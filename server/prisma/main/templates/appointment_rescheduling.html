@@ -1,0 +1,76 @@
+{% extends "base_email.html" %} {% block title %}Appointment Rescheduled{% endblock %}
+{% block content %}
+<div class="greeting">Hi there,</div>
+
+<div class="intro-text">
+  Your appointment has been rescheduled. Please see the updated details below.
+</div>
+
+<div class="details-banner">
+  <div class="details-title">Rescheduled Appointment Details</div>
+</div>
+
+<div class="details-grid">
+  <div class="detail-item">
+    <span class="detail-label">Booking Reference:</span>
+    <span class="detail-value">{{ booking_reference }}</span>
+  </div>
+
+  <div class="detail-item">
+    <span class="detail-label">New Date:</span>
+    <span class="detail-value">{{ new_appointment_date }}</span>
+  </div>
+
+  <div class="detail-item">
+    <span class="detail-label">New Time:</span>
+    <span class="detail-value">{{ new_appointment_time }}</span>
+  </div>
+
+  {% if total_amount %}
+  <div class="detail-item">
+    <span class="detail-label">Amount:</span>
+    <span class="detail-value">{{ total_amount }}</span>
+  </div>
+  {% endif %}
+</div>
+
+<div class="contact-info">
+  <div class="contact-text">
+    <strong
+      >We apologize for any inconvenience this rescheduling may cause.</strong
+    ><br />
+    This change was requested by the customer. We understand this may have
+    disrupted your schedule, and we truly appreciate your flexibility.
+    <br /><br />
+    <strong>What you need to do:</strong><br />
+    • Please update your calendar with the new appointment time<br />
+    • Arrive at the location 5 minutes before the scheduled time<br />
+    • If you have any questions or concerns, please contact our support team at
+    <a href="mailto:support@prismavalet.com">support@prismavalet.com</a>
+    <br /><br />
+    If you need to cancel or make any changes to this appointment, please do
+    this through the app.
+  </div>
+</div>
+
+<div class="closing">
+  <div class="closing-text">
+    We're grateful for your flexibility and continued partnership with Prisma.
+    Your adaptability helps us provide excellent service to our customers.
+    <br />
+    You keep 100% of your tips. We do not take any commissions from your
+    commendations from clients.
+    <br />
+    You can request a payout at any time.
+    <br />
+    Your commission rate will be advised to you by your manager.
+    <br />
+    Thank you for your understanding and continued dedication to providing
+    exceptional service.
+  </div>
+  <div class="signature">
+    Best regards,<br />
+    <span class="signature-name">The Prisma Team</span>
+  </div>
+</div>
+{% endblock %}

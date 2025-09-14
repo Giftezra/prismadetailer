@@ -1,0 +1,78 @@
+services:
+  detailer_server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./server/prisma:/app
+    env_file:
+      - .env
+    environment:
+      - DEBUG=True
+      - DJANGO_SETTINGS_MODULE=prisma.settings
+      - DJANGO_ALLOWED_HOSTS=*
+    command: daphne -b 0.0.0.0 -p 8000 prisma.asgi:application
+    networks:
+      - prisma_shared_net
+
+  prisma_detailer_database:
+    image: postgres:15
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - postgres_detailer_data:/var/lib/postgresql/data
+    networks:
+      - prisma_shared_net
+    ports:
+      - "5433:5432"
+
+  detailer_celery_worker:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    command: celery -A prisma.celery worker --loglevel=info
+    volumes:
+      - ./server/prisma:/app
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=prisma.settings
+      - CELERY_BROKER_URL=redis://prisma_redis:6379/0
+      - REDIS_HOST=prisma_redis
+      - CELERY_RESULT_BACKEND=redis://prisma_redis:6379/1
+      - CELERY_WORKER_CONCURRENCY=3
+    depends_on:
+      - detailer_server
+    networks:
+      - prisma_shared_net
+
+
+  appointment_subscriber:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    command: python manage.py appointment_subscriber
+    volumes:
+      - ./server/prisma:/app
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=prisma.settings
+      - REDIS_HOST=prisma_redis
+    depends_on:
+      - detailer_server
+    networks:
+      - prisma_shared_net
+
+
+volumes:
+  postgres_detailer_data:
+
+
+
+networks:
+  prisma_shared_net:
+    external: true
