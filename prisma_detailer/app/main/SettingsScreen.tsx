@@ -14,17 +14,14 @@
  * - General: Auto-save, Location Services, and Analytics settings
  */
 
-import { ScrollView, StyleSheet, View, Alert } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import React, { useState, useEffect } from "react";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useThemeContext } from "@/app/contexts/ThemeProvider";
-import SettingSection from "@/app/components/ui/settings/SettingSection";
-import SettingItem from "@/app/components/ui/settings/SettingItem";
-import StyledText from "@/app/components/helpers/StyledText";
-import { usePermissions } from "@/app/app-hooks/usePermissions";
-import { useNotificationService } from "@/app/app-hooks/useNotificationService";
-import { useLocationService } from "@/app/app-hooks/useLocationService";
-import * as SecureStore from "expo-secure-store";
+import SettingSection from "../components/ui/settings/SettingSection";
+import SettingItem from "../components/ui/settings/SettingItem";
+import StyledText from "../components/helpers/StyledText";
+import useProfile from "../app-hooks/useProfile";
 
 /**
  * Main Settings Screen Component
@@ -37,19 +34,16 @@ import * as SecureStore from "expo-secure-store";
  * - Responsive design with proper scrolling
  */
 const SettingScreen = () => {
-  // Get theme context for theme switching functionality
   const { theme, setTheme } = useThemeContext();
-
-  // Get permission and service hooks
   const {
-    permissionStatus,
-    requestNotificationPermission,
-    requestLocationPermission,
-    checkNotificationPermission,
-    checkLocationPermission,
-  } = usePermissions();
-  const { sendTestNotification } = useNotificationService();
-  const { currentLocation, getCurrentLocation } = useLocationService();
+    userProfile,
+    updatePushNotificationSetting,
+    updateEmailNotificationSetting,
+    updateMarketingEmailSetting,
+    isLoadingUpdatePushNotificationToken,
+    isLoadingUpdateEmailNotificationToken,
+    isLoadingUpdateMarketingEmailToken,
+  } = useProfile();
 
   // State for managing which sections are expanded
   const [expandedSections, setExpandedSections] = useState<{
@@ -62,60 +56,30 @@ const SettingScreen = () => {
     general: false,
   });
 
-  // User preference state (separate from system permissions)
-  const [userPreferences, setUserPreferences] = useState({
-    emailNotifications: true,
-    pushNotifications: false,
-    marketingNotifications: false,
-    autoSave: true,
-    locationServices: false,
-    analytics: false,
-  });
+  // Notification settings state - initialized from server data
+  const [emailNotifications, setEmailNotifications] = useState(
+    userProfile.allow_email_notifications ?? false
+  );
+  const [pushNotifications, setPushNotifications] = useState(
+    userProfile.allow_push_notifications ?? false
+  );
+  const [marketingNotifications, setMarketingNotifications] = useState(
+    userProfile.allow_marketing_emails ?? false
+  );
 
-  /**
-   * Load saved user preferences from SecureStore
-   */
-  const loadUserPreferences = async () => {
-    try {
-      const savedPreferences = await SecureStore.getItemAsync(
-        "user_preferences"
-      );
-      if (savedPreferences) {
-        const parsed = JSON.parse(savedPreferences);
-        setUserPreferences((prev) => ({ ...prev, ...parsed }));
-      }
-    } catch (error) {
-      console.error("Error loading user preferences:", error);
+  // General settings state
+  const [autoSave, setAutoSave] = useState(true);
+  const [locationServices, setLocationServices] = useState(true);
+  const [analytics, setAnalytics] = useState(false);
+
+  // Sync notification settings with server data when userProfile changes
+  useEffect(() => {
+    if (userProfile) {  
+      setEmailNotifications(userProfile.allow_email_notifications ?? false);
+      setPushNotifications(userProfile.allow_push_notifications ?? false);
+      setMarketingNotifications(userProfile.allow_marketing_emails ?? false);
     }
-  };
-
-  /**
-   * Save user preferences to SecureStore
-   */
-  const saveUserPreferences = async (
-    newPreferences: typeof userPreferences
-  ) => {
-    try {
-      await SecureStore.setItemAsync(
-        "user_preferences",
-        JSON.stringify(newPreferences)
-      );
-    } catch (error) {
-      console.error("Error saving user preferences:", error);
-    }
-  };
-
-  /**
-   * Update user preferences and save to storage
-   */
-  const updateUserPreference = (
-    key: keyof typeof userPreferences,
-    value: boolean
-  ) => {
-    const newPreferences = { ...userPreferences, [key]: value };
-    setUserPreferences(newPreferences);
-    saveUserPreferences(newPreferences);
-  };
+  }, [userProfile]);
 
   /**
    * Toggle the expanded state of a section
@@ -130,40 +94,53 @@ const SettingScreen = () => {
 
   /**
    * Handle notification setting changes
-   * Updates state and logs changes to console
+   * Updates state and server, logs changes to console
    * @param type - The type of notification (email, push, marketing)
    * @param value - The new boolean value
    */
   const handleNotificationToggle = async (type: string, value: boolean) => {
     console.log(`${type} notifications: ${value}`);
+
+    // Update local state immediately for better UX
     switch (type) {
       case "email":
-        updateUserPreference("emailNotifications", value);
+        setEmailNotifications(value);
         break;
       case "push":
-        if (value) {
-          // User wants to enable push notifications
-          const granted = await requestNotificationPermission();
-          if (granted) {
-            updateUserPreference("pushNotifications", true);
-            await sendTestNotification();
-          } else {
-            // Permission denied, keep toggle off
-            updateUserPreference("pushNotifications", false);
-          }
-        } else {
-          // User wants to disable push notifications
-          updateUserPreference("pushNotifications", false);
-          Alert.alert(
-            "Push Notifications Disabled",
-            "You can re-enable push notifications anytime in the settings.",
-            [{ text: "OK" }]
-          );
-        }
+        setPushNotifications(value);
         break;
       case "marketing":
-        updateUserPreference("marketingNotifications", value);
+        setMarketingNotifications(value);
         break;
+    }
+
+    // Update server
+    let success = false;
+    switch (type) {
+      case "email":
+        success = await updateEmailNotificationSetting(value);
+        break;
+      case "push":
+        success = await updatePushNotificationSetting(value);
+        break;
+      case "marketing":
+        success = await updateMarketingEmailSetting(value);
+        break;
+    }
+
+    // If server update failed, revert local state
+    if (!success) {
+      switch (type) {
+        case "email":
+          setEmailNotifications(!value);
+          break;
+        case "push":
+          setPushNotifications(!value);
+          break;
+        case "marketing":
+          setMarketingNotifications(!value);
+          break;
+      }
     }
   };
 
@@ -187,43 +164,20 @@ const SettingScreen = () => {
    * @param type - The setting type (autoSave, location, analytics)
    * @param value - The new boolean value
    */
-  const handleGeneralToggle = async (type: string, value: boolean) => {
+  const handleGeneralToggle = (type: string, value: boolean) => {
     console.log(`${type}: ${value}`);
     switch (type) {
       case "autoSave":
-        updateUserPreference("autoSave", value);
+        setAutoSave(value);
         break;
       case "location":
-        if (value) {
-          // User wants to enable location services
-          const granted = await requestLocationPermission();
-          if (granted) {
-            updateUserPreference("locationServices", true);
-            await getCurrentLocation();
-          } else {
-            // Permission denied, keep toggle off
-            updateUserPreference("locationServices", false);
-          }
-        } else {
-          // User wants to disable location services
-          updateUserPreference("locationServices", false);
-          Alert.alert(
-            "Location Services Disabled",
-            "You can re-enable location services anytime in the settings.",
-            [{ text: "OK" }]
-          );
-        }
+        setLocationServices(value);
         break;
       case "analytics":
-        updateUserPreference("analytics", value);
+        setAnalytics(value);
         break;
     }
   };
-
-  // Load user preferences on mount
-  useEffect(() => {
-    loadUserPreferences();
-  }, []);
 
   // Get theme-aware colors for the main container
   const backgroundColor = useThemeColor({}, "background");
@@ -254,24 +208,27 @@ const SettingScreen = () => {
             <SettingItem
               title="Email Notifications"
               description="Receive updates and alerts via email"
-              value={userPreferences.emailNotifications}
+              value={emailNotifications}
               onValueChange={(value) =>
                 handleNotificationToggle("email", value)
               }
+              disabled={isLoadingUpdateEmailNotificationToken}
             />
             <SettingItem
               title="Push Notifications"
               description="Get instant notifications on your device"
-              value={userPreferences.pushNotifications}
+              value={pushNotifications}
               onValueChange={(value) => handleNotificationToggle("push", value)}
+              disabled={isLoadingUpdatePushNotificationToken}
             />
             <SettingItem
               title="Marketing Communications"
               description="Receive promotional content and offers"
-              value={userPreferences.marketingNotifications}
+              value={marketingNotifications}
               onValueChange={(value) =>
                 handleNotificationToggle("marketing", value)
               }
+              disabled={isLoadingUpdateMarketingEmailToken}
             />
           </SettingSection>
 
@@ -325,19 +282,19 @@ const SettingScreen = () => {
             <SettingItem
               title="Auto Save"
               description="Automatically save your progress"
-              value={userPreferences.autoSave}
+              value={autoSave}
               onValueChange={(value) => handleGeneralToggle("autoSave", value)}
             />
             <SettingItem
               title="Location Services"
               description="Allow app to access your location"
-              value={userPreferences.locationServices}
+              value={locationServices}
               onValueChange={(value) => handleGeneralToggle("location", value)}
             />
             <SettingItem
               title="Analytics"
               description="Help improve the app with usage data"
-              value={userPreferences.analytics}
+              value={analytics}
               onValueChange={(value) => handleGeneralToggle("analytics", value)}
             />
           </SettingSection>

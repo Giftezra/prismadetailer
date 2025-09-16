@@ -106,6 +106,8 @@ class AppointmentView(APIView):
                 'special_instruction': appointment.owner_note if appointment.owner_note else '',
                 'valet_type': appointment.valet_type if appointment.valet_type else '',
                 'addons': appointment.addons.all().values_list('name', flat=True) if appointment.addons.all().exists() else [],
+                'loyalty_tier': appointment.loyalty_tier if appointment.loyalty_tier else 'bronze',
+                'loyalty_benefits': appointment.loyalty_benefits if appointment.loyalty_benefits else [],
                 'before_images': get_full_media_url(appointment.before_photo.url) if appointment.before_photo else '',
                 'after_images': get_full_media_url(appointment.after_photo.url) if appointment.after_photo else '',
             }

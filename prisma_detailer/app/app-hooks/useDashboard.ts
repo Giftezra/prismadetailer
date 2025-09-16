@@ -37,6 +37,7 @@ import {
 import { useAlertContext } from "../contexts/AlertContext";
 import * as Linking from "expo-linking";
 import useWebSocket from "./useWebsocket";
+import { useNotification } from "./useNotification";
 
 /**
  * Custom hook for managing dashboard data and state
@@ -100,6 +101,9 @@ export const useDashboard = () => {
 
   const { setAlertConfig, setIsVisible } = useAlertContext();
 
+  /* Import the notification refetch notification from the hook useNotification */
+  const { refreshNotifications } = useNotification();
+
   /**
    * Quick Actions Configuration
    *
@@ -158,7 +162,8 @@ export const useDashboard = () => {
     refetchQuickStats();
     refetchRecentJobs();
     refetchTodayOverview();
-  }, [refetchQuickStats, refetchRecentJobs, refetchTodayOverview]);
+    refreshNotifications();
+  }, [refetchQuickStats, refetchRecentJobs, refetchTodayOverview, refreshNotifications]);
 
   const handleBookingUpdate = useCallback(
     (data: any) => {

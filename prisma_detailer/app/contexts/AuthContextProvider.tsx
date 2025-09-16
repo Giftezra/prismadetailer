@@ -14,28 +14,8 @@ import { UserProfileProps } from "@/app/interfaces/ProfileInterfaces";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { usePermissions } from "@/app/app-hooks/usePermissions";
+import { saveDataToStorage } from "../utils/storage";
 
-/* Save the user data to the secure store.
- * Also save the access and refresh tokens to the secure store.
- * This will be used to authenticate the user when the user is logged in.
- * The access token will be used to authenticate the user when the user is logged in.
- * The refresh token will be used to refresh the access token when the access token is expired.
- */
-const saveUserToSecureStore = async (
-  user: UserProfileProps,
-  access: string,
-  refresh: string
-) => {
-  try {
-    await SecureStore.setItemAsync("user", JSON.stringify(user));
-    await SecureStore.setItemAsync("access", access);
-    await SecureStore.setItemAsync("refresh", refresh);
-    return true;
-  } catch (error) {
-    console.error("Error saving user to secure store:", error);
-    return false;
-  }
-};
 
 /**
  * Create an auth context to manage the user's authentication state.
@@ -134,7 +114,7 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (rememberMe) {
           // Call the save function to save the user data to the secure store.
-          const saved = await saveUserToSecureStore(
+          const saved = await saveDataToStorage(
             response.user,
             response.access,
             response.refresh

@@ -1,17 +1,18 @@
 from django.core.management.base import BaseCommand
-from main.tasks import send_appointment_cancellation_email, send_appointment_rescheduling_email, send_booking_confirmation_email
+from main.tasks import send_appointment_cancellation_email, send_appointment_rescheduling_email, send_booking_confirmation_email, send_push_notification
 from main.util.media_helper import get_full_media_url
-from main.models import Job, Notification
+from main.models import Job, Notification, Earning
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 import redis
 import json
 import time
 
+
 class Command(BaseCommand):
     help = "Subscribe to appointment cancellations"
 
-    def connect_to_redis(self, max_retries=30, delay=2):
+    def connect_to_redis(self, max_retries=30, delay=5):
         """Connect to Redis with retry logic"""
         for attempt in range(max_retries):
             try:
@@ -35,8 +36,8 @@ class Command(BaseCommand):
         r = self.connect_to_redis()
         pubsub = r.pubsub()
 
-        pubsub.subscribe('booking_cancelled', 'booking_rescheduled')
-        self.stdout.write(self.style.SUCCESS('Subscribed to booking cancellations and reschedules'))
+        pubsub.subscribe('booking_cancelled', 'booking_rescheduled','review_received')
+        self.stdout.write(self.style.SUCCESS('Subscribed to booking cancellations and reschedules and review received'))
 
         channel_layer = get_channel_layer()
 
@@ -57,12 +58,16 @@ class Command(BaseCommand):
                         new_appointment_date = data.get('new_appointment_date', '')
                         new_appointment_time = data.get('new_appointment_time', '')
                         total_amount = data.get('total_amount', 0)
+                        rating = data.get('rating', 0)
+                        tip_amount = data.get('tip_amount', 0)
                     else:
                         # String format: "ABC123"
                         booking_reference = str(data).strip().strip('"').strip("'")
                         new_appointment_date = ''
                         new_appointment_time = ''
                         total_amount = 0
+                        rating = 0
+                        tip_amount = 0
                 except Exception as e:
                     # Fallback to string parsing if JSON fails
                     booking_reference = str(raw_data).strip().strip('"').strip("'")
@@ -78,19 +83,33 @@ class Command(BaseCommand):
                     if channel == 'booking_cancelled':
                         job.status = 'cancelled'
                         job.save()
-                        send_appointment_cancellation_email(
-                            booking_reference, 
-                            job.detailer.user.email, 
-                            job.appointment_date, 
-                            job.appointment_time
+
+                        # Send the email notification if the detailer has email notifications enabled
+                        if job.detailer.user.allow_email_notifications:
+                            send_appointment_cancellation_email(
+                                booking_reference, 
+                                job.detailer.user.email, 
+                                job.appointment_date, 
+                                job.appointment_time
                             )
 
-                        self.send_websocket_notification(
-                            channel_layer, 
-                            job.detailer.user.id, 
-                            booking_reference, 
-                            'cancelled', 
-                            'Your appointment has been cancelled'
+                        # Send the push notification if the detailer has push notifications enabled
+                        if job.detailer.user.allow_push_notifications and job.detailer.user.notification_token:
+                            self.send_websocket_notification(
+                                channel_layer, 
+                                job.detailer.user.id, 
+                                booking_reference, 
+                                'cancelled', 
+                                'Your appointment has been cancelled'
+                                )
+                        
+                        # Send push notification if the detailer has push notifications enabled
+                        if job.detailer.user.allow_push_notifications:
+                            send_push_notification(
+                                job.detailer.user.id, 
+                                'Appointment Cancelled', 
+                                'Your appointment has been cancelled', 
+                                'booking_cancelled'
                             )
 
                         self.create_notification(
@@ -106,7 +125,8 @@ class Command(BaseCommand):
                         job.total_amount = total_amount
                         job.status = 'pending'
                         job.save()
-                        send_appointment_rescheduling_email(
+                        if job.detailer.user.allow_email_notifications:
+                            send_appointment_rescheduling_email(
                             booking_reference, 
                             job.detailer.user.email, 
                             new_appointment_date, 
@@ -114,12 +134,13 @@ class Command(BaseCommand):
                             total_amount
                             )
 
-                        self.send_websocket_notification(
-                            channel_layer, 
-                            job.detailer.user.id, 
-                            booking_reference, 'rescheduled', 
-                            'Your appointment has been rescheduled'
-                            )
+                        if job.detailer.user.allow_push_notifications and job.detailer.user.notification_token:
+                            self.send_websocket_notification(
+                                channel_layer, 
+                                job.detailer.user.id, 
+                                booking_reference, 'rescheduled', 
+                                'Your appointment has been rescheduled'
+                                )
                             
                         self.create_notification(
                             job.detailer.user, 
@@ -127,6 +148,24 @@ class Command(BaseCommand):
                             'booking_rescheduled', 
                             'warning', 
                             'Your appointment has been rescheduled')
+                    
+                    # Given the booking reference, get the job and update the rating on the associated detailer account
+                    # Also update the tip amount on the associated earning record
+                    elif channel == 'review_received':
+                        job.rating = rating
+                        job.save()
+                        earning = Earning.objects.get(job=job)
+                        earning.tip_amount = tip_amount
+                        earning.save()
+
+                        self.create_notification(
+                            job.detailer.user, 
+                            'Review Received', 
+                            'review_received', 
+                            'success', 
+                            f'You have received a review with a rating of {rating} and a tip amount of {tip_amount}'
+                            )
+
 
                 except Job.DoesNotExist:
                     self.stdout.write(self.style.ERROR(f"Job not found: {booking_reference}"))
@@ -156,6 +195,7 @@ class Command(BaseCommand):
             self.stderr.write(f"Failed to send websocket notification: {e}")
             return False
         return True
+
 
 
     def create_notification(self, user, title, type, status, message):

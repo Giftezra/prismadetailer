@@ -61,6 +61,8 @@ export interface JobDetailsProps {
   addons?: string[];
   before_images?: string;
   after_images?: string;
+  loyalty_tier?: string;
+  loyalty_benefits?: string[];
 }
 
 // Service Type Details

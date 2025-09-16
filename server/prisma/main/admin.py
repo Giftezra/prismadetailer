@@ -39,6 +39,40 @@ class ServiceTypeForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+# Custom form for Job to handle loyalty_benefits as textarea
+class JobForm(forms.ModelForm):
+    loyalty_benefits_text = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 4, 'cols': 50}),
+        help_text="Enter each loyalty benefit on a new line. These will be stored as an array of strings.",
+        required=False
+    )
+    
+    class Meta:
+        model = Job
+        fields = '__all__'
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            # Convert JSON array back to text for editing
+            if self.instance.loyalty_benefits:
+                self.fields['loyalty_benefits_text'].initial = '\n'.join(self.instance.loyalty_benefits)
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Convert textarea input to JSON array
+        loyalty_benefits_text = self.cleaned_data.get('loyalty_benefits_text', '')
+        if loyalty_benefits_text:
+            # Split by newlines and filter out empty lines
+            loyalty_benefits_array = [line.strip() for line in loyalty_benefits_text.split('\n') if line.strip()]
+            instance.loyalty_benefits = loyalty_benefits_array
+        else:
+            instance.loyalty_benefits = []
+        
+        if commit:
+            instance.save()
+        return instance
     
 @admin.register(ServiceType)
 class ServiceTypeAdmin(admin.ModelAdmin):
@@ -56,9 +90,17 @@ class ServiceTypeAdmin(admin.ModelAdmin):
 
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
-    list_display = ('service_type', 'booking_reference', 'client_name', 'vehicle_registration', 'address', 'city', 'post_code','appointment_date','detailer')
+    form = JobForm
+    list_display = ('service_type', 'booking_reference', 'client_name', 'vehicle_registration', 'address', 'city', 'post_code','appointment_date','detailer', 'loyalty_tier')
     search_fields = ('booking_reference', 'client_name', 'vehicle_registration',)
-    list_filter = ('booking_reference', 'client_name')
+    list_filter = ('booking_reference', 'client_name', 'loyalty_tier', 'status')
+    
+    def get_fields(self, request, obj=None):
+        # Exclude the original loyalty_benefits field and use our custom one
+        fields = list(super().get_fields(request, obj))
+        if 'loyalty_benefits' in fields:
+            fields.remove('loyalty_benefits')
+        return fields
 
 @admin.register(Earning)
 class EarningAdmin(admin.ModelAdmin):

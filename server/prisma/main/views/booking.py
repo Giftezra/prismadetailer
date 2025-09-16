@@ -38,21 +38,41 @@ class BookingView(APIView):
             When the data required to complete a booking is recieved in the params, the method is to destructure it so that it can be used to create a new booking.
         """
         try:
+
             try:
                 data = request.data
             except:
                 data = {}
+            print("Booking data: ", data)
 
             channel_layer = get_channel_layer()
 
             # Get the service type from the db using the name of the service type sent from the client app stack
             try:
                 service_type = ServiceType.objects.get(name=data['service_type'])
-                addons = Addon.objects.filter(name__in=data['addons'])
-            except Exception as e:
+            except ServiceType.DoesNotExist:
                 return Response({
-                    "error": "Service type or addons not found"
+                    "error": f"Service type '{data.get('service_type')}' not found"
                 }, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                print(f"Error finding service type: {str(e)}")
+                return Response({
+                    "error": f"Error finding service type: {str(e)}"
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Get addons
+            try:
+                addons = Addon.objects.filter(name__in=data['addons'])
+                print(f"Found addons: {[addon.name for addon in addons]}")
+            except Exception as e:
+                print(f"Error finding addons: {str(e)}")
+                return Response({
+                    "error": f"Error finding addons: {str(e)}"
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Clean up the city and country
+            data['city'] = data['city'].strip() if data['city'] else None
+            data['country'] = data['country'].strip() if data['country'] else None
 
             # Find the first available detailer in the specified location
             try:
@@ -63,15 +83,18 @@ class BookingView(APIView):
                     is_verified=True, 
                     is_available=True
                 )
+                print(f"Found {detailers.count()} detailers in {data['city']}, {data['country']}")
             except Exception as e:
+                print(f"Error finding detailers: {str(e)}")
                 return Response({
-                    "error": "No available detailers found in the specified location"
+                    "error": f"Error finding detailers: {str(e)}"
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             if not detailers.exists():
+                print(f"No detailers found for {data['city']}, {data['country']}")
                 return Response({
                     "success": False,
-                    "error": "No available detailers found in the specified location"
+                    "error": f"No available detailers found in {data['city']}, {data['country']}"
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # Get the first detailer (you can implement more sophisticated selection logic here)
@@ -79,8 +102,27 @@ class BookingView(APIView):
             
             # Check if the detailer is available for the specified time
             appointment_date = datetime.strptime(data['booking_date'], '%Y-%m-%d').date()
-            appointment_time = datetime.strptime(data['start_time'], '%H:%M:%S.%f').time()
-            appointment_end_time = datetime.strptime(data['end_time'], '%H:%M:%S.%f').time()
+            
+            # Handle time format - client sends HH:MM:SS.sss or HH:MM:SS
+            try:
+                appointment_time = datetime.strptime(data['start_time'], '%H:%M:%S.%f').time()
+            except ValueError:
+                try:
+                    appointment_time = datetime.strptime(data['start_time'], '%H:%M:%S').time()
+                except ValueError:
+                    return Response({
+                        "error": "Invalid start_time format"
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                appointment_end_time = datetime.strptime(data['end_time'], '%H:%M:%S.%f').time()
+            except ValueError:
+                try:
+                    appointment_end_time = datetime.strptime(data['end_time'], '%H:%M:%S').time()
+                except ValueError:
+                    return Response({
+                        "error": "Invalid end_time format"
+                    }, status=status.HTTP_400_BAD_REQUEST)
             
             # Create timezone-aware datetime for proper handling
             appointment_datetime_naive = datetime.combine(appointment_date, appointment_time)
@@ -116,33 +158,57 @@ class BookingView(APIView):
                     "error": "No detailers available for the specified time"
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Use the timezone-aware datetime we created earlier
+            # Convert vehicle_year to integer if it's a string
+            vehicle_year = data.get('vehicle_year')
+            if vehicle_year and isinstance(vehicle_year, str):
+                try:
+                    vehicle_year = int(vehicle_year)
+                except ValueError:
+                    vehicle_year = None
+            
+            # Convert total_amount to decimal
+            total_amount = data.get('total_amount', 0)
+            if isinstance(total_amount, str):
+                try:
+                    total_amount = float(total_amount)
+                except ValueError:
+                    total_amount = 0
             
             # Create the job
-            job = Job.objects.create(
-                booking_reference=data['booking_reference'],
-                detailer=detailer,
-                service_type=service_type,
-                client_name=data['client_name'],
-                client_phone=data['client_phone'],
-                vehicle_registration=data['vehicle_registration'],
-                vehicle_make=data['vehicle_make'],
-                vehicle_model=data['vehicle_model'],
-                vehicle_color=data['vehicle_color'],
-                vehicle_year=data['vehicle_year'],
-                total_amount=data['total_amount'],
-                valet_type=data['valet_type'],
-                owner_note=data.get('special_instructions', ''),
-                address=data['address'],
-                city=data['city'],
-                post_code=data['postcode'],
-                country=data['country'],
-                latitude=data['latitude'],
-                longitude=data['longitude'],
-                appointment_date=appointment_datetime,
-                appointment_time=appointment_time,
-                status=data['status']
-            )
+            try:
+                print(f"Creating job with detailer: {detailer}, service_type: {service_type}")
+                job = Job.objects.create(
+                    booking_reference=data['booking_reference'],
+                    detailer=detailer,
+                    service_type=service_type,
+                    client_name=data['client_name'],
+                    client_phone=data['client_phone'],
+                    vehicle_registration=data['vehicle_registration'],
+                    vehicle_make=data['vehicle_make'],
+                    vehicle_model=data['vehicle_model'],
+                    vehicle_color=data['vehicle_color'],
+                    vehicle_year=vehicle_year,
+                    total_amount=total_amount,
+                    valet_type=data['valet_type'],
+                    owner_note=data.get('special_instructions', ''),
+                    address=data['address'],
+                    city=data['city'],
+                    post_code=data['postcode'],
+                    country=data['country'],
+                    latitude=data['latitude'],
+                    longitude=data['longitude'],
+                    appointment_date=appointment_datetime,
+                    appointment_time=appointment_time,
+                    status=data['status'],
+                    loyalty_tier=data.get('loyalty_tier', 'bronze'),
+                    loyalty_benefits=data.get('loyalty_benefits', [])
+                )
+                print(f"Job created successfully: {job.id}")
+            except Exception as e:
+                print(f"Error creating job: {str(e)}")
+                return Response({
+                    "error": f"Error creating job: {str(e)}"
+                }, status=status.HTTP_400_BAD_REQUEST)
             
             # Add addons to the job
             if addons.exists():
@@ -157,17 +223,20 @@ class BookingView(APIView):
             formatted_appointment_date = local_datetime.strftime('%b. %d, %Y, %I %p').replace(' 0', ' ').lower()
             formatted_appointment_time = local_datetime.strftime('%I %p').replace(' 0', ' ').lower()
             
-            send_booking_confirmation_email.delay(
-                detailer.user.email,
-                job.booking_reference, 
-                formatted_appointment_date, 
-                formatted_appointment_time, 
-                job.address, 
-                job.service_type.name, 
-                job.owner_note, 
-                formatted_total_amount
+            # check if the detailer has email notifications enabled
+            if detailer.user.allow_email_notifications:
+                send_booking_confirmation_email.delay(
+                    detailer.user.email,
+                    job.booking_reference, 
+                    formatted_appointment_date, 
+                    formatted_appointment_time, 
+                    job.address, 
+                    job.service_type.name, 
+                    job.owner_note, 
+                    formatted_total_amount
                 )
 
+            # Check if the detailer has push notifications enabled
             create_notification.delay(
                 detailer.user.id,
                 'New Appointment',
@@ -176,6 +245,7 @@ class BookingView(APIView):
                 'You have a new appointment!'
             )
 
+            # Remove the stray 'se' and fix the websocket notification
             send_websocket_notification.delay(
                 detailer.user.id,
                 job.booking_reference,

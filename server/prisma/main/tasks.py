@@ -4,6 +4,7 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from main.util.graph_mail import send_mail as graph_send_mail
 from asgiref.sync import async_to_sync
+from exponent_server_sdk import PushClient, PushMessage
 import redis
 import json
 
@@ -108,7 +109,7 @@ def send_appointment_rescheduling_email(booking_reference, detailer_email, new_a
             'new_appointment_date': new_appointment_date,
             'new_appointment_time': new_appointment_time,
             'total_amount': total_amount,
-        })  
+        })
         graph_send_mail(subject, html_message, detailer_email)
         return f"Appointment rescheduling email sent successfully to {detailer_email}"
     except Exception as e:
@@ -156,3 +157,40 @@ def create_notification(user_id, title, type, status, message):
     except Exception as e:
         print(f"Failed to create notification: {e}")
         return False
+
+
+@shared_task
+def send_push_notification(user_id, title, message, type):
+    """ Send a push notification to the user """
+    try:
+        from main.models import User
+        user = User.objects.get(id=user_id)
+        
+        # Check if user has notification token
+        if not user.notification_token:
+            return f"Push notification not sent: User {user_id} has no notification token"
+        
+        # Check if user has allowed push notifications
+        if not user.allow_push_notifications:
+            return f"Push notification not sent: User {user_id} has disabled push notifications"
+        
+        # Send the notification
+        push_client = PushClient()
+        push_client.send_message(
+            PushMessage(
+                to=user.notification_token, 
+                title=title, 
+                body=message,
+                data={
+                    "type": type,
+                    "title": title,
+                    "body": message
+                }
+            )
+        )
+        return f"Push notification sent successfully to user {user_id}"
+        
+    except Exception as e:
+        error_msg = f"Failed to send push notification to user {user_id}: {str(e)}"
+        print(error_msg)
+        return error_msg

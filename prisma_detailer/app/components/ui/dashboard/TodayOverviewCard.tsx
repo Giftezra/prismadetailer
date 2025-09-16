@@ -210,6 +210,28 @@ const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
               </StyledText>
             </View>
           )}
+          {data.currentJob!.loyalty_tier && (
+            <View style={styles.innerRow}>
+              <StyledText variant="labelMedium" style={{ opacity: 0.5 }}>
+                Loyalty Tier:
+              </StyledText>
+              <StyledText variant="labelSmall">
+                {data.currentJob!.loyalty_tier.charAt(0).toUpperCase() +
+                  data.currentJob!.loyalty_tier.slice(1)}
+              </StyledText>
+            </View>
+          )}
+          {data.currentJob!.loyalty_benefits &&
+            data.currentJob!.loyalty_benefits.length > 0 && (
+              <View style={styles.innerRow}>
+                <StyledText variant="labelMedium" style={{ opacity: 0.5 }}>
+                  Loyalty Benefits:
+                </StyledText>
+                <StyledText variant="labelSmall">
+                  {data.currentJob!.loyalty_benefits.join(", ")}
+                </StyledText>
+              </View>
+            )}
           <StyledText
             variant="bodySmall"
             style={{ color: textColor, opacity: 0.7 }}
@@ -244,7 +266,12 @@ const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
                 Complete Job
               </StyledButton>
             )}
-            <Pressable style={[styles.chatbutton, { borderColor, backgroundColor, shadowColor: textColor }]}>
+            <Pressable
+              style={[
+                styles.chatbutton,
+                { borderColor, backgroundColor, shadowColor: textColor },
+              ]}
+            >
               <MaterialIcons name="message" size={24} color={textColor} />
             </Pressable>
           </View>
@@ -329,6 +356,28 @@ const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
               </StyledText>
             </View>
           )}
+          {data.nextAppointment!.loyalty_tier && (
+            <View style={styles.innerRow}>
+              <StyledText variant="labelMedium" style={{ opacity: 0.5 }}>
+                Loyalty Tier:
+              </StyledText>
+              <StyledText variant="labelSmall">
+                {data.nextAppointment!.loyalty_tier.charAt(0).toUpperCase() +
+                  data.nextAppointment!.loyalty_tier.slice(1)}
+              </StyledText>
+            </View>
+          )}
+          {data.nextAppointment!.loyalty_benefits &&
+            data.nextAppointment!.loyalty_benefits.length > 0 && (
+              <View style={styles.innerRow}>
+                <StyledText variant="labelMedium" style={{ opacity: 0.5 }}>
+                  Loyalty Benefits:
+                </StyledText>
+                <StyledText variant="labelSmall">
+                  {data.nextAppointment!.loyalty_benefits.join(", ")}
+                </StyledText>
+              </View>
+            )}
         </View>
       )}
     </View>

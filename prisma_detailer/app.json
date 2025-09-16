@@ -62,9 +62,9 @@
       "typedRoutes": true
     },
     "extra": {
-      "detailer_app_url": "https://5c4bf44f17f7.ngrok-free.app/detailer",
-      "customer_app_url": "https://5c4bf44f17f7.ngrok-free.app/client",
-      "websockets_url": "wss://5c4bf44f17f7.ngrok-free.app/ws/detailer/",
+      "detailer_app_url": "https://59008fd51784.ngrok-free.app/detailer",
+      "customer_app_url": "https://59008fd51784.ngrok-free.app/client",
+      "websockets_url": "wss://59008fd51784.ngrok-free.app/ws/detailer/",
       "router": {},
       "eas": {
         "projectId": "19cf1878-0602-4768-b678-6886a2b94358"

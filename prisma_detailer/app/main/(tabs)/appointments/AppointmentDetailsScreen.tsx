@@ -177,9 +177,7 @@ const AppointmentDetailsScreen = () => {
               key="complete"
               variant="tonal"
               style={[styles.actionButton, styles.completeButton]}
-              onPress={() =>
-                handleCompleteAppointment(appointmentDetails.id)
-              }
+              onPress={() => handleCompleteAppointment(appointmentDetails.id)}
             >
               <Ionicons name="checkmark-done" size={20} color="white" />
               <StyledText variant="labelLarge" style={{ color: "white" }}>
@@ -441,6 +439,51 @@ const AppointmentDetailsScreen = () => {
                   <StyledText variant="bodyMedium">{addon}</StyledText>
                 </View>
               ))}
+            </View>
+          </LinearGradientComponent>
+        )}
+
+        {/* Loyalty Information */}
+        {(appointmentDetails?.loyalty_tier ||
+          appointmentDetails?.loyalty_benefits) && (
+          <LinearGradientComponent
+            color1={cardColor}
+            color2={textColor}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 3, y: 1 }}
+            style={[styles.card, { borderColor }]}
+          >
+            <StyledText variant="labelMedium">Loyalty Information</StyledText>
+            <View style={styles.infoContainer}>
+              {appointmentDetails?.loyalty_tier && (
+                <View style={styles.infoRow}>
+                  <Ionicons name="star" size={15} color={tintColor} />
+                  <StyledText variant="bodyMedium">
+                    Tier:{" "}
+                    {appointmentDetails.loyalty_tier.charAt(0).toUpperCase() +
+                      appointmentDetails.loyalty_tier.slice(1)}
+                  </StyledText>
+                </View>
+              )}
+              {appointmentDetails?.loyalty_benefits &&
+                appointmentDetails.loyalty_benefits.length > 0 && (
+                  <View style={styles.infoRow}>
+                    <Ionicons name="gift" size={15} color={tintColor} />
+                    <View style={styles.descriptionContainer}>
+                      {appointmentDetails.loyalty_benefits.map(
+                        (benefit: string, index: number) => (
+                          <StyledText
+                            key={index}
+                            variant="bodyMedium"
+                            style={styles.descriptionItem}
+                          >
+                            • {benefit}
+                          </StyledText>
+                        )
+                      )}
+                    </View>
+                  </View>
+                )}
             </View>
           </LinearGradientComponent>
         )}

@@ -8,8 +8,10 @@ export interface CurrentJobProps {
   progress: number;
   addons?: string[];
   status: "in_progress" | "accepted" | "completed";
-  specialInstruction?: string
+  specialInstruction?: string;
   vehicleInfo?: string;
+  loyalty_tier?: string;
+  loyalty_benefits?: string[];
 }
 
 // Quick Stats Interfaces
@@ -50,6 +52,8 @@ export interface NextAppointmentProps {
   vehicleInfo: string;
   addons?: string[];
   specialInstruction?: string;
+  loyalty_tier?: string;
+  loyalty_benefits?: string[];
 }
 
 export interface RecentJobProps {

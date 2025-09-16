@@ -22,6 +22,7 @@ import ModalServices from "@/app/services/ModalServices";
 import ReviewItemList from "@/app/components/ui/profile/ReviewItemList";
 import useProfile from "@/app/app-hooks/useProfile";
 import { formatCurrency } from "@/app/utils/converters";
+import { APP_CONFIG } from "@/constants/Config";
 
 const ProfileScreen = () => {
   const user = useAppSelector((state: any) => state.auth.user);
@@ -267,7 +268,7 @@ const ProfileScreen = () => {
         {/* App Version */}
         <View style={styles.versionContainer}>
           <StyledText variant="bodySmall" style={styles.versionText}>
-            Prisma Detailer v1.0.0
+            Prisma Detailer v{APP_CONFIG.version}
           </StyledText>
         </View>
       </ScrollView>

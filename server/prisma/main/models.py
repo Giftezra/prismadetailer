@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone
 import math
-from django.db.models import Sum
+from django.db.models import Sum, Avg
 from main.tasks import send_welcome_email
 
 
@@ -42,6 +42,9 @@ class User(AbstractUser):
     is_admin = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
+    allow_marketing_emails = models.BooleanField(default=False)
+    allow_push_notifications = models.BooleanField(default=False)
+    allow_email_notifications = models.BooleanField(default=True)
     notification_token = models.TextField(null=True, blank=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(auto_now=True)
@@ -59,6 +62,7 @@ class User(AbstractUser):
         return f"{self.first_name} {self.last_name}"
     
     def save(self, *args, **kwargs):
+        self.username = self.email
         is_new = self.pk is None
         super().save(*args, **kwargs)
         if is_new:
@@ -93,7 +97,6 @@ class Detailer(models.Model):
 
     def unpaid_earnings(self):
         return self.earnings.filter(payment_status="pending").aggregate(total=Sum("net_amount"))["total"] or 0
-    
 
 
 # -------------------------------
@@ -143,6 +146,13 @@ class Job(models.Model):
         ('cancelled', 'Cancelled'),
     ]
 
+    LOYALTY_TIER_CHOICES = [
+        ('bronze', 'Bronze'),
+        ('silver', 'Silver'),
+        ('gold', 'Gold'),
+        ('platinum', 'Platinum'),
+    ]
+
     
     service_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE)
 
@@ -156,27 +166,27 @@ class Job(models.Model):
     vehicle_color = models.CharField(max_length=55)
     vehicle_year = models.IntegerField(blank=True, null=True)
     owner_note = models.TextField(blank=True, null=True)
-
     address = models.CharField(max_length=120)
     city = models.CharField(max_length=55)
     post_code = models.CharField(max_length=10)
     country = models.CharField(max_length=55)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
-
     appointment_date = models.DateTimeField()
     appointment_time = models.TimeField()
     duration = models.IntegerField(default=0, blank=True, null=True)
     addons = models.ManyToManyField(Addon, blank=True)
     valet_type = models.CharField(max_length=20, default=None, null=True, blank=True)
     total_amount = models.DecimalField(default=0, blank=True, null=True, max_digits=6, decimal_places=2)
-
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-
+    loyalty_tier = models.CharField(max_length=20, choices=LOYALTY_TIER_CHOICES, default='bronze')
+    loyalty_benefits = models.JSONField(default=list, blank=True, null=True)
     detailer = models.ForeignKey(Detailer, on_delete=models.CASCADE, related_name="jobs", blank=True, null=True)
     
     before_photo = models.ImageField(upload_to="jobs/before/", blank=True, null=True)
     after_photo = models.ImageField(upload_to="jobs/after/", blank=True, null=True)
+
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -205,22 +215,54 @@ class Job(models.Model):
         return self.service_type.price * (1 - self.detailer.commission_rate)#
     
     def save(self, *args, **kwargs):
+        # Check if rating is being updated
+        rating_updated = False
+        if self.pk:  # Only for existing records
+            try:
+                old_job = Job.objects.get(pk=self.pk)
+                rating_updated = old_job.rating != self.rating
+            except Job.DoesNotExist:
+                pass
+        else:
+            # New record with rating
+            rating_updated = self.rating and self.rating > 0
+        
+        # Save the job first
+        super().save(*args, **kwargs)
+        
+        # Update detailer rating if rating was changed and detailer exists
+        if rating_updated and self.detailer:
+            self.update_detailer_rating()
+        
+        # Create earning if job is completed
         if self.status == "completed":
             self.create_earning()
-        super().save(*args, **kwargs)
 
-
-# -------------------------------
-# Earnings
-# -------------------------------
-class EarningManager(models.Manager):
-    def total_for_detailer(self, detailer, start_date=None, end_date=None):
-        qs = self.filter(detailer=detailer)
-        if start_date:
-            qs = qs.filter(payout_date__gte=start_date)
-        if end_date:
-            qs = qs.filter(payout_date__lte=end_date)
-        return qs.aggregate(total=Sum("net_amount"))["total"] or 0
+    
+    def update_detailer_rating(self):
+        """Update the detailer's rating based on average of all job ratings"""
+        try:
+            # Calculate average rating from all jobs with ratings > 0
+            avg_rating = Job.objects.filter(
+                detailer=self.detailer,
+                rating__gt=0
+            ).aggregate(avg_rating=Avg('rating'))['avg_rating']
+            
+            if avg_rating is not None:
+                # Round to 2 decimal places and ensure it doesn't exceed 5.0
+                self.detailer.rating = min(round(float(avg_rating), 2), 5.0)
+            else:
+                # No ratings yet, set to 0
+                self.detailer.rating = 0.0
+            
+            # Save the detailer without triggering signals to avoid recursion
+            Detailer.objects.filter(pk=self.detailer.pk).update(rating=self.detailer.rating)
+            
+        except Exception as e:
+            # Log the error but don't raise it to avoid breaking the save process
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to update detailer rating: {e}")
 
 
 class Earning(models.Model):
@@ -230,7 +272,7 @@ class Earning(models.Model):
     ]
 
     detailer = models.ForeignKey(Detailer, on_delete=models.CASCADE, related_name="earnings")
-    job = models.ForeignKey(Job, on_delete=models.SET_NULL, related_name="earnings", null=True, blank=True)
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="earnings")
     gross_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     commission = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     net_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -238,8 +280,6 @@ class Earning(models.Model):
     payout_date = models.DateField(blank=True, null=True)
     payment_status = models.CharField(max_length=10, choices=PAYMENT_STATUS, default="pending")
     created_at = models.DateTimeField(auto_now_add=True)
-
-    objects = EarningManager()
 
     def __str__(self):
         return f"Earning for {self.detailer.user.get_full_name()} - Job {self.job.id}"
@@ -257,6 +297,7 @@ class Earning(models.Model):
         self.payment_status = "paid"
         self.payout_date = payout_date
         self.save()
+
 
 """ Defines the account neccessary where the users earnings will be paid into """
 class BankAccount(models.Model):
@@ -379,6 +420,7 @@ class Notification(models.Model):
         ('booking_created', 'Booking Created'),
         ('cleaning_completed', 'Cleaning Completed'),
         ('appointment_started', 'Appointment Started'),
+        ('review_received', 'Review Received'),
         ('pending', 'Pending'),
         ('car_ready', 'Car Ready'),
         ('payment_received', 'Payment Received'),

@@ -68,8 +68,8 @@ class AvailabilityView(APIView):
             data = request.query_params
             date_str = data.get('date')
             service_duration = int(data.get('service_duration', 60))
-            country = data.get('country')
-            city = data.get('city')
+            country = data.get('country').strip() if data.get('country') else None
+            city = data.get('city').strip() if data.get('city') else None
 
             # Validate required parameters
             if not all([date_str, country, city]):
@@ -88,8 +88,10 @@ class AvailabilityView(APIView):
             # Get detailers in the specified location
             detailers = Detailer.objects.filter(
                 city__iexact=city,
-                is_active=True
+                is_active=True,
+                is_verified=True
             )
+            print(f"Found {detailers.count()} detailers in {city}, {country}")
 
             if not detailers.exists():
                 return Response({

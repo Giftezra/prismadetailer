@@ -14,11 +14,13 @@ export interface UserProfileProps {
   last_name: string;
   email: string;
   phone: string;
-  image?: any;
   address?: string;
   city?: string;
   post_code?: string;
   country?: string;
+  allow_push_notifications?: boolean;
+  allow_email_notifications?: boolean;
+  allow_marketing_emails?: boolean;
 }
 
 /* Defines the interface for the detailers statistics */

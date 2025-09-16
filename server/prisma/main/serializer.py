@@ -61,7 +61,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'city': detailer.city if detailer else None,
                 'post_code': detailer.post_code if detailer else None,
                 'country': detailer.country if detailer else None,
-                'image': get_full_media_url(user.image.url) if getattr(user, 'image', None) else None,
+                'allow_push_notifications': user.allow_push_notifications,
+                'allow_email_notifications': user.allow_email_notifications,
+                'allow_marketing_emails': user.allow_marketing_emails,
             }
         })
         return data

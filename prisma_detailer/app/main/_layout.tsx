@@ -15,9 +15,12 @@ import { Divider } from "react-native-paper";
 import { useAlertContext } from "../contexts/AlertContext";
 import StyledText from "../components/helpers/StyledText";
 import { RootState, useAppSelector } from "../store/my_store";
+import { useNotification } from "../app-hooks/useNotification";
 
 /* Create a custom header that displays the user's name and back arrow, with notification and settings icons */
 const CustomHeader = ({ name }: { name: string }) => {
+  const { unreadCount } = useNotification();
+
   const backgroundColor = useThemeColor({}, "background");
   const iconColor = useThemeColor({}, "icons");
   const secondaryButtonColor = useThemeColor({}, "secondaryButton");
@@ -93,7 +96,20 @@ const CustomHeader = ({ name }: { name: string }) => {
           style={[styles.buttons, { backgroundColor, shadowColor: textColor }]}
           onPress={() => router.push("/main/NotificationScreen")}
         >
-          <Ionicons name="notifications-outline" size={24} color={iconColor} />
+          <View style={styles.notificationContainer}>
+            <Ionicons
+              name="notifications-outline"
+              size={24}
+              color={iconColor}
+            />
+            {unreadCount > 0 && (
+              <View style={[styles.badge, { backgroundColor: "#FF3B30" }]}>
+                <StyledText variant="bodySmall" style={styles.badgeText}>
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </StyledText>
+              </View>
+            )}
+          </View>
         </Pressable>
         <Pressable
           style={[styles.buttons, { backgroundColor, shadowColor: textColor }]}
@@ -156,5 +172,26 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 10,
     padding: 5,
+  },
+  notificationContainer: {
+    position: "relative",
+  },
+  badge: {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });

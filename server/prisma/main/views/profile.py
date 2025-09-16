@@ -11,9 +11,19 @@ class ProfileView(APIView):
 
     action_handler = {
         "get_profile_statistics": "_get_profile_statistics",
+        "update_push_notification_token": "_update_push_notification_token",
+        "update_email_notification_token": "_update_email_notification_token",
+        "update_marketing_email_token": "_update_marketing_email_token",
     }
 
     def get(self, request, *args, **kwargs):
+        action = kwargs.get('action')
+        if action not in self.action_handler:
+            return Response({"error": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
+        handler = getattr(self, self.action_handler[action])
+        return handler(request)
+
+    def patch(self, request, *args, **kwargs):
         action = kwargs.get('action')
         if action not in self.action_handler:
             return Response({"error": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
@@ -55,3 +65,77 @@ class ProfileView(APIView):
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+    def _update_push_notification_token(self, request):
+        try:
+            update_value = request.data.get('update')
+            
+            if update_value is None:
+                return Response(
+                    {'error': 'Update value is required'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            request.user.allow_push_notifications = update_value
+            request.user.save()
+            
+            return Response({
+                'success': True,
+                'message': 'Push notification setting updated successfully',
+                'value': update_value
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+    def _update_email_notification_token(self, request):
+        try:
+            update_value = request.data.get('update')
+            
+            if update_value is None:
+                return Response(
+                    {'error': 'Update value is required'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Update the user's email notification setting
+            request.user.allow_email_notifications = update_value
+            request.user.save()
+            
+            return Response({
+                'success': True,
+                'message': 'Email notification setting updated successfully',
+                'value': update_value
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+    def _update_marketing_email_token(self, request):
+        try:
+            update_value = request.data.get('update')
+            
+            if update_value is None:
+                return Response(
+                    {'error': 'Update value is required'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Update the user's marketing email setting
+            request.user.allow_marketing_emails = update_value
+            request.user.save()
+            
+            return Response({
+                'success': True,
+                'message': 'Marketing email setting updated successfully',
+                'value': update_value
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            
