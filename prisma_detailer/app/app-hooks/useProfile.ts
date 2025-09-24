@@ -96,13 +96,16 @@ const useProfile = () => {
       }).unwrap();
       if (response.success) {
         console.log("Push notification setting updated:", value);
-        
+
         // Update the Redux store with the new value
         if (currentUser) {
-          const updatedUser = { ...currentUser, allow_push_notifications: value };
+          const updatedUser = {
+            ...currentUser,
+            allow_push_notifications: value,
+          };
           dispatch(setUser(updatedUser));
         }
-        
+
         return true;
       }
       return false;
@@ -135,13 +138,16 @@ const useProfile = () => {
       }).unwrap();
       if (response.success) {
         console.log("Email notification setting updated:", value);
-        
+
         // Update the Redux store with the new value
         if (currentUser) {
-          const updatedUser = { ...currentUser, allow_email_notifications: value };
+          const updatedUser = {
+            ...currentUser,
+            allow_email_notifications: value,
+          };
           dispatch(setUser(updatedUser));
         }
-        
+
         return true;
       }
       return false;
@@ -191,13 +197,13 @@ const useProfile = () => {
       }).unwrap();
       if (response.success) {
         console.log("Marketing email setting updated:", value);
-        
+
         // Update the Redux store with the new value
         if (currentUser) {
           const updatedUser = { ...currentUser, allow_marketing_emails: value };
           dispatch(setUser(updatedUser));
         }
-        
+
         return true;
       }
       return false;

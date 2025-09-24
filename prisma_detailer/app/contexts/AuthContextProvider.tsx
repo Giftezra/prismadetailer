@@ -14,8 +14,11 @@ import { UserProfileProps } from "@/app/interfaces/ProfileInterfaces";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { usePermissions } from "@/app/app-hooks/usePermissions";
-import { saveDataToStorage } from "../utils/storage";
-
+import {
+  saveDataToStorage,
+  getPushTokenFromStorage,
+  clearPushTokenFromStorage,
+} from "../utils/storage";
 
 /**
  * Create an auth context to manage the user's authentication state.
@@ -47,18 +50,31 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
   /**
    * Reauthenticate a user when the page mounts by checking the secure store for the user data
    * If the data is correct, set data to the redux store and navigate to the dashboard page.
+   * Also checks if user has a stored push token to avoid re-registration.
    */
   React.useEffect(() => {
     const reauthenticateUser = async () => {
       const user = await SecureStore.getItemAsync("user");
       const storedAccess = await SecureStore.getItemAsync("access");
       const storedRefresh = await SecureStore.getItemAsync("refresh");
+      const storedPushToken = await getPushTokenFromStorage();
+
       // Check if the user is authenticated.
       if (user && storedAccess && storedRefresh) {
         dispatch(setUser(JSON.parse(user)));
         dispatch(setAccessToken(storedAccess));
         dispatch(setRefreshToken(storedRefresh));
         dispatch(setIsAuthenticated(true));
+
+        // Log push token status for debugging
+        if (storedPushToken) {
+          console.log("User has stored push token, will skip re-registration");
+        } else {
+          console.log(
+            "No stored push token found, will register for notifications"
+          );
+        }
+
         router.replace("/main/(tabs)/dashboard/DashboardScreen");
       }
     };
@@ -77,6 +93,7 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
           await SecureStore.deleteItemAsync("user");
           await SecureStore.deleteItemAsync("access");
           await SecureStore.deleteItemAsync("refresh");
+          await clearPushTokenFromStorage();
           dispatch(logout());
           // Navigate to signin page
           router.replace("/onboarding/SigninScreen");
@@ -102,6 +119,7 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
     rememberMe: boolean
   ) => {
     const credentials = { email, password };
+    console.log("Credentials:", credentials);
     try {
       const response = await login(credentials).unwrap();
 
@@ -130,10 +148,36 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
           router.replace("/main/(tabs)/dashboard/DashboardScreen");
         }
       } else {
-        console.error("Invalid response structure:", response);
+        setAlertConfig({
+          title: "Login Failed",
+          message:
+            "Please check your email and confirm your password again.\n\nIf you have forgotten your password, please reset it.",
+          type: "error",
+          isVisible: true,
+          onConfirm: () => {
+            setIsVisible(false);
+          },
+        });
       }
-    } catch (error) {
-      console.error("Error during login:", error);
+    } catch (error: any) {
+      let errorMessage =
+        "Please check your email and confirm your password again.\nIf you have forgotten your password, please reset it.";
+      if (error?.data?.error) {
+        errorMessage = error.data.error;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      }
+      setAlertConfig({
+        title: "Login Failed",
+        message: errorMessage,
+        type: "error",
+        isVisible: true,
+        onConfirm: () => {
+          setIsVisible(false);
+        },
+      });
     }
   };
 

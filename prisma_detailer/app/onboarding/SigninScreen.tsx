@@ -3,7 +3,6 @@ import {
   StyleSheet,
   View,
   ScrollView,
-  KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
   Alert,
@@ -15,10 +14,13 @@ import StyledButton from "../components/helpers/StyledButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import LinearGradientComponent from "../components/helpers/LinearGradientComponent";
+import { useAlertContext } from "../contexts/AlertContext";
+import { useSnackbar } from "../contexts/SnackbarContext";
 
 const SigninScreen = () => {
   const { handleLogin, isLoading } = useAuthContext();
+  const { setAlertConfig, setIsVisible } = useAlertContext();
+  const { showSnackbarWithConfig } = useSnackbar();
 
   // Form state
   const [email, setEmail] = useState("");
@@ -39,19 +41,31 @@ const SigninScreen = () => {
   const handleSignIn = async () => {
     // Basic validation
     if (!email.trim()) {
-      Alert.alert("Error", "Please enter your email address");
+      showSnackbarWithConfig({
+        message: "Please enter your email address",
+        type: "error",
+        duration: 3000,
+      });
       return;
     }
 
     if (!password.trim()) {
-      Alert.alert("Error", "Please enter your password");
+      showSnackbarWithConfig({
+        message: "Please enter your password",
+        type: "error",
+        duration: 3000,
+      });
       return;
     }
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-      Alert.alert("Error", "Please enter a valid email address");
+      showSnackbarWithConfig({
+        message: "Please enter a valid email address",
+        type: "error",
+        duration: 3000,
+      });
       return;
     }
 
@@ -66,12 +80,7 @@ const SigninScreen = () => {
    * Handle forgot password action
    */
   const handleForgotPassword = () => {
-    console.log("Forgot password pressed");
-    Alert.alert(
-      "Forgot Password",
-      "Password reset functionality will be implemented soon.",
-      [{ text: "OK" }]
-    );
+    router.push("/onboarding/ForgotPasswordScreen");
   };
 
   /**
@@ -82,142 +91,130 @@ const SigninScreen = () => {
   };
 
   return (
-    <LinearGradientComponent
-      color1={backgroundColor}
-      color2={primaryColor}
-      style={styles.container}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 4, y: 1 }}
-    >
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+    <View style={[styles.container, { backgroundColor: backgroundColor }]}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+        {/* Back Button */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
         >
-          {/* Header Section */}
-          <View style={styles.header}>
-            <StyledText
-              variant="headlineSmall"
-              style={[styles.title, { color: textColor }]}
-            >
-              Welcome Back
-            </StyledText>
-            <StyledText
-              variant="bodyMedium"
-              style={[styles.subtitle, { color: textColor }]}
-            >
-              Sign in to your account to continue
-            </StyledText>
-          </View>
+          <Ionicons name="chevron-back" size={24} color={textColor} />
+        </TouchableOpacity>
 
-          {/* Form Section */}
-          <View
-            style={[
-              styles.formContainer,
-              { backgroundColor: cardColor, borderColor },
-            ]}
+        {/* Header Section */}
+        <View style={styles.header}>
+          <StyledText
+            variant="headlineSmall"
+            style={[styles.title, { color: textColor }]}
           >
-            {/* Email Input */}
+            Login
+          </StyledText>
+          <StyledText
+            variant="bodySmall"
+            style={[styles.subtitle, { color: textColor }]}
+          >
+            welcome back, and remember to work well with your team.
+          </StyledText>
+        </View>
+
+        {/* Form Section */}
+        <View style={styles.formContainer}>
+          {/* Email Input */}
+          <StyledTextInput
+            label="Email"
+            placeholder="Enter your email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={styles.input}
+          />
+
+          {/* Password Input */}
+          <View style={styles.passwordContainer}>
             <StyledTextInput
-              label="Email Address"
-              placeholder="Enter your email address"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
+              label="Password"
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
               autoCapitalize="none"
               autoCorrect={false}
-              style={styles.input}
+              style={[styles.input, styles.passwordInput]}
             />
-
-            {/* Password Input */}
-            <View style={styles.passwordContainer}>
-              <StyledTextInput
-                label="Password"
-                placeholder="Enter your password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-                style={[styles.input, styles.passwordInput]}
-              />
-              <TouchableOpacity
-                style={[styles.eyeIcon, { borderColor }]}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <Ionicons
-                  name={showPassword ? "eye-off" : "eye"}
-                  size={20}
-                  color={textColor}
-                />
-              </TouchableOpacity>
-            </View>
-
-            {/* Remember Me & Forgot Password Row */}
-            <View style={styles.optionsRow}>
-              <TouchableOpacity
-                style={styles.rememberMeContainer}
-                onPress={() => setRememberMe(!rememberMe)}
-              >
-                <View style={[styles.checkbox, { borderColor }]}>
-                  {rememberMe && (
-                    <Ionicons name="checkmark" size={16} color={primaryColor} />
-                  )}
-                </View>
-                <StyledText
-                  variant="bodyMedium"
-                  style={[styles.rememberMeText, { color: textColor }]}
-                >
-                  Remember me
-                </StyledText>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={handleForgotPassword}>
-                <StyledText
-                  variant="bodyMedium"
-                  style={[styles.forgotPassword, { color: primaryColor }]}
-                >
-                  Forgot Password?
-                </StyledText>
-              </TouchableOpacity>
-            </View>
-
-            {/* Sign In Button */}
-            <StyledButton
-              variant="small"
-              onPress={handleSignIn}
-              disabled={isLoading}
-              style={styles.signInButton}
+            <TouchableOpacity
+              style={[styles.eyeIcon, { borderColor }]}
+              onPress={() => setShowPassword(!showPassword)}
             >
-              {isLoading ? "Signing In..." : "Sign In"}
-            </StyledButton>
+              <Ionicons
+                name={showPassword ? "eye-off" : "eye"}
+                size={20}
+                color={backgroundColor}
+              />
+            </TouchableOpacity>
           </View>
 
-          {/* Sign Up Section */}
-          <View style={styles.signUpContainer}>
-            <StyledText
-              variant="bodyMedium"
-              style={[styles.signUpText, { color: textColor }]}
+          {/* Remember Me & Forgot Password Row */}
+          <View style={styles.optionsRow}>
+            <TouchableOpacity
+              style={styles.rememberMeContainer}
+              onPress={() => setRememberMe(!rememberMe)}
             >
-              Don't have an account?{" "}
-            </StyledText>
-            <TouchableOpacity onPress={handleSignUp}>
+              <View style={[styles.checkbox, { borderColor }]}>
+                {rememberMe && (
+                  <Ionicons name="checkmark" size={16} color={textColor} />
+                )}
+              </View>
               <StyledText
                 variant="bodyMedium"
-                style={[styles.signUpLink, { color: primaryColor }]}
+                style={[styles.rememberMeText, { color: textColor }]}
               >
-                Sign Up
+                Remember me
+              </StyledText>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleForgotPassword}>
+              <StyledText variant="bodySmall" style={[styles.forgotPassword]}>
+                Forgot Password?
               </StyledText>
             </TouchableOpacity>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </LinearGradientComponent>
+
+          {/* Continue Button */}
+          <StyledButton
+            variant="tonal"
+            onPress={handleSignIn}
+            disabled={isLoading}
+            style={styles.signInButton}
+          >
+            {isLoading ? "Signing In..." : "Continue"}
+          </StyledButton>
+        </View>
+
+        {/* Sign Up Section */}
+        <View style={styles.signUpContainer}>
+          <StyledText
+            variant="bodyMedium"
+            style={[styles.signUpText, { color: textColor }]}
+          >
+            Haven't registered yet?{" "}
+          </StyledText>
+          <TouchableOpacity onPress={handleSignUp}>
+            <StyledText
+              variant="bodySmall"
+              style={[styles.signUpLink, { color: primaryColor }]}
+            >
+              Register here
+            </StyledText>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 
@@ -227,30 +224,45 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 20,
   },
-  header: {
+  backButton: {
+    position: "absolute",
+    top: 60,
+    left: 20,
+    zIndex: 1,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.1)",
     alignItems: "center",
+    justifyContent: "center",
+  },
+  header: {
+    paddingHorizontal: 20,
     marginBottom: 40,
+    marginTop: 50,
   },
   title: {
     marginBottom: 8,
-    textAlign: "center",
+    textAlign: "left",
   },
   subtitle: {
-    textAlign: "center",
+    textAlign: "left",
     opacity: 0.7,
   },
   formContainer: {
-    borderRadius: 20,
-    padding: 15,
-    borderWidth: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     marginBottom: 24,
+    width: "100%",
+    alignSelf: "center",
   },
   input: {
     marginBottom: 20,
+    borderRadius: 20,
   },
   passwordContainer: {
     position: "relative",
@@ -288,7 +300,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   forgotPassword: {
-    fontSize: 14,
+    fontSize: 10,
     textDecorationLine: "underline",
   },
   signInButton: {

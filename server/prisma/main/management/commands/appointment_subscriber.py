@@ -95,16 +95,6 @@ class Command(BaseCommand):
 
                         # Send the push notification if the detailer has push notifications enabled
                         if job.detailer.user.allow_push_notifications and job.detailer.user.notification_token:
-                            self.send_websocket_notification(
-                                channel_layer, 
-                                job.detailer.user.id, 
-                                booking_reference, 
-                                'cancelled', 
-                                'Your appointment has been cancelled'
-                                )
-                        
-                        # Send push notification if the detailer has push notifications enabled
-                        if job.detailer.user.allow_push_notifications:
                             send_push_notification(
                                 job.detailer.user.id, 
                                 'Appointment Cancelled', 
@@ -135,12 +125,12 @@ class Command(BaseCommand):
                             )
 
                         if job.detailer.user.allow_push_notifications and job.detailer.user.notification_token:
-                            self.send_websocket_notification(
-                                channel_layer, 
+                            send_push_notification(
                                 job.detailer.user.id, 
-                                booking_reference, 'rescheduled', 
-                                'Your appointment has been rescheduled'
-                                )
+                                'Appointment Rescheduled', 
+                                'Your appointment has been rescheduled', 
+                                'booking_rescheduled'
+                            )
                             
                         self.create_notification(
                             job.detailer.user, 
@@ -163,7 +153,15 @@ class Command(BaseCommand):
                             'Review Received', 
                             'review_received', 
                             'success', 
-                            f'You have received a review with a rating of {rating} and a tip amount of {tip_amount}'
+                            f'You have received a review with a rating of {rating} and a tip amount of {self.get_currency(job.detailer.country)} {tip_amount}'
+                            )
+
+                        if job.detailer.user.allow_push_notifications and job.detailer.user.notification_token:
+                            send_push_notification(
+                                job.detailer.user.id, 
+                                'Review Received', 
+                                f'You have received a review with a rating of {rating} and a tip amount of {self.get_currency(job.detailer.country)} {tip_amount}', 
+                                'review_received'
                             )
 
 
@@ -213,4 +211,15 @@ class Command(BaseCommand):
         except Exception as e:
             self.stderr.write(f"Failed to create notification: {e}")
             return False
+
+    
+    # Get the currency of the detailer using the country
+    def get_currency(self, country):
+        """ Get the currency of the detailer using the country """
+        if country == 'united kingdom' or country == 'United Kingdom':
+            return '£'
+        elif country == 'ireland' or country == 'Ireland':
+            return '€'
+        else:
+            return '€'
 

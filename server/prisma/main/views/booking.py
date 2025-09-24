@@ -7,7 +7,7 @@ from main.serializer import DetailerSerializer, ServiceTypeSerializer
 from datetime import datetime, time, timedelta
 from django.utils import timezone
 from main.util.media_helper import get_full_media_url
-from main.tasks import send_booking_confirmation_email, send_websocket_notification, create_notification   
+from main.tasks import send_booking_confirmation_email, send_push_notification, create_notification   
 from channels.layers import get_channel_layer
 
 class BookingView(APIView):
@@ -245,13 +245,15 @@ class BookingView(APIView):
                 'You have a new appointment!'
             )
 
-            # Remove the stray 'se' and fix the websocket notification
-            send_websocket_notification.delay(
-                detailer.user.id,
-                job.booking_reference,
-                'created',
-                'You have a new appointment!'
-            )
+            # Send the user a push notification if they have allowed push notifications and 
+            # have a notification token
+            if detailer.user.allow_push_notifications and detailer.user.notification_token:
+                send_push_notification.delay(
+                    detailer.user.id,
+                    'New Appointment',
+                    'You have a new appointment| ' + self.format_appointment_date_time(job.appointment_date, job.appointment_time) + ' at ' + job.post_code,
+                    'booking_created'
+                )
 
             # Return success response with appointment ID
             response_data = {
@@ -280,6 +282,13 @@ class BookingView(APIView):
                 "error": str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
         
+
+    
+    # Format the appointment date and time so it says the day and time 
+    # Example: Wednesday 8:00 AM
+    def format_appointment_date_time(self, appointment_date, appointment_time):
+        """ Format the appointment date and time so it says the day and time """
+        return f"{appointment_date.strftime('%A')} {appointment_time.strftime('%I:%M %p')}"
     
 
     # def get_available_detailer(self, country, city, appointment_date, appointment_time, service_duration=60, appointment_end_time=None):

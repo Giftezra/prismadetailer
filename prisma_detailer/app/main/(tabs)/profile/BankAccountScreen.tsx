@@ -5,6 +5,8 @@ import {
   StyleSheet,
   Alert,
   TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { Switch, Divider } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
@@ -24,6 +26,9 @@ const BankAccountScreen: React.FC = () => {
     handleSetDefaultBankAccount,
     collectBankAccountInformation,
     getUserFullName,
+    isLoadingAddBankAccount,
+    isLoadingSetDefaultBankAccount,
+    refetchBankAccounts,
   } = useBankAccount();
 
   const textColor = useThemeColor({}, "text");
@@ -34,7 +39,17 @@ const BankAccountScreen: React.FC = () => {
   const [isFormVisible, setIsFormVisible] = useState(false);
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor }]}>
+    <ScrollView
+      style={[styles.container, { backgroundColor }]}
+      refreshControl={
+        <RefreshControl
+          refreshing={false}
+          onRefresh={() => {
+            refetchBankAccounts();
+          }}
+        />
+      }
+    >
       {/* Header */}
       <View style={styles.header}>
         <StyledText variant="titleLarge">Bank Accounts</StyledText>
@@ -44,7 +59,7 @@ const BankAccountScreen: React.FC = () => {
       </View>
 
       {/* Add New Account Form */}
-      <View style={[styles.card, { borderColor, backgroundColor: cardColor }]}>
+      <View style={[styles.card]}>
         <TouchableOpacity
           onPress={() => setIsFormVisible(!isFormVisible)}
           style={styles.formHeader}
@@ -126,7 +141,7 @@ const BankAccountScreen: React.FC = () => {
                 onPress={handleAddBankAccount}
                 style={styles.submitButton}
               >
-                Add Account
+                {isLoadingAddBankAccount ? <ActivityIndicator size="small" color={textColor} /> : "Add Account"}
               </StyledButton>
             </View>
           </View>
@@ -135,7 +150,7 @@ const BankAccountScreen: React.FC = () => {
 
       {/* Bank Accounts List */}
       <View style={styles.accountsSection}>
-        <StyledText variant="titleMedium">
+        <StyledText variant="labelSmall">
           Your Bank Accounts ({bankAccounts.length})
         </StyledText>
 
@@ -227,7 +242,7 @@ const BankAccountScreen: React.FC = () => {
                       Set as default account
                     </StyledText>
                     <Switch
-                      value={account.is_default}
+                      value={isLoadingSetDefaultBankAccount ? false : account.is_default}
                       onValueChange={() =>
                         handleSetDefaultBankAccount(account.id!)
                       }
@@ -261,10 +276,9 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 10,
-    borderWidth: 1,
-    borderRadius: 3,
-    paddingHorizontal: 10,
-    paddingVertical:2
+    borderRadius: 20,
+    paddingHorizontal: 5,
+    paddingVertical:5,
   },
   cardContent: {
     padding: 5,
@@ -294,6 +308,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   accountsSection: {
+    padding: 5,
     marginTop: 8,
     gap: 10,
   },

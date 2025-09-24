@@ -8,7 +8,10 @@ const bankingApi = createApi({
   endpoints: (builder) => ({
     /* Get all the bank accounts of the user */
     getBankAccounts: builder.query<BankAccountProps[], void>({
-      query: () => "/api/v1/banking/get_bank_accounts/",
+      query: () => ({
+        url: "/api/v1/banking/get_bank_accounts/",
+        method: "GET",
+      }),
       transformResponse: (response: BankAccountProps[]) => response,
     }),
 
@@ -32,14 +35,21 @@ const bankingApi = createApi({
     /**
      * Add a new bank account to the users bank account information
      * @params {BankAccountProps} bankAccount - The bank account to add
-     * @returns {BankAccountProps} The bank account that was added
+     * @returns {object} The response from the server
      */
-    addBankAccount: builder.mutation<{message:string}, BankAccountProps>({
+    addBankAccount: builder.mutation<
+      { message: string; account_name: string },
+      BankAccountProps
+    >({
       query: (bankAccount) => ({
-        url: "/api/v1/banking/add_bank_account/",
+        url: "/api/v1/banking/create_bank_account/",
         method: "POST",
-        data: bankAccount,
+        data: { bankAccountData: bankAccount },
       }),
+      transformResponse: (response: {
+        message: string;
+        account_name: string;
+      }) => response,
     }),
 
     /**
@@ -47,13 +57,16 @@ const bankingApi = createApi({
      * @params {string} accountId - The id of the bank account to delete
      * @returns {string} The message from the server
      */
-    deleteBankAccount: builder.mutation<{message:string}, {accountId:string}>({
-      query: ({accountId}) => ({
+    deleteBankAccount: builder.mutation<
+      { message: string },
+      { accountId: string }
+    >({
+      query: ({ accountId }) => ({
         url: "/api/v1/banking/delete_bank_account/",
         method: "DELETE",
-        data: {accountId},
+        data: { accountId },
       }),
-      transformResponse: (response: {message:string}) => response,
+      transformResponse: (response: { message: string }) => response,
     }),
   }),
 });

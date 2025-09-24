@@ -1,4 +1,4 @@
-import { UserProfileProps } from "./ProfileInterfaces"
+import { UserProfileProps } from "./ProfileInterfaces";
 
 export default interface AuthState {
   user?: UserProfileProps | null;
@@ -7,6 +7,7 @@ export default interface AuthState {
   isAuthenticated?: boolean;
   isLoading?: boolean;
   signUpData?: SignUpScreenProps | null;
+  confirmPassword?: string;
 }
 
 export interface SignUpScreenProps {

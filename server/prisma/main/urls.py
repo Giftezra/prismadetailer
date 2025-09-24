@@ -11,6 +11,8 @@ from main.views.banking import BankingView
 from main.views.profile import ProfileView
 from main.views.earning import EarningView
 from main.views.notifications import NotificationsView
+from main.views.terms import TermsView
+from .views.password_reset import RequestPasswordResetView, ResetPasswordView
 
 app_name = 'main'
 urlpatterns = [
@@ -24,7 +26,10 @@ urlpatterns = [
     path('banking/<str:action>/', BankingView.as_view(), name='banking'),
     path('profile/<str:action>/', ProfileView.as_view(), name='profile'),
     path('earnings/<str:action>/', EarningView.as_view(), name='earnings'),
+    path('terms/<str:action>/', TermsView.as_view(), name='terms'),
     path('notifications/<str:action>/', NotificationsView.as_view(), name='notifications'),
+    path('auth/password-reset/', RequestPasswordResetView.as_view(), name='request_password_reset'),
+    path('auth/reset-password/', ResetPasswordView.as_view(), name='reset_password'),
 ]
 
 if settings.DEBUG:

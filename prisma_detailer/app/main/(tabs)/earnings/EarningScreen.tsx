@@ -36,7 +36,7 @@ const EarningScreen = () => {
     isLoadingPayoutHistory,
     handleRefetchData,
   } = useEarnings();
-  
+
   const [showAllEarnings, setShowAllEarnings] = React.useState(false);
   const [showAllPayouts, setShowAllPayouts] = React.useState(false);
 
@@ -97,20 +97,20 @@ const EarningScreen = () => {
         </View>
 
         {/* Earnings Summary */}
-        <EarningsSummaryCard {...earningsSummary!} />
+        {earningsSummary && <EarningsSummaryCard {...earningsSummary} />}
 
         {/* Earnings Analytics */}
-        <EarningsAnalyticsCard {...earningsAnalytics!} />
+        {earningsAnalytics && <EarningsAnalyticsCard {...earningsAnalytics} />}
 
         {/* Earnings List */}
         <RecentEarningCard
-          earnings={recentEarnings?.slice(0, 3)}
+          earnings={recentEarnings?.slice(0, 3) || []}
           onViewAllPress={() => setShowAllEarnings(!showAllEarnings)}
         />
 
         {/* Payout History */}
         <PayoutHistoryCard
-          payments={payoutHistory?.slice(0, 2)}
+          payments={payoutHistory?.slice(0, 2) || []}
           onViewAllPress={() => setShowAllPayouts(!showAllPayouts)}
         />
       </ScrollView>
@@ -118,7 +118,7 @@ const EarningScreen = () => {
       <ModalServices
         visible={showAllEarnings}
         onClose={() => setShowAllEarnings(false)}
-        component={<RecentEarnings earnings={recentEarnings} />}
+        component={<RecentEarnings earnings={recentEarnings || []} />}
         title="All Earnings"
         modalType="fullscreen"
         animationType="fade"
@@ -128,7 +128,7 @@ const EarningScreen = () => {
       <ModalServices
         visible={showAllPayouts}
         onClose={() => setShowAllPayouts(false)}
-        component={<PaymentHistory payments={payoutHistory} />}
+        component={<PaymentHistory payments={payoutHistory || []} />}
         title="All Payouts"
         modalType="sheet"
         animationType="fade"

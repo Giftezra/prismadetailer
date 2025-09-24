@@ -14,6 +14,7 @@ class ProfileView(APIView):
         "update_push_notification_token": "_update_push_notification_token",
         "update_email_notification_token": "_update_email_notification_token",
         "update_marketing_email_token": "_update_marketing_email_token",
+        'get_user_profile': '_get_user_profile',
     }
 
     def get(self, request, *args, **kwargs):
@@ -138,4 +139,4 @@ class ProfileView(APIView):
             
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-            
+

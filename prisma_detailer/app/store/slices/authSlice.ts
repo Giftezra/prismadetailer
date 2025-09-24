@@ -8,6 +8,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
   isLoading: false,
   signUpData: null,
+  confirmPassword: "",
 };
 
 const authSlice = createSlice({
@@ -56,6 +57,16 @@ const authSlice = createSlice({
      */
     clearSignUpData: (state) => {
       state.signUpData = null;
+      state.confirmPassword = "";
+    },
+
+    /**
+     * Set the confirm password value
+     * @param state - The current state of the auth slice
+     * @param action - The action payload containing the confirm password value
+     */
+    setConfirmPassword: (state, action) => {
+      state.confirmPassword = action.payload;
     },
   },
 });
@@ -69,5 +80,6 @@ export const {
   logout,
   setAccessToken,
   setRefreshToken,
+  setConfirmPassword,
 } = authSlice.actions;
 export default authSlice.reducer;

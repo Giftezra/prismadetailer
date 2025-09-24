@@ -13,6 +13,8 @@ interface TodayOverviewCardProps {
   onViewNextAppointment?: () => void;
   onStartCurrentJob?: (jobId: string) => void;
   onCompleteCurrentJob?: (jobId: string) => void;
+  onViewChat?: () => void;
+  onCallClient?: (phoneNumber: string) => void;
 }
 
 const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
@@ -20,12 +22,15 @@ const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
   onViewNextAppointment,
   onStartCurrentJob,
   onCompleteCurrentJob,
+  onViewChat,
+  onCallClient,
 }) => {
   const backgroundColor = useThemeColor({}, "cards");
   const textColor = useThemeColor({}, "text");
   const borderColor = useThemeColor({}, "borders");
   const primaryColor = useThemeColor({}, "primary");
-
+  const iconColor = useThemeColor({}, "icons");
+  
   // State to toggle between current job and next appointment when both exist
   // MUST be called before any conditional returns to follow Rules of Hooks
   const [showNextAppointment, setShowNextAppointment] = useState(false);
@@ -266,15 +271,25 @@ const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
                 Complete Job
               </StyledButton>
             )}
-            <Pressable
-              style={[
-                styles.chatbutton,
-                { borderColor, backgroundColor, shadowColor: textColor },
-              ]}
-            >
-              <MaterialIcons name="message" size={24} color={textColor} />
-            </Pressable>
           </View>
+
+          {/* Call Client button - show when phone number is available */}
+          {data.currentJob!.clientPhone && onCallClient && (
+            <View style={styles.callButtonContainer}>
+              <TouchableOpacity
+                style={[styles.callButton, { borderColor: primaryColor }]}
+                onPress={() => onCallClient(data.currentJob!.clientPhone!)}
+              >
+                <MaterialIcons name="phone" size={20} color={iconColor}/>
+                <StyledText
+                  variant="labelMedium"
+                  style={{ marginLeft: 8 }}
+                >
+                  Call Client
+                </StyledText>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
 
@@ -463,6 +478,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+  },
+  callButtonContainer: {
+    position: "absolute",
+    marginTop: 10,
+    alignItems: "flex-start",
+    bottom: 0,
+    right: 0,
+  },
+  callButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 5,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderRadius: 20,
+    backgroundColor: "transparent",
   },
 });
 

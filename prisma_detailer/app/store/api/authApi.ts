@@ -50,6 +50,52 @@ const authApi = createApi({
         data: credentials,
       }),
     }),
+
+    /**
+     * Get the terms and conditions from the server.
+     */
+    getTermsAndConditions: builder.query<
+      { version: string; content: string; last_updated: string },
+      void
+    >({
+      query: () => ({
+        url: "/api/v1/terms/get_terms/",
+        method: "GET",
+      }),
+    }),
+
+    /**
+     * Request password reset email.
+     */
+    requestPasswordReset: builder.mutation<
+      { message: string },
+      { email: string }
+    >({
+      query: ({ email }) => ({
+        url: "/api/v1/auth/password-reset/",
+        method: "POST",
+        data: { email },
+      }),
+    }),
+
+    /**
+     * Reset password with token.
+     */
+    resetPassword: builder.mutation<
+      {
+        message: string;
+        access: string;
+        refresh: string;
+        user: UserProfileProps;
+      },
+      { token: string; password: string }
+    >({
+      query: ({ token, password }) => ({
+        url: "/api/v1/auth/reset-password/",
+        method: "POST",
+        data: { token, password },
+      }),
+    }),
   }),
 });
 
@@ -57,5 +103,8 @@ export const {
   useLoginMutation,
   useRegisterMutation,
   useRefreshTokenMutation,
+  useGetTermsAndConditionsQuery,
+  useRequestPasswordResetMutation,
+  useResetPasswordMutation,
 } = authApi;
 export default authApi;

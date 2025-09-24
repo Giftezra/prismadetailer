@@ -1,19 +1,22 @@
 from pathlib import Path
 from datetime import timedelta
 import os
+import dj_database_url
+from celery.schedules import crontab
+
+
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
-BASE_URL = 'https://59008fd51784.ngrok-free.app'  
-ALLOWED_ORIGINS = ['https://59008fd51784.ngrok-free.app'] 
-CSRF_TRUSTED_ORIGINS = ['https://59008fd51784.ngrok-free.app']   
-CORS_ALLOWED_ORIGINS = ['https://59008fd51784.ngrok-free.app']
+BASE_URL= os.getenv('BASE_URL')
+ALLOWED_ORIGINS = [BASE_URL] 
+CSRF_TRUSTED_ORIGINS = [BASE_URL]    
+CORS_ALLOWED_ORIGINS = [BASE_URL]
 CORS_ALLOW_CREDENTIALS = True
-
-DEBUG = True
-
-ALLOWED_HOSTS = ['*']
+DEBUG=os.getenv('DEBUG') == 'True'
+ALLOWED_HOSTS=[os.getenv('ALLOWED_HOSTS'), 'localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
     'daphne',  # <-- Move this to the first position
@@ -64,14 +67,11 @@ TEMPLATES = [
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB'),
-        'USER': os.getenv('POSTGRES_USER'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
-        'HOST': os.getenv('POSTGRES_HOST'),
-        'PORT': os.getenv('POSTGRES_PORT'),
-    }
+    'default': dj_database_url.parse(
+        os.getenv('DATABASE_URL'),
+        conn_max_age=600, 
+        ssl_require=True
+    )
 }
 
 
@@ -154,6 +154,21 @@ SIMPLE_JWT = {
     "TOKEN_BLACKLIST_SERIALIZER": "rest_framework_simplejwt.serializers.TokenBlacklistSerializer",
     "SLIDING_TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainSlidingSerializer",
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
+}
+
+CELERY_BEAT_SCHEDULE = {
+    'check-upcoming-jobs': {
+        'task': 'main.tasks.check_upcoming_jobs',
+        'schedule': crontab(minute=15),  # Every 15 minutes
+    },
+    'send-daily-schedule': {
+        'task': 'main.tasks.check_daily_schedule',
+        'schedule': crontab(hour=7, minute=0),  # Daily at 7 AM
+    },
+    'check-pending-jobs': {
+        'task': 'main.tasks.check_pending_jobs',
+        'schedule': crontab(hour=1),  # Every hour
+    },
 }
 
 

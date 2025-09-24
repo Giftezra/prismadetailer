@@ -2,21 +2,19 @@ import { fetchBaseQuery, BaseQueryFn } from "@reduxjs/toolkit/query/react";
 import store from "@/app/store/my_store";
 import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from "axios";
 import * as SecureStore from "expo-secure-store";
+import { API_CONFIG } from "@/constants/Config";
+
 import {
   setIsAuthenticated,
   setAccessToken,
   setRefreshToken,
 } from "@/app/store/slices/authSlice";
-import { API_CONFIG } from "@/constants/Config";
 
 // Create axios instance for RTK Query
 const baseURL = API_CONFIG.detailerAppUrl;
 const axiosInstance = axios.create({
   baseURL,
-  timeout: 10000,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  timeout: 30000, // Increase timeout for large file uploads
 });
 
 // Request interceptor
@@ -30,6 +28,7 @@ axiosInstance.interceptors.request.use(
     const publicEndpoints = [
       "/api/v1/authentication/login/",
       "/api/v1/authentication/refresh/",
+      "/api/v1/onboard/create_new_account/",
     ];
 
     // Only add Authorization header if endpoint requires auth and we have access token
@@ -41,17 +40,19 @@ axiosInstance.interceptors.request.use(
       config.headers.Authorization = `Bearer ${access}`;
     }
 
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+    // Set Content-Type header based on data type
+    if (config.data instanceof FormData) {
+      // Don't set Content-Type for FormData, let axios handle it
+      delete config.headers?.["Content-Type"];
+    } else if (
+      config.data &&
+      typeof config.data === "object" &&
+      !config.headers?.["Content-Type"]
+    ) {
+      config.headers["Content-Type"] = "application/json";
+    }
 
-// Response interceptor
-axiosInstance.interceptors.response.use(
-  (response) => {
-    return response;
+    return config;
   },
   (error) => {
     return Promise.reject(error);
@@ -61,16 +62,6 @@ axiosInstance.interceptors.response.use(
 // Custom base query for RTK Query using axios with token refresh
 export const axiosBaseQuery = (): BaseQueryFn => {
   return async ({ url, method, data, params, headers }, api, extraOptions) => {
-    // Handle case where url might be undefined
-    if (!url) {
-      return {
-        error: {
-          status: 400,
-          data: "URL is undefined",
-        },
-      };
-    }
-
     try {
       const config: AxiosRequestConfig = {
         url,

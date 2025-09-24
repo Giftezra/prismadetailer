@@ -39,7 +39,12 @@ const StyledTextInput: React.FC<StyledTextInputProps> = ({
         style={[
           styles.input,
           style,
-          { borderColor: borderColor, borderWidth: 1, color: textColor },
+          {
+            borderColor: borderColor,
+            borderWidth: 1,
+            color: "black",
+            backgroundColor: "white",
+          },
         ]}
         placeholderTextColor="#999999"
         {...props}
@@ -65,10 +70,11 @@ const styles = StyleSheet.create({
   },
   input: {
     padding: 10,
-    borderRadius: 10,
+    borderRadius: 15,
     fontFamily: "BarlowRegular",
     fontSize: 14,
     color: "#333333",
+    fontWeight: "600",
   },
   info: {
     paddingTop: 1,

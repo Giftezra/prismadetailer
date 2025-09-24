@@ -70,15 +70,21 @@ export const useAppointment = () => {
   const {
     data: appointmentDetails,
     isLoading: isLoadingAppointmentDetails,
+    error: errorAppointmentDetails,
     refetch: refetchAppointmentDetails,
   } = useGetAppointmentDetailsQuery(
     { id: selectedAppointmentId },
-    { skip: !selectedAppointmentId }
+    {
+      skip: !selectedAppointmentId,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: false,
+      refetchOnReconnect: false,
+    }
   );
 
   /**
    * Route to the appointment details screen when the appointment details are loaded
-   *
+   * FIXED: Reset selectedAppointmentId after navigation to prevent stuck state
    */
   useEffect(() => {
     if (
@@ -86,12 +92,41 @@ export const useAppointment = () => {
       appointmentDetails &&
       selectedAppointmentId
     ) {
+      // Navigate to details screen
       router.push({
         pathname: "/main/appointments/AppointmentDetailsScreen",
         params: { appointmentDetails: JSON.stringify(appointmentDetails) },
       });
+      setSelectedAppointmentId(null);
     }
   }, [isLoadingAppointmentDetails, appointmentDetails, selectedAppointmentId]);
+
+  /**
+   * FIXED: Handle errors in appointment details fetching
+   */
+  useEffect(() => {
+    if (errorAppointmentDetails && selectedAppointmentId) {
+      console.error(
+        "Error fetching appointment details:",
+        errorAppointmentDetails
+      );
+      setAlertConfig({
+        title: "Error",
+        message: "Failed to load appointment details. Please try again.",
+        type: "error",
+        isVisible: true,
+        onConfirm: () => {
+          setIsVisible(false);
+          setSelectedAppointmentId(null); // Reset state on error
+        },
+      });
+    }
+  }, [
+    errorAppointmentDetails,
+    selectedAppointmentId,
+    setAlertConfig,
+    setIsVisible,
+  ]);
 
   /**
    * Generate array of months for the scrollable month selector
@@ -253,11 +288,29 @@ export const useAppointment = () => {
    *
    * @param job - JobCardProps object containing appointment details
    */
-  const handleJobPress = useCallback(async (id: string) => {
-    try {
-      setSelectedAppointmentId(id);
-    } catch (error) {}
-  }, []);
+  const handleJobPress = useCallback(
+    async (id: string) => {
+      try {
+        // Reset any previous state
+        setSelectedAppointmentId(null);
+
+        // Small delay to ensure state is reset before setting new ID
+        setTimeout(() => {
+          setSelectedAppointmentId(id);
+        }, 50);
+      } catch (error) {
+        console.error("Error in handleJobPress:", error);
+        setAlertConfig({
+          title: "Error",
+          message: "Failed to load appointment. Please try again.",
+          type: "error",
+          isVisible: true,
+          onConfirm: () => setIsVisible(false),
+        });
+      }
+    },
+    [setAlertConfig, setIsVisible]
+  );
 
   /**
    * Navigate to current month
@@ -327,6 +380,8 @@ export const useAppointment = () => {
             isVisible: true,
             onConfirm() {
               setIsVisible(false);
+              refetchAllAppointments();
+              refetchAppointmentDetails();
             },
           });
         }
@@ -407,6 +462,9 @@ export const useAppointment = () => {
             isVisible: true,
             onConfirm() {
               setIsVisible(false);
+              refetchAllAppointments();
+              refetchAppointmentDetails();
+              router.back();
             },
           });
         }
@@ -439,6 +497,7 @@ export const useAppointment = () => {
     selectedAppointmentId,
     appointmentDetails,
     isLoadingAppointmentDetails,
+    errorAppointmentDetails, // Add error state to return
 
     // Data
     months,

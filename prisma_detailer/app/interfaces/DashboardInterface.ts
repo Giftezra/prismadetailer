@@ -12,6 +12,8 @@ export interface CurrentJobProps {
   vehicleInfo?: string;
   loyalty_tier?: string;
   loyalty_benefits?: string[];
+  booking_reference?: string;
+  clientPhone?: string;
 }
 
 // Quick Stats Interfaces
@@ -39,6 +41,7 @@ export interface TodayOverviewProps {
   pendingJobs: number;
   nextAppointment?: NextAppointmentProps;
   currentJob?: CurrentJobProps;
+  bookingReference?: string;
 }
 
 export interface NextAppointmentProps {

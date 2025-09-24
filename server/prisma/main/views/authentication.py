@@ -77,10 +77,6 @@ class AuthenticationView(APIView):
             # Save the user and the profile, then return the token and the user data
             user.save()
             profile.save()
-
-            # send the user an email
-            send_welcome_email.delay(user.email)
-
             return Response({
                 'user' :{
                     'first_name' : user.first_name,
@@ -99,5 +95,4 @@ class AuthenticationView(APIView):
         except ValidationError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print(f"Error creating user: {str(e)}")  # Debug print
             return Response({'error': f'An error occurred while creating the user: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

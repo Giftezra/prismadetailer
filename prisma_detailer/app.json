@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "prisma_detailer",
+    "name": "Prisma Detailer",
     "slug": "prisma_detailer",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -17,9 +17,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/logo.png",
         "backgroundColor": "#ffffff"
       },
+      "googleServicesFile": "./google-services.json",
       "edgeToEdgeEnabled": true,
       "package": "com.giftezra.ifeanyi.prisma_detailer",
       "permissions": [
@@ -62,9 +63,9 @@
       "typedRoutes": true
     },
     "extra": {
-      "detailer_app_url": "https://59008fd51784.ngrok-free.app/detailer",
-      "customer_app_url": "https://59008fd51784.ngrok-free.app/client",
-      "websockets_url": "wss://59008fd51784.ngrok-free.app/ws/detailer/",
+      "detailer_app_url": "https://24a7c8282fed.ngrok-free.app/detailer",
+      "customer_app_url": "https://24a7c8282fed.ngrok-free.app/client",
+      "websockets_url": "wss://24a7c8282fed.ngrok-free.app/ws/detailer/",
       "router": {},
       "eas": {
         "projectId": "19cf1878-0602-4768-b678-6886a2b94358"

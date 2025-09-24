@@ -10,6 +10,7 @@ import {
 import { useThemeColor } from "@/hooks/useThemeColor";
 import StyledText from "./StyledText";
 import { Colors } from "@/constants/Colors";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -34,7 +35,8 @@ const AlertModal = ({
   const warningColor = useThemeColor({}, "warning");
   const errorColor = useThemeColor({}, "error");
   const successColor = useThemeColor({}, "success");
-
+  const backgroundColor = useThemeColor({}, "background");
+  const primaryColor = useThemeColor({}, "primary");
   // Function to determine title color based on type
   const getTitleColor = () => {
     switch (type) {
@@ -57,12 +59,16 @@ const AlertModal = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View
+        <LinearGradient
+          colors={[backgroundColor, textColor]}
+          start={{ x: 0, y: 1 }}
+          end={{ x: 2, y: 4 }}
           style={[
             styles.modalContainer,
             {
               backgroundColor: cardColor,
               borderColor: borderColor,
+              shadowColor: "gray",
             },
           ]}
         >
@@ -83,7 +89,6 @@ const AlertModal = ({
                 onPress={onClose}
                 style={[
                   styles.button,
-                  styles.cancelButton,
                   { borderColor: borderColor },
                 ]}
                 activeOpacity={0.7}
@@ -104,20 +109,19 @@ const AlertModal = ({
                 }}
                 style={[
                   styles.button,
-                  styles.confirmButton,
-                  { backgroundColor: getTitleColor() },
+                  { backgroundColor: getTitleColor(), borderColor },
                 ]}
                 activeOpacity={0.8}
               >
                 <StyledText
-                  children="Confirm"
+                  children="Okay"
                   variant="labelMedium"
                   style={styles.confirmButtonText}
                 />
               </TouchableOpacity>
             )}
           </View>
-        </View>
+        </LinearGradient>
       </View>
     </Modal>
   );
@@ -132,13 +136,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   modalContainer: {
-    borderRadius: 5,
+    borderRadius: 30,
     borderWidth: 1,
     padding: 15,
     width: Math.min(screenWidth - 40, 350),
     maxWidth: 350,
     minWidth: 280,
-    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -170,17 +173,18 @@ const styles = StyleSheet.create({
   button: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 6,
-    minWidth: 80,
+    borderRadius: 20,
+    minWidth: 100,
     alignItems: "center",
     justifyContent: "center",
-  },
-  cancelButton: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-  },
-  confirmButton: {
-    backgroundColor: "#007AFF",
+    borderWidth: 1.5,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.7,
+    shadowRadius: 6,
+    elevation: 4,
   },
   cancelButtonText: {
     fontWeight: "500",

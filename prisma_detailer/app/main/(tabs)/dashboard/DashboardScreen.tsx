@@ -10,7 +10,6 @@ import QuickActionsCard from "../../../components/ui/dashboard/QuickActionsCard"
 import { useDashboard } from "../../../app-hooks/useDashboard";
 import ModalServices from "@/app/services/ModalServices";
 import RecentJobList from "@/app/components/ui/dashboard/RecentJobList";
-import { useAppSelector } from "@/app/store/my_store";
 
 const DashboardScreen = () => {
   // ... rest of your component
@@ -19,12 +18,13 @@ const DashboardScreen = () => {
   const textColor = useThemeColor({}, "text");
 
   const [viewAllJobs, setViewAllJobs] = useState(false);
-
+  const [viewChat, setViewChat] = useState(false);
   const {
     handleQuickActions,
     viewNextAppointment,
     beginJob,
     completeJob,
+    callClient,
     quickStats,
     recentJobs,
     refetchAllData,
@@ -65,6 +65,8 @@ const DashboardScreen = () => {
             onViewNextAppointment={viewNextAppointment}
             onStartCurrentJob={beginJob}
             onCompleteCurrentJob={completeJob}
+            onViewChat={() => setViewChat(!viewChat)}
+            onCallClient={callClient}
           />
         )}
 

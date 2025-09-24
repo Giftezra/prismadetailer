@@ -100,7 +100,7 @@ class AvailabilityView(APIView):
                 }, status=status.HTTP_200_OK)
 
             # Business hours: 6 AM to 9 PM (default if no availability set)
-            business_start = time(6, 0)  # 6:00 AM
+            business_start = time(7, 0)  # 7:00 AM
             business_end = time(21, 0)   # 9:00 PM
             
             # Travel time interval between jobs (30 minutes)
@@ -134,7 +134,7 @@ class AvailabilityView(APIView):
             existing_jobs = Job.objects.filter(
                 detailer__in=detailers,
                 appointment_date__date=target_date,
-                status__in=['completed', 'accepted', 'in_progress']
+                status__in=['accepted', 'in_progress', 'pending']
             ).select_related('detailer')
 
             # Calculate available slots by removing booked times
@@ -150,8 +150,6 @@ class AvailabilityView(APIView):
                     "error": "No available slots found",
                     "slots": []
                 }, status=status.HTTP_200_OK)
-            
-            print('available_slots', available_slots)
             return Response({
                 "slots": available_slots,
             }, status=status.HTTP_200_OK)
@@ -167,20 +165,7 @@ class AvailabilityView(APIView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
-
     def _generate_time_slots(self, start_time, end_time, service_duration, travel_interval):
-        """
-        Generate all possible time slots for a given day
-        
-        Args:
-            start_time: Business start time (time object)
-            end_time: Business end time (time object)
-            service_duration: Service duration in minutes
-            travel_interval: Travel time interval in minutes
-            
-        Returns:
-            List of time slot dictionaries
-        """
         slots = []
         current_time = start_time
         
@@ -201,7 +186,6 @@ class AvailabilityView(APIView):
                 "is_available": True
             })
             
-            # Move to next slot (service duration + travel interval)
             next_start_minutes = end_minutes + travel_interval
             current_time = time(next_start_minutes // 60, next_start_minutes % 60)
         
@@ -209,17 +193,6 @@ class AvailabilityView(APIView):
     
 
     def _generate_slots_from_availability(self, detailer_availability, service_duration, travel_interval):
-        """
-        Generate time slots based on detailers' set availability
-        
-        Args:
-            detailer_availability: QuerySet of Availability objects
-            service_duration: Service duration in minutes
-            travel_interval: Travel time interval in minutes
-            
-        Returns:
-            List of time slot dictionaries
-        """
         all_slots = []
         
         for availability in detailer_availability:

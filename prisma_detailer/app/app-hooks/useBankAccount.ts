@@ -31,46 +31,9 @@ import {
   clearNewBankAccount,
 } from "@/app/store/slices/bankingSlice";
 import { useAlertContext } from "@/app/contexts/AlertContext";
+import { useSnackbar } from "../contexts/SnackbarContext";
+import { router } from "expo-router";
 
-/**
- * Custom hook for managing bank account operations
- *
- * This hook integrates with Redux for state management, RTK Query for API operations,
- * and the Alert Context for user notifications. It provides a complete solution for
- * bank account CRUD operations with proper validation and error handling.
- *
- * @returns {Object} Hook return object containing state and methods
- * @returns {BankAccountProps[]} bankAccounts - Array of user's bank accounts
- * @returns {boolean} isLoadingBankAccounts - Loading state for fetching bank accounts
- * @returns {boolean} isLoadingAddBankAccount - Loading state for adding bank account
- * @returns {boolean} isLoadingDeleteBankAccount - Loading state for deleting bank account
- * @returns {boolean} isLoadingSetDefaultBankAccount - Loading state for setting default account
- * @returns {BankAccountProps} newBankAccount - Current form data for new bank account
- * @returns {Function} handleAddBankAccount - Function to add a new bank account
- * @returns {Function} handleRemoveBankAccount - Function to remove a bank account
- * @returns {Function} handleSetDefaultBankAccount - Function to set default bank account
- * @returns {Function} getUserFullName - Function to get user's full name
- * @returns {Function} collectBankAccountInformation - Function to collect form data
- *
- * @example
- * ```typescript
- * const MyComponent = () => {
- *   const {
- *     bankAccounts,
- *     isLoadingBankAccounts,
- *     newBankAccount,
- *     handleAddBankAccount,
- *     handleRemoveBankAccount,
- *     handleSetDefaultBankAccount,
- *     collectBankAccountInformation,
- *   } = useBankAccount();
- *
- *   return (
- *     // Component JSX using the hook's methods and state
- *   );
- * };
- * ```
- */
 export const useBankAccount = () => {
   // Redux state management
   const dispatch = useAppDispatch();
@@ -96,42 +59,10 @@ export const useBankAccount = () => {
 
   /* Alert context for user notifications */
   const { setAlertConfig, setIsVisible } = useAlertContext();
+  const { showSnackbarWithConfig } = useSnackbar();
 
   /* Validate the  */
 
-  /**
-   * Adds a new bank account to the user's account list
-   *
-   * This function validates all required fields before making the API call.
-   * It handles both success and error scenarios with appropriate user feedback.
-   *
-   * @async
-   * @function handleAddBankAccount
-   * @returns {Promise<void>} Promise that resolves when the operation completes
-   *
-   * @description
-   * **Validation Requirements:**
-   * - account_number: Required
-   * - bank_name: Required
-   * - account_name: Required
-   * - iban: Required
-   * - bic: Required
-   * - sort_code: Required
-   *
-   * **Success Flow:**
-   * 1. Validates required fields
-   * 2. Calls addBankAccount API
-   * 3. Shows success alert with server message
-   * 4. Refetches bank accounts data
-   * 5. Clears form data
-   *
-   * **Error Handling:**
-   * - Client-side validation errors
-   * - API errors with server messages
-   * - Fallback error messages
-   *
-   * @throws {Error} When validation fails or API call fails
-   */
   const handleAddBankAccount = useCallback(async () => {
     // Validate required fields
     if (
@@ -142,31 +73,29 @@ export const useBankAccount = () => {
       !newBankAccount.bic ||
       !newBankAccount.sort_code
     ) {
-      setAlertConfig({
-        title: "Error",
+      showSnackbarWithConfig({
         message: "Please fill in all the details",
         type: "error",
-        isVisible: true,
-        onConfirm: () => setIsVisible(false),
+        duration: 3000,
       });
       return;
     }
 
     try {
       const response = await addBankAccount(newBankAccount).unwrap();
-      if (response && response.message) {
-        // Success: Show alert and refresh data
-        setAlertConfig({
-          title: "Success",
-          message: response.message,
+      if (response) {
+        let message =
+          response.message ||
+          response.account_name ||
+          "Bank account created successfully";
+        showSnackbarWithConfig({
+          message: message,
           type: "success",
-          isVisible: true,
-          onConfirm: () => {
-            refetchBankAccounts();
-            dispatch(clearNewBankAccount());
-            setIsVisible(false);
-          },
+          duration: 3000,
         });
+        refetchBankAccounts();
+        dispatch(clearNewBankAccount());
+        router.back();
       }
     } catch (error: any) {
       // Extract error message from various response formats
@@ -176,13 +105,10 @@ export const useBankAccount = () => {
         error?.data?.error ||
         error?.message ||
         "Failed to add bank account";
-
-      setAlertConfig({
-        title: "Error",
+      showSnackbarWithConfig({
         message: errorMessage,
         type: "error",
-        isVisible: true,
-        onConfirm: () => setIsVisible(false),
+        duration: 3000,
       });
     }
   }, [
@@ -191,7 +117,8 @@ export const useBankAccount = () => {
     setAlertConfig,
     setIsVisible,
     addBankAccount,
-    isLoadingAddBankAccount,
+    showSnackbarWithConfig,
+    refetchBankAccounts,
   ]);
 
   /**
@@ -272,7 +199,13 @@ export const useBankAccount = () => {
         });
       }
     },
-    [dispatch]
+    [
+      bankAccounts,
+      setAlertConfig,
+      setIsVisible,
+      deleteBankAccount,
+      refetchBankAccounts,
+    ]
   );
 
   /**
@@ -302,50 +235,55 @@ export const useBankAccount = () => {
    *
    * @throws {Error} When API call fails
    */
-  const handleSetDefaultBankAccount = useCallback(async (accountId: string) => {
-    // Find the bank account to check if it's already default
-    const bankaccount = bankAccounts.find(
-      (bankaccount: BankAccountProps) => bankaccount.id === accountId
-    );
+  const handleSetDefaultBankAccount = useCallback(
+    async (accountId: string) => {
+      // Find the bank account to check if it's already default
+      const bankaccount = bankAccounts.find(
+        (bankaccount: BankAccountProps) => bankaccount.id === accountId
+      );
 
-    // Early return if already default
-    if (bankaccount && bankaccount.is_default) {
-      return;
-    }
+      // Early return if already default
+      if (bankaccount && bankaccount.is_default) {
+        return;
+      }
 
-    /* Set the account as default */
-    try {
-      const response = await setDefaultBankAccount({ accountId }).unwrap();
-      if (response && response.message) {
+      /* Set the account as default */
+      try {
+        const response = await setDefaultBankAccount({ accountId }).unwrap();
+        if (response && response.message) {
+          showSnackbarWithConfig({
+            message: response.message,
+            type: "success",
+            duration: 3000,
+          });
+          refetchBankAccounts();
+        }
+      } catch (error: any) {
+        // Extract and display error message
+        let errorMessage = "";
+        errorMessage =
+          error?.data?.message ||
+          error?.data?.error ||
+          error?.message ||
+          "Failed to set default bank account";
+
         setAlertConfig({
-          title: "Success",
-          message: response.message,
-          type: "success",
+          title: "Error",
+          message: errorMessage,
+          type: "error",
           isVisible: true,
-          onConfirm: () => {
-            refetchBankAccounts();
-            setIsVisible(false);
-          },
+          onConfirm: () => setIsVisible(false),
         });
       }
-    } catch (error: any) {
-      // Extract and display error message
-      let errorMessage = "";
-      errorMessage =
-        error?.data?.message ||
-        error?.data?.error ||
-        error?.message ||
-        "Failed to set default bank account";
-
-      setAlertConfig({
-        title: "Error",
-        message: errorMessage,
-        type: "error",
-        isVisible: true,
-        onConfirm: () => setIsVisible(false),
-      });
-    }
-  }, []);
+    },
+    [
+      bankAccounts,
+      setAlertConfig,
+      setIsVisible,
+      setDefaultBankAccount,
+      refetchBankAccounts,
+    ]
+  );
 
   /**
    * Gets the user's full name for auto-populating the account name field
@@ -363,25 +301,6 @@ export const useBankAccount = () => {
     return `${user.first_name} ${user.last_name}`.trim();
   }, [user]);
 
-  /**
-   * Cleans and formats SWIFT/BIC code
-   *
-   * @function cleanSwiftCode
-   * @param {string} swiftCode - The raw SWIFT code input
-   * @returns {string} Cleaned and formatted SWIFT code
-   *
-   * @description
-   * **Formatting Rules:**
-   * - Converts to uppercase
-   * - Removes spaces and special characters
-   * - Limits to 8-11 characters (standard SWIFT code length)
-   *
-   * **Usage:**
-   * ```typescript
-   * const cleanedSwift = cleanSwiftCode('chase us 33');
-   * // Returns: 'CHASEUS33'
-   * ```
-   */
   const cleanSwiftCode = useCallback((swiftCode: string): string => {
     if (!swiftCode) return "";
 
@@ -392,25 +311,6 @@ export const useBankAccount = () => {
     return cleaned.substring(0, 11);
   }, []);
 
-  /**
-   * Cleans and formats sort code
-   *
-   * @function cleanSortCode
-   * @param {string} sortCode - The raw sort code input
-   * @returns {string} Cleaned and formatted sort code
-   *
-   * @description
-   * **Formatting Rules:**
-   * - Removes spaces, hyphens, and special characters
-   * - Keeps only digits
-   * - Limits to 6 digits (UK sort code standard)
-   *
-   * **Usage:**
-   * ```typescript
-   * const cleanedSortCode = cleanSortCode('12-34-56');
-   * // Returns: '123456'
-   * ```
-   */
   const cleanSortCode = useCallback((sortCode: string): string => {
     if (!sortCode) return "";
 
@@ -421,26 +321,6 @@ export const useBankAccount = () => {
     return cleaned.substring(0, 6);
   }, []);
 
-  /**
-   * Cleans and formats IBAN (International Bank Account Number)
-   *
-   * @function cleanIban
-   * @param {string} iban - The raw IBAN input
-   * @returns {string} Cleaned and formatted IBAN
-   *
-   * @description
-   * **Formatting Rules:**
-   * - Converts to uppercase
-   * - Removes spaces and special characters
-   * - Keeps only alphanumeric characters
-   * - Limits to 34 characters (max IBAN length)
-   *
-   * **Usage:**
-   * ```typescript
-   * const cleanedIban = cleanIban('gb82 west 1234 5698 7654 32');
-   * // Returns: 'GB82WEST12345698765432'
-   * ```
-   */
   const cleanIban = useCallback((iban: string): string => {
     if (!iban) return "";
 
@@ -451,25 +331,6 @@ export const useBankAccount = () => {
     return cleaned.substring(0, 34);
   }, []);
 
-  /**
-   * Cleans and formats account number
-   *
-   * @function cleanAccountNumber
-   * @param {string} accountNumber - The raw account number input
-   * @returns {string} Cleaned and formatted account number
-   *
-   * @description
-   * **Formatting Rules:**
-   * - Removes spaces and special characters
-   * - Keeps only digits
-   * - Limits to 10 digits (standard account number length)
-   *
-   * **Usage:**
-   * ```typescript
-   * const cleanedAccount = cleanAccountNumber('1234 5678 90');
-   * // Returns: '1234567890'
-   * ```
-   */
   const cleanAccountNumber = useCallback((accountNumber: string): string => {
     if (!accountNumber) return "";
 
@@ -480,36 +341,6 @@ export const useBankAccount = () => {
     return cleaned.substring(0, 10);
   }, []);
 
-  /**
-   * Collects bank account information from form fields
-   *
-   * This function updates the Redux state with form data as the user types,
-   * providing real-time form state management with automatic cleaning and formatting.
-   *
-   * @function collectBankAccountInformation
-   * @param {keyof BankAccountProps} fields - The field name being updated
-   * @param {string} values - The new value for the field
-   * @returns {void}
-   *
-   * @description
-   * **Behavior:**
-   * - Merges new field value with existing form data
-   * - Auto-populates account_name with user's full name if not set
-   * - Automatically cleans and formats specific fields:
-   *   - account_number: Limited to 10 digits
-   *   - iban: Converted to uppercase, alphanumeric only, max 34 chars
-   *   - bic: Converted to uppercase, alphanumeric only, max 11 chars
-   *   - sort_code: Digits only, max 6 chars
-   * - Updates Redux state with new form data
-   * - Maintains form state across component re-renders
-   *
-   * **Usage:**
-   * ```typescript
-   * collectBankAccountInformation('bank_name', 'Chase Bank');
-   * collectBankAccountInformation('account_number', '1234 5678 90');
-   * collectBankAccountInformation('iban', 'gb82 west 1234 5698 7654 32');
-   * ```
-   */
   const collectBankAccountInformation = (
     fields: keyof BankAccountProps,
     values: string
@@ -563,6 +394,7 @@ export const useBankAccount = () => {
     handleSetDefaultBankAccount,
     getUserFullName,
     collectBankAccountInformation,
+    refetchBankAccounts,
 
     // Cleaning and formatting methods
     cleanSwiftCode,

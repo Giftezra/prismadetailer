@@ -15,6 +15,7 @@ import StyledButton from "@/app/components/helpers/StyledButton";
 import LinearGradientComponent from "@/app/components/helpers/LinearGradientComponent";
 import { JobDetailsProps } from "@/app/interfaces/AppointmentInterface";
 import { useAppointment } from "@/app/app-hooks/useAppointment";
+import { formatCurrency } from "@/app/utils/converters";
 
 /**
  * AppointmentDetailsScreen Component
@@ -120,27 +121,25 @@ const AppointmentDetailsScreen = () => {
     switch (appointmentDetails?.status) {
       case "pending":
         return (
-          <View style={styles.buttonContainer}>
+          <View style={styles.sleekButtonContainer}>
             <StyledButton
               key="accept"
               variant="tonal"
               onPress={() => handleAcceptAppointment(appointmentDetails.id)}
-              style={[styles.actionButton, styles.acceptButton]}
+              style={[styles.sleekActionButton, styles.sleekAcceptButton]}
             >
-              <Ionicons name="checkmark" size={20} color="white" />
-              <StyledText variant="labelLarge" style={{ color: "white" }}>
-                Accept Job
+              <StyledText variant="labelMedium" style={styles.sleekButtonText}>
+                Accept
               </StyledText>
             </StyledButton>
             <StyledButton
               key="decline"
               variant="tonal"
               onPress={() => handleCancelAppointment(appointmentDetails.id)}
-              style={[styles.actionButton, styles.cancelButton]}
+              style={[styles.sleekActionButton, styles.sleekCancelButton]}
             >
-              <Ionicons name="close" size={20} color="white" />
-              <StyledText variant="labelLarge" style={{ color: "white" }}>
-                Decline Job
+              <StyledText variant="labelMedium" style={styles.sleekButtonText}>
+                Decline
               </StyledText>
             </StyledButton>
           </View>
@@ -416,7 +415,7 @@ const AppointmentDetailsScreen = () => {
             <View style={styles.infoRow}>
               <Ionicons name="cash" size={15} color={tintColor} />
               <StyledText variant="bodyMedium">
-                ${appointmentDetails?.service_type.price.toFixed(2)}
+                {formatCurrency(appointmentDetails?.service_type.price || 0)}
               </StyledText>
             </View>
           </View>
@@ -656,6 +655,15 @@ const styles = StyleSheet.create({
   buttonContainer: {
     gap: 12,
   },
+  modernButtonContainer: {
+    gap: 16,
+    paddingHorizontal: 4,
+  },
+  sleekButtonContainer: {
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 4,
+  },
   actionButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -664,8 +672,79 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
   },
+  sleekActionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 0,
+    gap: 8,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  modernActionButton: {
+    padding: 0,
+    borderRadius: 16,
+    marginBottom: 0,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 20,
+    width: "100%",
+  },
+  buttonIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+  },
+  buttonTextContainer: {
+    flex: 1,
+  },
+  sleekButtonText: {
+    color: "white",
+    fontWeight: "500",
+    fontSize: 14,
+  },
+  modernButtonText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 16,
+    marginBottom: 2,
+  },
+  modernButtonSubtext: {
+    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 13,
+  },
   acceptButton: {
     backgroundColor: "#28a745",
+  },
+  modernAcceptButton: {
+    backgroundColor: "#10B981",
+  },
+  sleekAcceptButton: {
+    backgroundColor: "#10B981",
   },
   startButton: {
     backgroundColor: "#007bff",
@@ -675,6 +754,12 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     backgroundColor: "#dc3545",
+  },
+  modernCancelButton: {
+    backgroundColor: "#EF4444",
+  },
+  sleekCancelButton: {
+    backgroundColor: "#EF4444",
   },
   completedMessage: {
     flexDirection: "row",

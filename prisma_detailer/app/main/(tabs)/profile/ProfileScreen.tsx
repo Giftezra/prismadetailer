@@ -13,9 +13,7 @@ import StyledButton from "../../../components/helpers/StyledButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import {
-  DetailerStatisticsInterface,
-} from "../../../interfaces/ProfileInterfaces";
+import { DetailerStatisticsInterface } from "../../../interfaces/ProfileInterfaces";
 import LinearGradientComponent from "@/app/components/helpers/LinearGradientComponent";
 import ReviewItems from "@/app/components/ui/profile/ReviewItems";
 import ModalServices from "@/app/services/ModalServices";
@@ -23,6 +21,9 @@ import ReviewItemList from "@/app/components/ui/profile/ReviewItemList";
 import useProfile from "@/app/app-hooks/useProfile";
 import { formatCurrency } from "@/app/utils/converters";
 import { APP_CONFIG } from "@/constants/Config";
+import { useNotification } from "@/app/app-hooks/useNotification";
+import { useAlertContext } from "@/app/contexts/AlertContext";
+
 
 const ProfileScreen = () => {
   const user = useAppSelector((state: any) => state.auth.user);
@@ -32,6 +33,9 @@ const ProfileScreen = () => {
     profileStatisticsError,
     handleActions,
   } = useProfile();
+  const { setAlertConfig, setIsVisible } = useAlertContext();
+
+  const { unreadCount } = useNotification();
 
   /* Set the modal visible state */
   const [isViewAllReviewsModalVisible, setIsViewAllReviewsModalVisible] =
@@ -45,17 +49,18 @@ const ProfileScreen = () => {
   const successColor = useThemeColor({}, "success");
   const warningColor = useThemeColor({}, "warning");
 
-
   /**
    * Handle profile edit action
    */
   const handleEditProfile = () => {
     console.log("Edit profile pressed");
-    Alert.alert(
-      "Edit Profile",
-      "Profile editing functionality will be implemented soon.",
-      [{ text: "OK" }]
-    );
+    setAlertConfig({
+      title: "Edit Profile",
+      message: "Profile editing functionality will be implemented soon.",
+      type: "warning",
+      isVisible: true,
+      onConfirm: () => setIsVisible(false),
+    });
   };
 
   /**
@@ -127,7 +132,7 @@ const ProfileScreen = () => {
       >
         {/* Header Section */}
         <View
-          style={[styles.header, { backgroundColor: cardColor, borderColor }]}
+          style={[styles.header,]}
         >
           <View style={styles.profileInfo}>
             <View style={styles.avatarContainer}>
@@ -162,12 +167,9 @@ const ProfileScreen = () => {
               <StyledText variant="bodyMedium">{user?.phone}</StyledText>
             </View>
           </View>
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={handleEditProfile}
-          >
-            <Ionicons name="pencil" size={20} color={primaryColor} />
-          </TouchableOpacity>
+          <View style={styles.verifiedBadge}>
+            <Ionicons name="checkmark-circle" size={20} color={user?.is_verified ? successColor : textColor} />
+          </View>
         </View>
 
         {/* Statistics Section */}
@@ -205,7 +207,7 @@ const ProfileScreen = () => {
 
         {/* Recent Reviews Section */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}> 
+          <View style={styles.sectionHeader}>
             <StyledText variant="titleMedium" style={styles.sectionTitle}>
               Recent Reviews
             </StyledText>
@@ -246,7 +248,7 @@ const ProfileScreen = () => {
               "notifications-outline",
               () => handleActions("notifications"),
               true,
-              "3"
+              unreadCount.toString()
             )}
           </View>
         </View>
@@ -276,7 +278,9 @@ const ProfileScreen = () => {
       <ModalServices
         visible={isViewAllReviewsModalVisible}
         onClose={() => setIsViewAllReviewsModalVisible(false)}
-        component={<ReviewItemList reviews={profileStatistics?.reviews || []} />}
+        component={
+          <ReviewItemList reviews={profileStatistics?.reviews || []} />
+        }
         title="Reviews"
         showCloseButton={true}
         modalType="sheet"
@@ -295,8 +299,6 @@ const styles = StyleSheet.create({
   header: {
     margin: 5,
     padding: 15,
-    borderRadius: 2,
-    borderWidth: 1,
   },
   profileInfo: {
     flexDirection: "row",
@@ -339,6 +341,12 @@ const styles = StyleSheet.create({
     top: 20,
     right: 20,
     padding: 8,
+  },
+  verifiedBadge: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    padding: 4,
   },
   section: {
     marginHorizontal: 5,

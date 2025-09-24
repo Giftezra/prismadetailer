@@ -17,17 +17,6 @@ services:
     networks:
       - prisma_shared_net
 
-  prisma_detailer_database:
-    image: postgres:15
-    restart: always
-    env_file:
-      - .env
-    volumes:
-      - postgres_detailer_data:/var/lib/postgresql/data
-    networks:
-      - prisma_shared_net
-    ports:
-      - "5433:5432"
 
   detailer_celery_worker:
     build:
@@ -68,10 +57,45 @@ services:
       - prisma_shared_net
 
 
+  chat_subscriber:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    command: python manage.py chat_subscriber
+    volumes:
+      - ./server/prisma:/app
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=prisma.settings
+      - REDIS_HOST=prisma_redis
+    depends_on:
+      - detailer_server
+    networks:
+      - prisma_shared_net
+
+  detailer_celery_beat:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    command: celery -A prisma.celery beat --loglevel=info
+    volumes:
+      - ./server/prisma:/app
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=prisma.settings
+      - CELERY_BROKER_URL=redis://prisma_redis:6379/0
+      - REDIS_HOST=prisma_redis
+      - CELERY_RESULT_BACKEND=redis://prisma_redis:6379/1
+    depends_on:
+      - detailer_server
+    networks:
+      - prisma_shared_net
+
+      
 volumes:
   postgres_detailer_data:
-
-
 
 networks:
   prisma_shared_net:

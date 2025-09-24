@@ -4,6 +4,10 @@ import * as Device from "expo-device";
 import { Platform } from "react-native";
 import { usePermissions } from "./usePermissions";
 import Constants from "expo-constants";
+import {
+  getPushTokenFromStorage,
+  isPushTokenSavedToServer,
+} from "../utils/storage";
 
 /**
  * Notification service hook that handles push notifications
@@ -178,7 +182,16 @@ export const useNotificationService = () => {
     try {
       configureNotifications();
 
-      if (permissionStatus.notifications.granted) {
+      // Check if we already have a stored push token
+      const storedToken = await getPushTokenFromStorage();
+      const tokenSavedToServer = await isPushTokenSavedToServer();
+
+      if (storedToken && tokenSavedToServer) {
+        setExpoPushToken(storedToken);
+      } else if (permissionStatus.notifications.granted) {
+        console.log(
+          "No stored token found, registering for push notifications"
+        );
         const token = await registerForPushNotificationsAsync();
         console.log("Expo push token:", token);
         setExpoPushToken(token);

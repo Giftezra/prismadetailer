@@ -2,24 +2,19 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 
-class DetailerNotificationConsumer(AsyncWebsocketConsumer):
+class JobChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        # Import here to avoid Django apps registry error
         from django.contrib.auth.models import AnonymousUser
         from rest_framework_simplejwt.tokens import AccessToken
         from django.contrib.auth import get_user_model
         
         User = get_user_model()
         
-        # Accept the WebSocket connection first
         await self.accept()
-        print("WebSocket connection accepted")
         
-        # Then authenticate user from token
+        # Authenticate user
         self.user = await self.get_user(User, AnonymousUser, AccessToken)
         if self.user.is_anonymous:
-            print("Authentication failed - closing connection")
-            # Send error message before closing
             await self.send(text_data=json.dumps({
                 'type': 'error',
                 'message': 'Authentication failed'
@@ -27,37 +22,75 @@ class DetailerNotificationConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
         
-        # Join user-specific channel
-        self.group_name = f"detailer_{self.user.id}"
+        # Get booking reference from URL
+        self.booking_reference = self.scope['url_route']['kwargs']['booking_reference']
+        
+        # Verify user has access to this job
+        try:
+            self.job = await self.get_job()
+            if self.job.detailer.user != self.user:
+                await self.close()
+                return
+        except:
+            await self.close()
+            return
+        
+        # Join room-specific channel
+        self.room_group_name = f"job_chat_{self.booking_reference}"
         await self.channel_layer.group_add(
-            self.group_name,
+            self.room_group_name,
             self.channel_name
         )
-        print(f"Detailer {self.user.id} connected successfully")
+        
+        # Create or get chat room
+        self.chat_room = await self.get_or_create_chat_room()
+        
+        print(f"Detailer {self.user.id} connected to chat for job {self.booking_reference}")
 
     async def disconnect(self, close_code):
-        if hasattr(self, 'group_name'):
+        # Only try to leave the group if we successfully joined it
+        if hasattr(self, 'room_group_name'):
             await self.channel_layer.group_discard(
-                self.group_name,
+                self.room_group_name,
                 self.channel_name
             )
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        if data['type'] == "accepted_job":
-            await self.accepted_job(data['job_id'])
-        elif data['type'] == "new_job_assigned":
-            await self.new_job_assigned(data['job_id'])
+        message_type = data.get('type', 'text')
+        content = data.get('content', '').strip()
+        
+        if not content:
+            return
+        
+        # Save message to database
+        message = await self.save_message(content, message_type)
+        
+        # Send message to room group (only if we're properly connected)
+        if hasattr(self, 'room_group_name'):
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'chat_message',
+                    'message': {
+                        'id': str(message.id),
+                        'content': message.content,
+                        'sender_type': message.sender_type,
+                        'message_type': message.message_type,
+                        'created_at': message.created_at.isoformat(),
+                        'is_read': message.is_read,
+                    }
+                }
+            )
+        
+        # Publish to Redis for cross-app delivery
+        await self.publish_to_redis(message)
 
-    async def status_update(self, event):
-        """Send booking status update to client"""
+    async def chat_message(self, event):
+        message = event['message']
         await self.send(text_data=json.dumps({
-            'type': 'status_update',
-            'booking_reference': event['booking_reference'],
-            'status': event['status'],
-            'message': event['message'],
-            'timestamp': event.get('timestamp', ''),
-            'action': 'refresh_dashboard'
+            'type': 'chat_message',
+            'message': message
         }))
 
     @database_sync_to_async
@@ -82,5 +115,56 @@ class DetailerNotificationConsumer(AsyncWebsocketConsumer):
             print(f"Token validation failed: {e}")
             return AnonymousUser()
 
-    
+    @database_sync_to_async
+    def get_job(self):
+        from .models import Job
+        return Job.objects.get(booking_reference=self.booking_reference)
+
+    @database_sync_to_async
+    def get_or_create_chat_room(self):
+        from .models import JobChatRoom
+        room, created = JobChatRoom.objects.get_or_create(
+            job=self.job,
+            defaults={
+                'client_name': self.job.client_name,
+                'detailer': self.job.detailer,
+                'is_active': True
+            }
+        )
+        return room
+
+    @database_sync_to_async
+    def save_message(self, content, message_type):
+        from .models import JobChatMessage
+        return JobChatMessage.objects.create(
+            room=self.chat_room,
+            sender_id=str(self.user.id),
+            sender_type='detailer',
+            message_type=message_type,
+            content=content
+        )
+
+    async def publish_to_redis(self, message):
+        # Only publish if we have the booking reference
+        if not hasattr(self, 'booking_reference'):
+            return
+            
+        import redis
+        import asyncio
+        
+        def publish():
+            r = redis.Redis(host='prisma_redis', port=6379, db=0)
+            r.publish(f'job_chat_{self.booking_reference}', json.dumps({
+                'type': 'chat_message',
+                'booking_reference': self.booking_reference,
+                'message': {
+                    'id': str(message.id),
+                    'content': message.content,
+                    'sender_type': message.sender_type,
+                    'message_type': message.message_type,
+                    'created_at': message.created_at.isoformat(),
+                }
+            }))
+        
+        await asyncio.get_event_loop().run_in_executor(None, publish)
 

@@ -36,8 +36,14 @@ import {
 } from "../store/api/dashboardApi";
 import { useAlertContext } from "../contexts/AlertContext";
 import * as Linking from "expo-linking";
-import useWebSocket from "./useWebsocket";
 import { useNotification } from "./useNotification";
+import { useNotificationService } from "./useNotificationService";
+import { usePermissions } from "./usePermissions";
+import * as SecureStore from "expo-secure-store";
+import {
+  getPushTokenFromStorage,
+  isPushTokenSavedToServer,
+} from "../utils/storage";
 
 /**
  * Custom hook for managing dashboard data and state
@@ -100,9 +106,55 @@ export const useDashboard = () => {
     useCompleteCurrentJobMutation();
 
   const { setAlertConfig, setIsVisible } = useAlertContext();
-
-  /* Import the notification refetch notification from the hook useNotification */
   const { refreshNotifications } = useNotification();
+
+  // Get notification service and permissions
+  const { expoPushToken, initializeNotificationService } =
+    useNotificationService();
+  const { requestNotificationPermission, permissionStatus } = usePermissions();
+
+  /**
+   * Initialize notifications when the dashboard loads
+   * Check that the notification permission has been initialized before and the
+   * expo push token has been sent to the server, and that the notification service has been initialized
+   */
+  useEffect(() => {
+    const initializeNotifications = async () => {
+      // Check if we already have a stored push token that was saved to server
+      const storedToken = await getPushTokenFromStorage();
+      const tokenSavedToServer = await isPushTokenSavedToServer();
+
+      if (storedToken && tokenSavedToServer) {
+        return;
+      }
+
+      // Check if we've already requested permissions
+      const hasRequestedPermissions = await SecureStore.getItemAsync(
+        "notification_permission_requested"
+      );
+
+      if (!hasRequestedPermissions) {
+        // Request notification permission
+        const granted = await requestNotificationPermission();
+
+        if (granted) {
+          // Initialize notification service to get token
+          await initializeNotificationService();
+
+          // Mark that we've requested permissions
+          await SecureStore.setItemAsync(
+            "notification_permission_requested",
+            "true"
+          );
+        }
+      } else if (permissionStatus.notifications.granted && !expoPushToken) {
+        // If permissions were granted before but we don't have a token, initialize
+        await initializeNotificationService();
+      }
+    };
+
+    initializeNotifications();
+  }, []);
 
   /**
    * Quick Actions Configuration
@@ -163,7 +215,12 @@ export const useDashboard = () => {
     refetchRecentJobs();
     refetchTodayOverview();
     refreshNotifications();
-  }, [refetchQuickStats, refetchRecentJobs, refetchTodayOverview, refreshNotifications]);
+  }, [
+    refetchQuickStats,
+    refetchRecentJobs,
+    refetchTodayOverview,
+    refreshNotifications,
+  ]);
 
   const handleBookingUpdate = useCallback(
     (data: any) => {
@@ -173,8 +230,6 @@ export const useDashboard = () => {
     },
     [refetchAllData]
   );
-  
-  useWebSocket(handleBookingUpdate);
   /**
    * View Next Appointment Handler
    *
@@ -265,6 +320,34 @@ export const useDashboard = () => {
     [completeCurrentJob, refetchTodayOverview, setAlertConfig, setIsVisible]
   );
 
+  /**
+   * Call the detailer using the phone number. this method will take the user out of the app
+   * and into their dialer
+   * @param phoneNumber - The phone number to call
+   */
+  const callClient = useCallback(
+    (phoneNumber: string) => {
+      if (!phoneNumber) {
+        return;
+      }
+
+      setAlertConfig({
+        isVisible: true,
+        title: "Make a call",
+        message: `Are you sure you want to call ${phoneNumber}?`,
+        type: "success",
+        onConfirm() {
+          Linking.openURL(`tel:${phoneNumber}`);
+          setIsVisible(false);
+        },
+        onClose() {
+          setIsVisible(false);
+        },
+      });
+    },
+    [setAlertConfig, setIsVisible]
+  );
+
   return {
     // Action handlers for user interactions
     viewNextAppointment,
@@ -295,7 +378,7 @@ export const useDashboard = () => {
       pendingJobs: 0,
     },
     completeJob,
-
+    callClient,
     // Data refresh functionality
     refetchAllData,
   };

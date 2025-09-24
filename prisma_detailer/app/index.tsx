@@ -75,7 +75,7 @@ export default function LandingPage() {
             <View style={styles.heroContent}>
               <Image
                 source={require("../assets/images/logo.png")}
-                style={styles.logo}
+                style={[styles.logo, {shadowColor:"red"}]}
                 resizeMode="contain"
               />
 
@@ -315,6 +315,11 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     marginBottom: 24,
+    borderRadius:50, 
+    shadowOffset: {width:0, height:2},
+    elevation:5, 
+    shadowRadius:4,
+    shadowOpacity:0.25,
   },
   heroTitle: {
     color: "#FFFFFF",

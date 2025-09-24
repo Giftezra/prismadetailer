@@ -27,6 +27,7 @@ const ToggleComponent = ({
 
   const secondaryColor = useThemeColor({}, "secondaryButton");
   const backgroundColor = useThemeColor({}, "background");
+  const textColor = useThemeColor({}, "text");
 
   useEffect(() => {
     Animated.timing(slideAnim, {
@@ -78,6 +79,7 @@ const ToggleComponent = ({
     isLarge ? styles.textLarge : styles.textSmall,
     value ? styles.textOn : styles.textOff,
     disabled && styles.textDisabled,
+
   ];
 
   const offTextStyle = [
@@ -85,6 +87,9 @@ const ToggleComponent = ({
     isLarge ? styles.textLarge : styles.textSmall,
     value ? styles.textOff : styles.textOn,
     disabled && styles.textDisabled,
+    {
+      color: textColor,
+    },
   ];
 
   return (
@@ -100,7 +105,7 @@ const ToggleComponent = ({
       </View>
 
       {/* OFF Text - positioned on the right */}
-      <View style={styles.textContainer}>
+      <View style={styles.textContainer }>
         <Text style={offTextStyle}>OFF</Text>
       </View>
 

@@ -64,6 +64,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'allow_push_notifications': user.allow_push_notifications,
                 'allow_email_notifications': user.allow_email_notifications,
                 'allow_marketing_emails': user.allow_marketing_emails,
+                'is_verified': detailer.is_verified,
             }
         })
         return data

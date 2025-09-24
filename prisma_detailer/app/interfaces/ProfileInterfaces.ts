@@ -21,6 +21,7 @@ export interface UserProfileProps {
   allow_push_notifications?: boolean;
   allow_email_notifications?: boolean;
   allow_marketing_emails?: boolean;
+  is_verified?: boolean;
 }
 
 /* Defines the interface for the detailers statistics */

@@ -72,36 +72,6 @@ class DashboardView(APIView):
 
 
     def _get_today_overview(self, request):
-        """
-        Get today's overview data for the authenticated detailer
-        
-        Retrieves comprehensive information about today's schedule including:
-        - Total appointments count
-        - Completed jobs count
-        - Pending jobs count
-        - Current job details (if any job is in progress)
-        - Next appointment details (if any pending appointments exist)
-        
-        The logic ensures that:
-        - Current job and next appointment are mutually exclusive
-        - Only jobs for today's date are considered
-        - Proper error handling for missing or invalid data
-        
-        Args:
-            request: The HTTP request object containing the authenticated user
-            
-        Returns:
-            Response: JSON object containing:
-                - totalAppointments: Total number of jobs scheduled for today
-                - completedJobs: Number of completed jobs today
-                - pendingJobs: Number of pending/in-progress jobs today
-                - nextAppointment: Object with next appointment details (or null)
-                - currentJob: Object with current job details (or null)
-                
-        Raises:
-            HTTP_404_NOT_FOUND: If detailer profile doesn't exist
-            HTTP_500_INTERNAL_SERVER_ERROR: If database query fails
-        """
         try:
             today = timezone.now().date()
 
@@ -139,9 +109,9 @@ class DashboardView(APIView):
                         "addons": in_progress_job.addons.all().values_list('name', flat=True) if in_progress_job.addons.all().exists() else [],
                         "specialInstruction": in_progress_job.owner_note if in_progress_job.owner_note else "",
                         'vehicleInfo': f"{in_progress_job.vehicle_make} {in_progress_job.vehicle_model} ({in_progress_job.vehicle_registration})" if in_progress_job.vehicle_registration else "",
+                        "booking_reference": in_progress_job.booking_reference,
+                        "clientPhone": in_progress_job.client_phone if in_progress_job.client_phone else "",
                     }
-                    print(f"Current job: {current_job}")
-                    print(f"Current job: {in_progress_job}")
             except Exception as e:
                 logger.error(f"Error getting current job: {str(e)}")
                 current_job = None
@@ -208,35 +178,6 @@ class DashboardView(APIView):
 
 
     def _get_quick_stats(self, request):
-        """
-        Get quick statistics for the authenticated detailer
-        
-        Calculates various performance metrics including:
-        - Weekly and monthly earnings
-        - Completed jobs count for current week and month
-        - Pending jobs count
-        - Average rating and total reviews
-        
-        All calculations are based on the current date and provide insights into
-        the detailer's performance and earnings.
-        
-        Args:
-            request: The HTTP request object containing the authenticated user
-            
-        Returns:
-            Response: JSON object containing:
-                - weeklyEarnings: Total earnings for current week
-                - monthlyEarnings: Total earnings for current month
-                - completedJobsThisWeek: Number of completed jobs this week
-                - completedJobsThisMonth: Number of completed jobs this month
-                - pendingJobsCount: Total number of pending jobs
-                - averageRating: Average rating from all reviews
-                - totalReviews: Total number of reviews received
-                
-        Raises:
-            HTTP_404_NOT_FOUND: If detailer profile doesn't exist
-            HTTP_500_INTERNAL_SERVER_ERROR: If database query fails
-        """
         try:
             detailer = Detailer.objects.get(user=request.user)
             today = timezone.now().date()
@@ -245,14 +186,20 @@ class DashboardView(APIView):
             week_start = today - timedelta(days=today.weekday())  # Start of current week (Monday)
             month_start = today.replace(day=1)  # Start of current month
             
-            # Calculate weekly earnings (including both paid out and newly completed jobs)
+            # Calculate weekly earnings (including tips from reviews)
             try:
                 # Get earnings with payout_date in the week (paid out earnings)
                 weekly_paid_earnings = Earning.objects.filter(
                     detailer=detailer,
                     payout_date__gte=week_start,
                     payout_date__lte=today
-                ).aggregate(total=Sum('net_amount'))['total'] or 0
+                ).aggregate(
+                    total_net=Sum('net_amount'),
+                    total_tips=Sum('tip_amount')
+                )
+                
+                weekly_net_earnings = weekly_paid_earnings['total_net'] or 0
+                weekly_tip_earnings = weekly_paid_earnings['total_tips'] or 0
                 
                 # Get earnings for jobs completed this week but not yet paid out
                 weekly_completed_jobs = Job.objects.filter(
@@ -265,21 +212,38 @@ class DashboardView(APIView):
                     detailer=detailer,
                     job__in=weekly_completed_jobs,
                     payout_date__isnull=True
-                ).aggregate(total=Sum('net_amount'))['total'] or 0
+                ).aggregate(
+                    total_net=Sum('net_amount'),
+                    total_tips=Sum('tip_amount')
+                )
                 
-                weekly_earnings = weekly_paid_earnings + weekly_new_earnings
+                weekly_new_net = weekly_new_earnings['total_net'] or 0
+                weekly_new_tips = weekly_new_earnings['total_tips'] or 0
+                
+                weekly_earnings = weekly_net_earnings + weekly_new_net
+                weekly_tips = weekly_tip_earnings + weekly_new_tips
+                weekly_total_earnings = weekly_earnings + weekly_tips
+                
             except Exception as e:
                 logger.error(f"Error calculating weekly earnings: {str(e)}")
                 weekly_earnings = 0
+                weekly_tips = 0
+                weekly_total_earnings = 0
             
-            # Calculate monthly earnings (including both paid out and newly completed jobs)
+            # Calculate monthly earnings (including tips from reviews)
             try:
                 # Get earnings with payout_date in the month (paid out earnings)
                 monthly_paid_earnings = Earning.objects.filter(
                     detailer=detailer,
                     payout_date__gte=month_start,
                     payout_date__lte=today
-                ).aggregate(total=Sum('net_amount'))['total'] or 0
+                ).aggregate(
+                    total_net=Sum('net_amount'),
+                    total_tips=Sum('tip_amount')
+                )
+                
+                monthly_net_earnings = monthly_paid_earnings['total_net'] or 0
+                monthly_tip_earnings = monthly_paid_earnings['total_tips'] or 0
                 
                 # Get earnings for jobs completed this month but not yet paid out
                 monthly_completed_jobs = Job.objects.filter(
@@ -292,12 +256,23 @@ class DashboardView(APIView):
                     detailer=detailer,
                     job__in=monthly_completed_jobs,
                     payout_date__isnull=True
-                ).aggregate(total=Sum('net_amount'))['total'] or 0
+                ).aggregate(
+                    total_net=Sum('net_amount'),
+                    total_tips=Sum('tip_amount')
+                )
                 
-                monthly_earnings = monthly_paid_earnings + monthly_new_earnings
+                monthly_new_net = monthly_new_earnings['total_net'] or 0
+                monthly_new_tips = monthly_new_earnings['total_tips'] or 0
+                
+                monthly_earnings = monthly_net_earnings + monthly_new_net
+                monthly_tips = monthly_tip_earnings + monthly_new_tips
+                monthly_total_earnings = monthly_earnings + monthly_tips
+                
             except Exception as e:
                 logger.error(f"Error calculating monthly earnings: {str(e)}")
                 monthly_earnings = 0
+                monthly_tips = 0
+                monthly_total_earnings = 0
             
             # Calculate completed jobs this week
             try:
@@ -333,28 +308,67 @@ class DashboardView(APIView):
                 logger.error(f"Error calculating pending jobs count: {str(e)}")
                 pending_jobs_count = 0
             
-            # Calculate average rating and total reviews
+            # Calculate average rating and total reviews - using both Review model and Job rating
             try:
+                # Get reviews from Review model (more reliable)
                 reviews = Review.objects.filter(detailer=detailer)
-                average_rating = reviews.aggregate(avg_rating=Avg('rating'))['avg_rating'] or 0
-                total_reviews = reviews.count()
+                review_avg_rating = reviews.aggregate(avg_rating=Avg('rating'))['avg_rating'] or 0
+                review_count = reviews.count()
+                
+                # Also get ratings from Job model (updated by appointment_subscriber)
+                jobs_with_ratings = Job.objects.filter(
+                    detailer=detailer,
+                    rating__gt=0
+                )
+                job_avg_rating = jobs_with_ratings.aggregate(avg_rating=Avg('rating'))['avg_rating'] or 0
+                job_rating_count = jobs_with_ratings.count()
+                
+                # Use the most recent/accurate data
+                # If we have Review model data, use that; otherwise use Job model data
+                if review_count > 0:
+                    average_rating = review_avg_rating
+                    total_reviews = review_count
+                else:
+                    average_rating = job_avg_rating
+                    total_reviews = job_rating_count
+                    
             except Exception as e:
                 logger.error(f"Error calculating ratings: {str(e)}")
                 average_rating = 0
                 total_reviews = 0
+            
+            # Calculate recent tips (tips received in the last 7 days)
+            try:
+                seven_days_ago = today - timedelta(days=7)
+                recent_tips = Earning.objects.filter(
+                    detailer=detailer,
+                    tip_amount__gt=0,
+                    job__appointment_date__date__gte=seven_days_ago
+                ).aggregate(total_tips=Sum('tip_amount'))['total_tips'] or 0
+            except Exception as e:
+                logger.error(f"Error calculating recent tips: {str(e)}")
+                recent_tips = 0
 
             # Debug logging
-            print(weekly_earnings, monthly_earnings, completed_jobs_this_week, completed_jobs_this_month, pending_jobs_count, average_rating, total_reviews)
+            logger.info(f"Weekly: {weekly_earnings} + {weekly_tips} = {weekly_total_earnings}")
+            logger.info(f"Monthly: {monthly_earnings} + {monthly_tips} = {monthly_total_earnings}")
+            logger.info(f"Rating: {average_rating} from {total_reviews} reviews")
+            logger.info(f"Recent tips: {recent_tips}")
             
             # Prepare response data
             data = {
-                "weeklyEarnings": float(weekly_earnings),
-                "monthlyEarnings": float(monthly_earnings),
+                "weeklyEarnings": float(weekly_total_earnings),
+                "weeklyNetEarnings": float(weekly_earnings),
+                "weeklyTips": float(weekly_tips),
+                "monthlyEarnings": float(monthly_total_earnings),
+                "monthlyNetEarnings": float(monthly_earnings),
+                "monthlyTips": float(monthly_tips),
                 "completedJobsThisWeek": completed_jobs_this_week,
                 "completedJobsThisMonth": completed_jobs_this_month,
                 "pendingJobsCount": pending_jobs_count,
                 "averageRating": float(average_rating),
-                "totalReviews": total_reviews
+                "totalReviews": total_reviews,
+                "recentTips": float(recent_tips)
             }
             
             return Response(data, status=status.HTTP_200_OK)

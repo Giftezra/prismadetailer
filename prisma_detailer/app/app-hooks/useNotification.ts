@@ -13,6 +13,10 @@ import {
   useSaveNotificationTokenMutation,
 } from "@/app/store/api/notificationApi";
 import { useNotificationService } from "./useNotificationService";
+import {
+  savePushTokenToStorage,
+  isPushTokenSavedToServer,
+} from "../utils/storage";
 
 /**
  * Custom hook for managing notifications in the application.
@@ -165,7 +169,7 @@ export const useNotification = () => {
   };
 
   /**
-   * Save notification token to the server.
+   * Save notification token to the server and storage.
    * This should be called once when the user grants notification permissions.
    *
    * @param {string} token - The Expo push token to save
@@ -179,12 +183,20 @@ export const useNotification = () => {
         return false;
       }
 
+      // Check if token was already saved to server
+      const alreadySavedToServer = await isPushTokenSavedToServer();
+      if (alreadySavedToServer) {
+        setTokenSaved(true);
+        return true;
+      }
+
       setIsSavingToken(true);
       const result = await saveNotificationTokenMutation({ token }).unwrap();
 
       if (result.success) {
         setTokenSaved(true);
-        console.log("Push token saved successfully");
+        // Save token to storage for future use
+        await savePushTokenToStorage(token);
         return true;
       } else {
         console.log(
