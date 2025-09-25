@@ -12,7 +12,7 @@ from main.views.profile import ProfileView
 from main.views.earning import EarningView
 from main.views.notifications import NotificationsView
 from main.views.terms import TermsView
-from .views.password_reset import RequestPasswordResetView, ResetPasswordView
+from .views.password_reset import RequestPasswordResetView, ResetPasswordView, ValidateResetTokenView, WebResetPasswordView
 
 app_name = 'main'
 urlpatterns = [
@@ -29,7 +29,9 @@ urlpatterns = [
     path('terms/<str:action>/', TermsView.as_view(), name='terms'),
     path('notifications/<str:action>/', NotificationsView.as_view(), name='notifications'),
     path('auth/password-reset/', RequestPasswordResetView.as_view(), name='request_password_reset'),
+    path('auth/validate-reset-token/', ValidateResetTokenView.as_view(), name='validate_reset_token'),
     path('auth/reset-password/', ResetPasswordView.as_view(), name='reset_password'),
+    path('reset-password/', WebResetPasswordView.as_view(), name='web_reset_password'),
 ]
 
 if settings.DEBUG:

@@ -99,6 +99,7 @@ def send_appointment_cancellation_email(booking_reference, detailer_email, appoi
         return f"Failed to send appointment cancellation email: {str(e)}"
 
 
+
 @shared_task
 def send_appointment_rescheduling_email(booking_reference, detailer_email, new_appointment_date, new_appointment_time, total_amount):
     print(f"DEBUG: send_appointment_rescheduling_email called with booking_reference: {booking_reference} and detailer_email: {detailer_email}")
@@ -115,6 +116,8 @@ def send_appointment_rescheduling_email(booking_reference, detailer_email, new_a
     except Exception as e:
         print(f"DEBUG: send_appointment_rescheduling_email error: {str(e)}")
         return f"Failed to send appointment rescheduling email: {str(e)}"
+
+
 
 
 @shared_task
@@ -293,13 +296,21 @@ def cleanup_job_chat_messages(chat_room_id):
 @shared_task
 def send_password_reset_email(user_email, user_name, reset_token):
     subject = "Reset Your Prisma Password"
-    # Use mobile deep link for React Native app
-    # Format: scheme://path?param=value
-    reset_url = f"prismadetailer://onboarding/ResetPasswordScreen?token={reset_token}"
+    
+    # Get base URL from settings
+    from django.conf import settings
+    base_url = getattr(settings, 'BASE_URL', 'https://yourdomain.com')
+    
+    # Web URL that works for everyone
+    web_reset_url = f"{base_url}/reset-password/?token={reset_token}"
+    
+    # Mobile deep link for app users
+    mobile_deep_link = f"prismadetailer://onboarding/ResetPasswordScreen?token={reset_token}"
     
     html_message = render_to_string('password_reset_email.html', {
         'user_name': user_name,
-        'reset_url': reset_url,
+        'web_reset_url': web_reset_url,
+        'mobile_deep_link': mobile_deep_link,
         'expires_in': '1 hour'
     })
     

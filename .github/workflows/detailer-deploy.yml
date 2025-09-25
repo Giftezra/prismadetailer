@@ -1,0 +1,111 @@
+name: Deploy Detailer App
+
+on:
+  push:
+    branches: [master, develop]
+    paths:
+      - "detailer/**"
+  pull_request:
+    branches: [master]
+    paths:
+      - "detailer/**"
+
+env:
+  EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+  EAS_PROJECT_ID: ${{ secrets.EAS_PROJECT_ID_DETAILER }}
+
+jobs:
+  # Job 1: Deploy Detailer Mobile App (OTA Updates)
+  deploy-mobile-app:
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: "./detailer/prisma_detailer/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build and publish OTA update
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/master" ]; then
+            eas update --branch production --message "Production update: ${{ github.event.head_commit.message }}"
+          else
+            eas update --branch development --message "Development update: ${{ github.event.head_commit.message }}"
+          fi
+
+  # Job 2: Deploy Detailer Backend Server
+  deploy-backend-server:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./detailer
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to Digital Ocean
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USERNAME }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          script: |
+            cd /home/${{ secrets.DO_USERNAME }}/prisma/detailer
+            git pull origin master
+            docker-compose down
+            docker-compose build --no-cache
+            docker-compose up -d
+            docker system prune -f
+
+      - name: Health Check
+        run: |
+          sleep 30
+          curl -f http://${{ secrets.DO_HOST }}:8001/health || exit 1
+
+  # Job 3: Run Tests
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./detailer/prisma_detailer
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: "./detailer/prisma_detailer/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit

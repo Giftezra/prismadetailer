@@ -153,7 +153,7 @@ const ForgotPasswordScreen = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flex: 1
   },
   scrollContent: {
     flexGrow: 1,
