@@ -37,7 +37,7 @@ class AuthenticationView(APIView):
     
     """ Create a new user """
     def create_new_user(self, request):
-        print("Received request data:", request.data)  # Debug print
+        pass
         try:
             credentials = request.data.get('credentials')
             if not credentials:

@@ -224,7 +224,7 @@ export const useDashboard = () => {
 
   const handleBookingUpdate = useCallback(
     (data: any) => {
-      console.log("Booking update received:", data);
+      // Trigger dashboard refresh
       // Trigger dashboard refresh
       refetchAllData();
     },
@@ -239,7 +239,7 @@ export const useDashboard = () => {
    * TODO: Implement actual appointment viewing functionality
    */
   const viewNextAppointment = useCallback(() => {
-    console.log("View next appointment");
+    // TODO: Implement view appointment functionality
     // TODO: Implement view appointment functionality
   }, []);
 

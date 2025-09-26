@@ -1,6 +1,6 @@
 import { useLoadedFonts } from "@/hooks/useLoadedFonts";
 import { createContext, useContext, useState, useEffect } from "react";
-import { ActivityIndicator, Dimensions, useColorScheme } from "react-native"; 
+import { ActivityIndicator, Dimensions, useColorScheme } from "react-native";
 import * as SecureStore from "expo-secure-store";
 
 type ThemeMode = "light" | "dark" | "system";
@@ -17,7 +17,7 @@ const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const systemColorScheme = useColorScheme();
 
-//  Load saved theme on app start
+  //  Load saved theme on app start
   useEffect(() => {
     const loadSavedTheme = async () => {
       try {
@@ -31,7 +31,7 @@ const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
           setTheme(savedTheme as ThemeMode);
         }
       } catch (error) {
-        console.log("Error loading saved theme:", error);
+        // Error loading saved theme
       } finally {
         setIsLoading(false);
       }
@@ -45,7 +45,7 @@ const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       await SecureStore.setItemAsync("userTheme", newTheme);
     } catch (error) {
-      console.log("Error saving theme:", error);
+      // Error saving theme
     }
   };
 

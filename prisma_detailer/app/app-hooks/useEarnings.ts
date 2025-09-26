@@ -51,13 +51,13 @@ export const useEarnings = () => {
     isLoadingEarningsSummary ||
     isLoadingRecentEarnings ||
     isLoadingEarningsAnalytics ||
-    isLoadingPayoutHistory; 
+    isLoadingPayoutHistory;
 
   /**
    * Set bank account as primary
    */
   const setPrimaryBankAccount = useCallback((accountId: string) => {
-    console.log("Set primary bank account:", accountId);
+    // Set primary bank account
     // TODO: Implement set primary bank account functionality
   }, []);
 
@@ -65,7 +65,7 @@ export const useEarnings = () => {
    * Delete bank account
    */
   const deleteBankAccount = useCallback((accountId: string) => {
-    console.log("Delete bank account:", accountId);
+    // Delete bank account
     // TODO: Implement delete bank account functionality
   }, []);
 
@@ -73,7 +73,7 @@ export const useEarnings = () => {
    * Add new bank account
    */
   const addBankAccount = useCallback((accountData: any) => {
-    console.log("Add bank account:", accountData);
+    // Add bank account
     // TODO: Implement add bank account functionality
   }, []);
 
@@ -81,7 +81,7 @@ export const useEarnings = () => {
    * Request payout
    */
   const requestPayout = useCallback((amount: number, bankAccountId: string) => {
-    console.log("Request payout:", { amount, bankAccountId });
+    // Request payout
     // TODO: Implement request payout functionality
   }, []);
 

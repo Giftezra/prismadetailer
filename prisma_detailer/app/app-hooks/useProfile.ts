@@ -95,7 +95,7 @@ const useProfile = () => {
         update: value,
       }).unwrap();
       if (response.success) {
-        console.log("Push notification setting updated:", value);
+        // Push notification setting updated
 
         // Update the Redux store with the new value
         if (currentUser) {
@@ -137,7 +137,7 @@ const useProfile = () => {
         update: value,
       }).unwrap();
       if (response.success) {
-        console.log("Email notification setting updated:", value);
+        // Email notification setting updated
 
         // Update the Redux store with the new value
         if (currentUser) {
@@ -196,7 +196,7 @@ const useProfile = () => {
         update: value,
       }).unwrap();
       if (response.success) {
-        console.log("Marketing email setting updated:", value);
+        // Marketing email setting updated
 
         // Update the Redux store with the new value
         if (currentUser) {

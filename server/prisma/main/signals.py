@@ -28,7 +28,7 @@ def handle_job_status_change(sender, instance, created, **kwargs):
                     args=[instance.detailer.user.id, "Job Starting Soon! 🚗", f"Your {instance.service_type.name} appointment with {instance.client_name} starts in 30 minutes at {instance.address}", "reminder"],
                     eta=reminder_time
                 )
-                print(f"Scheduled 30-minute reminder for job {instance.booking_reference} at {reminder_time}")
+                pass
         
         # Schedule 15-minute closing notification when job status changes to in_progress
         elif instance.status == 'in_progress':
@@ -51,9 +51,9 @@ def handle_job_status_change(sender, instance, created, **kwargs):
                     args=[instance.id],
                     eta=closing_notification_time
                 )
-                print(f"Scheduled 15-minute closing notification for job {instance.booking_reference} at {closing_notification_time}")
+                pass
             else:
-                print(f"Cannot schedule closing notification for job {instance.booking_reference} - notification time {closing_notification_time} is in the past")
+                pass
         
         # Close and cleanup chat room when job is completed or cancelled
         elif instance.status in ['completed', 'cancelled']:
@@ -65,6 +65,6 @@ def handle_job_status_change(sender, instance, created, **kwargs):
                 
                 # Schedule cleanup task
                 cleanup_job_chat.delay(str(chat_room.id))
-                print(f"Chat room closed for job {instance.booking_reference}")
+                pass
             except JobChatRoom.DoesNotExist:
                 pass

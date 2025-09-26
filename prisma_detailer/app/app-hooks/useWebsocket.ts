@@ -47,9 +47,7 @@ const useWebSocket = (
 
   const connectWebSocket = useCallback(() => {
     if (!accessToken || !bookingReference) {
-      console.log(
-        "No access token or booking reference available for WebSocket connection"
-      );
+      // No access token or booking reference available for WebSocket connection
       return;
     }
 
@@ -58,16 +56,16 @@ const useWebSocket = (
       ws.current.close();
     }
 
-    console.log("API_CONFIG.websocketUrl:", API_CONFIG.websocketUrl);
-    console.log("accessToken:", accessToken);
-    console.log("bookingReference:", bookingReference);
+    // API_CONFIG.websocketUrl
+    // accessToken
+    // bookingReference
 
     const wsUrl = `${API_CONFIG.websocketUrl}chat/${bookingReference}/${accessToken}/`;
-    console.log("Connecting to WebSocket:", wsUrl);
+    // Connecting to WebSocket
     ws.current = new WebSocket(wsUrl);
 
     ws.current.onopen = () => {
-      console.log("WebSocket connected for job chat");
+      // WebSocket connected for job chat
       reconnectAttempts.current = 0; // Reset reconnect attempts on successful connection
       // Clear any pending reconnection
       if (reconnectTimeoutRef.current) {
@@ -98,7 +96,7 @@ const useWebSocket = (
     };
 
     ws.current.onclose = (event) => {
-      console.log("WebSocket disconnected", event.code, event.reason);
+      // WebSocket disconnected
 
       // Only attempt reconnection if it wasn't a manual close and we haven't exceeded max attempts
       if (
@@ -111,9 +109,7 @@ const useWebSocket = (
           1000 * Math.pow(2, reconnectAttempts.current),
           30000
         ); // Exponential backoff, max 30s
-        console.log(
-          `Attempting to reconnect in ${delay}ms... (attempt ${reconnectAttempts.current}/${maxReconnectAttempts})`
-        );
+        // Attempting to reconnect
 
         reconnectTimeoutRef.current = setTimeout(() => {
           connectWebSocket();

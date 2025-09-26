@@ -24,7 +24,6 @@ import { APP_CONFIG } from "@/constants/Config";
 import { useNotification } from "@/app/app-hooks/useNotification";
 import { useAlertContext } from "@/app/contexts/AlertContext";
 
-
 const ProfileScreen = () => {
   const user = useAppSelector((state: any) => state.auth.user);
   const {
@@ -53,7 +52,7 @@ const ProfileScreen = () => {
    * Handle profile edit action
    */
   const handleEditProfile = () => {
-    console.log("Edit profile pressed");
+    // Handle edit profile action
     setAlertConfig({
       title: "Edit Profile",
       message: "Profile editing functionality will be implemented soon.",
@@ -131,9 +130,7 @@ const ProfileScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* Header Section */}
-        <View
-          style={[styles.header,]}
-        >
+        <View style={[styles.header]}>
           <View style={styles.profileInfo}>
             <View style={styles.avatarContainer}>
               {user?.image ? (
@@ -168,7 +165,11 @@ const ProfileScreen = () => {
             </View>
           </View>
           <View style={styles.verifiedBadge}>
-            <Ionicons name="checkmark-circle" size={20} color={user?.is_verified ? successColor : textColor} />
+            <Ionicons
+              name="checkmark-circle"
+              size={20}
+              color={user?.is_verified ? successColor : textColor}
+            />
           </View>
         </View>
 

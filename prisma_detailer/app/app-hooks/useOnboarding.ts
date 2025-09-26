@@ -228,8 +228,8 @@ export const useOnboarding = () => {
 
   // Custom handleNext for step 2 that includes confirm password validation
   const handleNextStep2 = () => {
-    console.log("Confirm password:", confirmPassword);
-    console.log("Sign up data password:", signUpData?.password);
+    // Validate confirm password
+    // Validate sign up data password
     if (!validateStep(2)) {
       return;
     }
@@ -259,11 +259,11 @@ export const useOnboarding = () => {
    */
   const handleSubmit = useCallback(async () => {
     if (validateStep(currentStep) && signUpData) {
-      console.log("Submitting signup data:", signUpData); // Debug log
+      // Submit signup data
       dispatch(setIsLoading(true));
       try {
         const response = await register(signUpData).unwrap();
-        console.log("Registration response:", response); // Debug log
+        // Process registration response
         if (response.user && response.access && response.refresh) {
           /*  Call the alert to show the user that the application has been submitted
            * Save the user data to the async storage after login.
@@ -388,7 +388,7 @@ export const useOnboarding = () => {
       await SecureStore.setItemAsync("user", JSON.stringify(user));
       await SecureStore.setItemAsync("access", access);
       await SecureStore.setItemAsync("refresh", refresh);
-      console.log("Data saved to storage");
+      // Data saved to storage
     } catch (error) {
       console.error("Error saving data to storage:", error);
     }

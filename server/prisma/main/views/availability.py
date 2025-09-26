@@ -64,7 +64,6 @@ class AvailabilityView(APIView):
         - slots: Array of available time slots
         """
         try:
-            print('request', request.query_params)
             data = request.query_params
             date_str = data.get('date')
             service_duration = int(data.get('service_duration', 60))
@@ -91,7 +90,7 @@ class AvailabilityView(APIView):
                 is_active=True,
                 is_verified=True
             )
-            print(f"Found {detailers.count()} detailers in {city}, {country}")
+            pass
 
             if not detailers.exists():
                 return Response({
@@ -159,7 +158,6 @@ class AvailabilityView(APIView):
                 "error": f"Invalid parameter: {str(e)}"
             }, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print(e)
             return Response({
                 "error": f"Server error: {str(e)}"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

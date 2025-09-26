@@ -43,7 +43,7 @@ class BookingView(APIView):
                 data = request.data
             except:
                 data = {}
-            print("Booking data: ", data)
+            pass
 
             channel_layer = get_channel_layer()
 
@@ -55,7 +55,7 @@ class BookingView(APIView):
                     "error": f"Service type '{data.get('service_type')}' not found"
                 }, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
-                print(f"Error finding service type: {str(e)}")
+                pass
                 return Response({
                     "error": f"Error finding service type: {str(e)}"
                 }, status=status.HTTP_400_BAD_REQUEST)
@@ -63,9 +63,9 @@ class BookingView(APIView):
             # Get addons
             try:
                 addons = Addon.objects.filter(name__in=data['addons'])
-                print(f"Found addons: {[addon.name for addon in addons]}")
+                pass
             except Exception as e:
-                print(f"Error finding addons: {str(e)}")
+                pass
                 return Response({
                     "error": f"Error finding addons: {str(e)}"
                 }, status=status.HTTP_400_BAD_REQUEST)
@@ -83,15 +83,15 @@ class BookingView(APIView):
                     is_verified=True, 
                     is_available=True
                 )
-                print(f"Found {detailers.count()} detailers in {data['city']}, {data['country']}")
+                pass
             except Exception as e:
-                print(f"Error finding detailers: {str(e)}")
+                pass
                 return Response({
                     "error": f"Error finding detailers: {str(e)}"
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             if not detailers.exists():
-                print(f"No detailers found for {data['city']}, {data['country']}")
+                pass
                 return Response({
                     "success": False,
                     "error": f"No available detailers found in {data['city']}, {data['country']}"
@@ -176,7 +176,7 @@ class BookingView(APIView):
             
             # Create the job
             try:
-                print(f"Creating job with detailer: {detailer}, service_type: {service_type}")
+                pass
                 job = Job.objects.create(
                     booking_reference=data['booking_reference'],
                     detailer=detailer,
@@ -203,9 +203,9 @@ class BookingView(APIView):
                     loyalty_tier=data.get('loyalty_tier', 'bronze'),
                     loyalty_benefits=data.get('loyalty_benefits', [])
                 )
-                print(f"Job created successfully: {job.id}")
+                pass
             except Exception as e:
-                print(f"Error creating job: {str(e)}")
+                pass
                 return Response({
                     "error": f"Error creating job: {str(e)}"
                 }, status=status.HTTP_400_BAD_REQUEST)

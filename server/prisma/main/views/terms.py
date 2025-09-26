@@ -94,7 +94,7 @@ class TermsView(APIView):
             </body>
             </html>
             """
-            print(styled_html)
+            pass
             return Response({
                 'version': terms.version,
                 'content': styled_html,

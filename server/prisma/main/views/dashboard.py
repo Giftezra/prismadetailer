@@ -126,8 +126,7 @@ class DashboardView(APIView):
                     id=in_progress_job.id if in_progress_job else None
                 ).order_by('appointment_date').first()
                 
-                print(f"Next job found: {next_job}")
-                print(f"Current in_progress_job: {in_progress_job}")
+                pass
                 
                 if next_job:
                     next_appointment = {
@@ -517,7 +516,7 @@ class DashboardView(APIView):
         """
         try:
             id = request.data.get('id')
-            print('job id', id)
+            pass
             job = Job.objects.get(id=id, detailer__user=request.user)
             if job.status == 'in_progress':
                 job.status = 'completed'

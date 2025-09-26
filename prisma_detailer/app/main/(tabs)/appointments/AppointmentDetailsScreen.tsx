@@ -532,7 +532,9 @@ const AppointmentDetailsScreen = () => {
               ) : (
                 <TouchableOpacity
                   style={[styles.uploadButton, { borderColor }]}
-                  onPress={() => console.log("Upload before image")}
+                  onPress={() => {
+                    /* Upload before image */
+                  }}
                 >
                   <Ionicons name="camera" size={24} color={tintColor} />
                   <StyledText variant="bodySmall">Add Before Image</StyledText>
@@ -556,7 +558,9 @@ const AppointmentDetailsScreen = () => {
               ) : (
                 <TouchableOpacity
                   style={[styles.uploadButton, { borderColor }]}
-                  onPress={() => console.log("Upload after image")}
+                  onPress={() => {
+                    /* Upload after image */
+                  }}
                 >
                   <Ionicons name="camera" size={24} color={tintColor} />
                   <StyledText variant="bodySmall">Add After Image</StyledText>

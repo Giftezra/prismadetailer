@@ -100,7 +100,7 @@ const AppointmentDailyScreen = () => {
 
     const slots: TimeSlotProps[] = [];
     const occupiedSlots = new Set<number>();
-    // console.log("allAppointments", allAppointments);
+    // allAppointments
 
     // If no appointments, return empty slots
     if (!allAppointments || allAppointments.length === 0) {
@@ -145,7 +145,7 @@ const AppointmentDailyScreen = () => {
                 .split(":")
                 .map(Number);
               const appointmentHour = hours;
-              // console.log(
+              // Log
               //   `Checking hour ${hour} against appointment time ${appointment.appointment_time} (hour: ${appointmentHour})`
               // );
               return appointmentHour === hour;
@@ -153,8 +153,8 @@ const AppointmentDailyScreen = () => {
           : undefined;
 
       if (appointment) {
-        // console.log("appointment found for this hour", appointment);
-        // console.log("Creating slot with hasJob: true");
+        // appointment found for this hour
+        // Creating slot with hasJob: true
         // Calculate how many slots this job should occupy
         const slotsToOccupy = Math.ceil(appointment.duration / 60);
 

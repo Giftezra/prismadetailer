@@ -22,7 +22,7 @@ export const saveDataToStorage = async (
     if (pushToken) {
       await SecureStore.setItemAsync("push_token", pushToken);
     }
-    console.log("Data saved to storage");
+    // Data saved to storage
     return true;
   } catch (error) {
     console.error("Error saving data to storage:", error);
@@ -59,7 +59,7 @@ export const savePushTokenToStorage = async (
   try {
     await SecureStore.setItemAsync("push_token", token);
     await SecureStore.setItemAsync("push_token_saved_to_server", "true");
-    console.log("Push token saved to storage");
+    // Push token saved to storage
     return true;
   } catch (error) {
     console.error("Error saving push token to storage:", error);

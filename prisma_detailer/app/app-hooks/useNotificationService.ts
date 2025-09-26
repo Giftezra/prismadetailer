@@ -54,7 +54,7 @@ export const useNotificationService = () => {
   const registerForPushNotificationsAsync = async () => {
     let token;
 
-    console.log("Registering for push notifications");
+    // Register for push notifications
 
     if (Platform.OS === "android") {
       await Notifications.setNotificationChannelAsync("default", {
@@ -76,7 +76,7 @@ export const useNotificationService = () => {
       }
 
       if (finalStatus !== "granted") {
-        console.log("Failed to get push token for push notification!");
+        // Failed to get push token for push notification
         return;
       }
 
@@ -85,9 +85,9 @@ export const useNotificationService = () => {
           projectId: projectId, // Your EAS project ID
         })
       ).data;
-      console.log("Expo push token:", token);
+      // Expo push token received
     } else {
-      console.log("Must use physical device for Push Notifications");
+      // Must use physical device for Push Notifications
     }
 
     return token;
@@ -104,7 +104,7 @@ export const useNotificationService = () => {
   ) => {
     try {
       if (!permissionStatus.notifications.granted) {
-        console.log("Notification permission not granted");
+        // Notification permission not granted
         return null;
       }
 
@@ -164,7 +164,7 @@ export const useNotificationService = () => {
    */
   const sendTestNotification = async () => {
     if (!permissionStatus.notifications.granted) {
-      console.log("Notification permission not granted");
+      // Notification permission not granted
       return;
     }
 
@@ -189,11 +189,9 @@ export const useNotificationService = () => {
       if (storedToken && tokenSavedToServer) {
         setExpoPushToken(storedToken);
       } else if (permissionStatus.notifications.granted) {
-        console.log(
-          "No stored token found, registering for push notifications"
-        );
+        // No stored token found, registering for push notifications
         const token = await registerForPushNotificationsAsync();
-        console.log("Expo push token:", token);
+        // Expo push token received
         setExpoPushToken(token);
       }
 
@@ -205,7 +203,7 @@ export const useNotificationService = () => {
 
       responseListener.current =
         Notifications.addNotificationResponseReceivedListener((response) => {
-          console.log("Notification response:", response);
+          // Process notification response
           // Handle notification tap here
           // You can navigate to specific screens based on the notification data
         });

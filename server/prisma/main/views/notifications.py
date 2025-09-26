@@ -62,7 +62,7 @@ class NotificationsView(APIView):
         
     def _mark_notification_as_read(self, request):
         try:
-            print('Notification Marked as Read', request.data)
+            pass
             notification_id = request.data.get('id')
             notification = Notification.objects.get(id=notification_id, user=request.user)
             notification.is_read = True
@@ -73,7 +73,7 @@ class NotificationsView(APIView):
 
     def _mark_all_notifications_as_read(self, request):
         try:
-            print('Marking All Notifications as Read', request.data)
+            pass
             notification_ids = request.data.get('ids', [])
             
             if not notification_ids:
@@ -86,7 +86,7 @@ class NotificationsView(APIView):
                 is_read=False
             ).update(is_read=True)
             
-            print(f'Updated {updated_count} notifications')
+            pass
             return Response({'success': True}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

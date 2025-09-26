@@ -54,37 +54,30 @@ def publish_job_acceptance(booking_reference):
 
 @shared_task
 def publish_job_started(booking_reference):
-    print(f"DEBUG: publish_job_started called with booking_reference: {booking_reference}")
     try:
         r = redis.Redis(host='prisma_redis', port=6379, db=0)
         channel = 'job_started'
         message = json.dumps(booking_reference)
         result = r.publish(channel, message)
-        print(f"DEBUG: publish_job_started result: {result}")
         return f"Job started published to redis: {result}"
     except Exception as e:
-        print(f"DEBUG: publish_job_started error: {str(e)}")
         return f"Failed to publish job started to redis: {str(e)}"
 
 
 @shared_task
 def publish_job_completed(booking_reference):
-    print(f"DEBUG: publish_job_completed called with booking_reference: {booking_reference}")
     try:
         r = redis.Redis(host='prisma_redis', port=6379, db=0)
         channel = 'job_completed'
         message = json.dumps(booking_reference)
         result = r.publish(channel, message)
-        print(f"DEBUG: publish_job_completed result: {result}")
         return f"Job completed published to redis: {result}"
     except Exception as e:
-        print(f"DEBUG: publish_job_completed error: {str(e)}")
         return f"Failed to publish job completed to redis: {str(e)}"
 
 
 @shared_task
 def send_appointment_cancellation_email(booking_reference, detailer_email, appointment_date, appointment_time):
-    print(f"DEBUG: send_appointment_cancellation_email called with booking_reference: {booking_reference} and detailer_email: {detailer_email}")
     try:
         subject = "Appointment Cancellation"
         html_message = render_to_string('appointment_cancellation.html', {
@@ -95,14 +88,12 @@ def send_appointment_cancellation_email(booking_reference, detailer_email, appoi
         graph_send_mail(subject, html_message, detailer_email)
         return f"Appointment cancellation email sent successfully to {detailer_email}"
     except Exception as e:
-        print(f"DEBUG: send_appointment_cancellation_email error: {str(e)}")
         return f"Failed to send appointment cancellation email: {str(e)}"
 
 
 
 @shared_task
 def send_appointment_rescheduling_email(booking_reference, detailer_email, new_appointment_date, new_appointment_time, total_amount):
-    print(f"DEBUG: send_appointment_rescheduling_email called with booking_reference: {booking_reference} and detailer_email: {detailer_email}")
     try:
         subject = "Appointment Rescheduling"
         html_message = render_to_string('appointment_rescheduling.html', {
@@ -114,7 +105,6 @@ def send_appointment_rescheduling_email(booking_reference, detailer_email, new_a
         graph_send_mail(subject, html_message, detailer_email)
         return f"Appointment rescheduling email sent successfully to {detailer_email}"
     except Exception as e:
-        print(f"DEBUG: send_appointment_rescheduling_email error: {str(e)}")
         return f"Failed to send appointment rescheduling email: {str(e)}"
 
 
@@ -136,9 +126,9 @@ def send_websocket_notification(user_id, booking_reference, status, message):
                 'message': message
             }
         )
-        print(f"Websocket notification sent to {user_id}")
+        pass
     except Exception as e:
-        print(f"Failed to send websocket notification: {e}")
+        pass
         return False
     return True
 
@@ -158,7 +148,6 @@ def create_notification(user_id, title, type, status, message):
         )
         return True
     except Exception as e:
-        print(f"Failed to create notification: {e}")
         return False
 
 
@@ -200,7 +189,6 @@ def send_push_notification(user_id, title, message, type):
         
     except Exception as e:
         error_msg = f"Failed to send push notification to user {user_id}: {str(e)}"
-        print(error_msg)
         return error_msg
 
 
@@ -216,12 +204,10 @@ def create_job_chat_room(job_id):
         
         # Check if job is still accepted and not completed/cancelled
         if job.status not in ['accepted', 'in_progress']:
-            print(f"Job {job.booking_reference} is no longer active, skipping chat room creation")
             return f"Job {job.booking_reference} is no longer active"
         
         # Check if chat room already exists
         if JobChatRoom.objects.filter(job=job).exists():
-            print(f"Chat room already exists for job {job.booking_reference}")
             return f"Chat room already exists for job {job.booking_reference}"
         
         # Create the chat room
@@ -231,8 +217,6 @@ def create_job_chat_room(job_id):
             detailer=job.detailer,
             is_active=True
         )
-        
-        print(f"Chat room created for job {job.booking_reference}")
         
         # Send notification to detailer
         if job.detailer.user.allow_push_notifications and job.detailer.user.notification_token:
@@ -432,7 +416,6 @@ def send_job_closing_notification(job_id):
         
         # Check if job is still in progress
         if job.status != 'in_progress':
-            print(f"Job {job.booking_reference} is no longer in progress, skipping closing notification")
             return f"Job {job.booking_reference} is no longer in progress"
         
         # Send the closing notification
@@ -443,7 +426,7 @@ def send_job_closing_notification(job_id):
             "reminder"
         )
         
-        print(f"Sent 15-minute closing notification for job {job.booking_reference}")
+        pass
         return f"Closing notification sent for job {job.booking_reference}"
         
     except Job.DoesNotExist:

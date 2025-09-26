@@ -118,14 +118,14 @@ export const AvailabilitySummary: React.FC<AvailabilitySummaryProps> = ({
           { backgroundColor: colors.secondaryButton },
         ]}
         onPress={() => {
-          console.log("=== AVAILABILITY SUMMARY ===");
+          // AVAILABILITY SUMMARY
           selectedDates.forEach((date) => {
             const selectedTimes = date.timeSlots
               .filter((slot) => slot.isSelected)
               .map((slot) => slot.time);
-            console.log(`${date.date}: ${selectedTimes.join(", ")}`);
+            // Log date and selected times
           });
-          console.log("===========================");
+          // End availability summary
         }}
       >
         <Ionicons name="code-outline" size={16} color={colors.buttonText} />

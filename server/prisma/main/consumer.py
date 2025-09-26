@@ -45,7 +45,7 @@ class JobChatConsumer(AsyncWebsocketConsumer):
         # Create or get chat room
         self.chat_room = await self.get_or_create_chat_room()
         
-        print(f"Detailer {self.user.id} connected to chat for job {self.booking_reference}")
+        pass
 
     async def disconnect(self, close_code):
         # Only try to leave the group if we successfully joined it
@@ -97,22 +97,22 @@ class JobChatConsumer(AsyncWebsocketConsumer):
     def get_user(self, User, AnonymousUser, AccessToken):
         # Extract token from URL path
         token = self.scope['url_route']['kwargs'].get('token')
-        print(f"Extracted token: {token[:20]}..." if token else "No token found")
+        pass
         
         if not token:
-            print("No token provided in URL")
+            pass
             return AnonymousUser()
         
         try:
             # Validate JWT token
             access_token = AccessToken(token)
             user_id = access_token['user_id']
-            print(f"Token validated for user_id: {user_id}")
+            pass
             user = User.objects.get(id=user_id)
-            print(f"User found: {user.email}")
+            pass
             return user
         except Exception as e:
-            print(f"Token validation failed: {e}")
+            pass
             return AnonymousUser()
 
     @database_sync_to_async

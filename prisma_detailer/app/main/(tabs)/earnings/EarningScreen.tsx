@@ -53,12 +53,12 @@ const EarningScreen = () => {
   };
 
   const handleEarningPress = (earningId: string) => {
-    console.log("Navigate to earning:", earningId);
+    // Navigate to earning details
     // TODO: Implement navigation to earning details
   };
 
   const handlePayoutPress = (payoutId: string) => {
-    console.log("Navigate to payout:", payoutId);
+    // Navigate to payout details
     // TODO: Implement navigation to payout details
   };
 

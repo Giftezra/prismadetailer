@@ -62,7 +62,7 @@ class ProfileView(APIView):
                 'total_earnings': total_earnings,
                 'reviews': review_data
             }
-            print('Profile statistics data:', data)
+            pass
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

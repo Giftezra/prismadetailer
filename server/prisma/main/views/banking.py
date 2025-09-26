@@ -131,7 +131,7 @@ class BankingView(APIView):
         except ValidationError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print(f"Error creating bank account: {str(e)}")
+            pass
             return Response({"error": f"Failed to create bank account: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
@@ -154,7 +154,7 @@ class BankingView(APIView):
             bank_account.delete()
             return Response({"message": f"{account_name} deleted successfully"}, status=status.HTTP_200_OK)
         except Exception as e:
-            print(f"Error deleting bank account: {str(e)}")
+            pass
             return Response({"error": f"Failed to delete bank account: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         
@@ -185,5 +185,5 @@ class BankingView(APIView):
             )
             return Response({"message": f"{bank_account.account_name} set as primary successfully"}, status=status.HTTP_200_OK)
         except Exception as e:
-            print(f"Error setting default bank account: {str(e)}")
+            pass
             return Response({"error": f"Failed to set default bank account: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

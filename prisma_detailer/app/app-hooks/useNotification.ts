@@ -179,7 +179,7 @@ export const useNotification = () => {
   const saveNotificationToken = async (token: string): Promise<boolean> => {
     try {
       if (!token || tokenSaved || isSavingToken) {
-        console.log("Token already saved, invalid token, or currently saving");
+        // Token already saved, invalid token, or currently saving
         return false;
       }
 
@@ -199,7 +199,7 @@ export const useNotification = () => {
         await savePushTokenToStorage(token);
         return true;
       } else {
-        console.log(
+        // Log
           "Failed to save push token: Server returned unsuccessful response"
         );
         return false;

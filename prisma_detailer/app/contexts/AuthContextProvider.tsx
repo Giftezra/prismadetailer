@@ -68,11 +68,9 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
 
         // Log push token status for debugging
         if (storedPushToken) {
-          console.log("User has stored push token, will skip re-registration");
+          // User has stored push token, will skip re-registration
         } else {
-          console.log(
-            "No stored push token found, will register for notifications"
-          );
+          // No stored push token found, will register for notifications
         }
 
         router.replace("/main/(tabs)/dashboard/DashboardScreen");
@@ -119,7 +117,7 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
     rememberMe: boolean
   ) => {
     const credentials = { email, password };
-    console.log("Credentials:", credentials);
+    // Process credentials
     try {
       const response = await login(credentials).unwrap();
 

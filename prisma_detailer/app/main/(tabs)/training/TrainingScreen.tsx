@@ -120,7 +120,7 @@ const TrainingScreen = () => {
           <StyledButton
             variant="tonal"
             onPress={() => {
-              console.log("Notify me when available");
+              // Notify me when available
             }}
             style={styles.notifyButton}
           >

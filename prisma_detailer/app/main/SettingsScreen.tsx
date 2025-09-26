@@ -74,7 +74,7 @@ const SettingScreen = () => {
 
   // Sync notification settings with server data when userProfile changes
   useEffect(() => {
-    if (userProfile) {  
+    if (userProfile) {
       setEmailNotifications(userProfile.allow_email_notifications ?? false);
       setPushNotifications(userProfile.allow_push_notifications ?? false);
       setMarketingNotifications(userProfile.allow_marketing_emails ?? false);
@@ -99,7 +99,7 @@ const SettingScreen = () => {
    * @param value - The new boolean value
    */
   const handleNotificationToggle = async (type: string, value: boolean) => {
-    console.log(`${type} notifications: ${value}`);
+    // Update notification settings
 
     // Update local state immediately for better UX
     switch (type) {
@@ -152,7 +152,7 @@ const SettingScreen = () => {
    * @param value - The new boolean value
    */
   const handleThemeToggle = (type: string, value: boolean) => {
-    console.log(`${type} theme: ${value}`);
+    // Update theme settings
     if (value) {
       setTheme(type as "light" | "dark" | "system");
     }
@@ -165,7 +165,7 @@ const SettingScreen = () => {
    * @param value - The new boolean value
    */
   const handleGeneralToggle = (type: string, value: boolean) => {
-    console.log(`${type}: ${value}`);
+    // Update settings
     switch (type) {
       case "autoSave":
         setAutoSave(value);
