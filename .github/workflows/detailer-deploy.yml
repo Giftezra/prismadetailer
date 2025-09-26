@@ -3,12 +3,8 @@ name: Deploy Detailer App
 on:
   push:
     branches: [master, develop, staging]
-    paths:
-      - "detailer/**"
   pull_request:
     branches: [master]
-    paths:
-      - "detailer/**"
 
 env:
   EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
@@ -96,9 +92,9 @@ jobs:
           script: |
             cd /${{ secrets.DO_USERNAME }}/prismaprod/detailer
             git pull origin master
-            docker-compose down
-            docker-compose build --no-cache
-            docker-compose up -d
+            docker compose down
+            docker compose build --no-cache
+            docker compose up -d
             docker system prune -f
 
       - name: Health Check
