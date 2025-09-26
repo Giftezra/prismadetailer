@@ -200,6 +200,7 @@ export const useNotification = () => {
         return true;
       } else {
         // Log
+        console.log(
           "Failed to save push token: Server returned unsuccessful response"
         );
         return false;
