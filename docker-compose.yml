@@ -13,10 +13,9 @@ services:
       - DEBUG=True
       - DJANGO_SETTINGS_MODULE=prisma.settings
       - DJANGO_ALLOWED_HOSTS=*
-    command: python manage.py runserver 0.0.0.0:8000
+    command: daphne prisma.asgi:application -b 0.0.0.0 -p 8000
     networks:
       - prisma_shared_net
-
 
   detailer_celery_worker:
     build:
@@ -38,7 +37,6 @@ services:
     networks:
       - prisma_shared_net
 
-
   appointment_subscriber:
     build:
       context: ./server
@@ -55,7 +53,6 @@ services:
       - detailer_server
     networks:
       - prisma_shared_net
-
 
   chat_subscriber:
     build:
@@ -93,7 +90,6 @@ services:
     networks:
       - prisma_shared_net
 
-      
 volumes:
   postgres_detailer_data:
 

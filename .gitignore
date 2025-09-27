@@ -38,6 +38,7 @@ yarn-error.*
 
 app-example
 
+redis/data/dump.rdb
 
 .env
 prisma_detailer/google-services.json
