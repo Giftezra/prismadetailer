@@ -380,12 +380,14 @@ def check_upcoming_jobs():
 @shared_task
 def check_pending_jobs():
     """ Send notification for jobs that are pending and haven't been accepted yet """
-    from main.models import Job
+    from main.models import Job, Notification
     from django.utils import timezone
     from datetime import timedelta
     
     try:
         now = timezone.now()
+        # Only send notifications for pending jobs that haven't been notified in the last hour
+        one_hour_ago = now - timedelta(hours=1)
     
         # Check for jobs that are pending and haven't been accepted yet
         pending_jobs = Job.objects.filter(

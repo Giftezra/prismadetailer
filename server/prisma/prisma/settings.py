@@ -170,7 +170,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'check-pending-jobs': {
         'task': 'main.tasks.check_pending_jobs',
-        'schedule': crontab(hour=1),  # Every hour
+        'schedule': crontab(minute='*/5'),
     },
 }
 
