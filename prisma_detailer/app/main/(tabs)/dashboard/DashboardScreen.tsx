@@ -3,7 +3,6 @@ import { View, StyleSheet, ScrollView, RefreshControl } from "react-native";
 import { useThemeColor } from "../../../../hooks/useThemeColor";
 import StyledText from "../../../components/helpers/StyledText";
 import TodayOverviewCard from "../../../components/ui/dashboard/TodayOverviewCard";
-import NoOverviewCard from "../../../components/ui/dashboard/NoOverviewCard";
 import QuickStatsCard from "../../../components/ui/dashboard/QuickStatsCard";
 import RecentActivityCard from "../../../components/ui/dashboard/RecentActivityCard";
 import QuickActionsCard from "../../../components/ui/dashboard/QuickActionsCard";

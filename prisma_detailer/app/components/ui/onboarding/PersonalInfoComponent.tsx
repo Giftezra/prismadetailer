@@ -145,6 +145,7 @@ const PersonalInfoComponent = () => {
                   value={signUpData?.phone || ""}
                   onChangeText={(text) => handleSignUpData("phone", text)}
                   keyboardType="phone-pad"
+                  maxLength={12}
                   autoCapitalize="none"
                   style={styles.textInput}
                   placeholderTextColor={

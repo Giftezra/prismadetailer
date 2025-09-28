@@ -8,7 +8,6 @@ import {
   Pressable,
 } from "react-native";
 import { router } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import StyledButton from "../components/helpers/StyledButton";
 import StyledText from "../components/helpers/StyledText";
@@ -61,7 +60,7 @@ const SignUpScreen = () => {
                 style={[
                   styles.stepNumber,
                   {
-                    color: currentStep >= step.id ? "#FFFFFF" : textColor,
+                    color: currentStep >= step.id ? textColor : textColor,
                   },
                 ]}
               >
@@ -119,7 +118,7 @@ const SignUpScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
+      automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
       >
         {renderStepIndicator()}
         {renderStepContent()}

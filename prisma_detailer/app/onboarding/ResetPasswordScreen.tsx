@@ -289,9 +289,8 @@ const ResetPasswordScreen = () => {
             onPress={handleResetPassword}
             disabled={isLoading}
             style={styles.resetButton}
-          >
-            {isLoading ? "Resetting..." : "Reset Password"}
-          </StyledButton>
+            title={isLoading ? "Resetting..." : "Reset Password"}
+          />
         </View>
       </ScrollView>
     </LinearGradientComponent>

@@ -12,7 +12,7 @@ import time
 class Command(BaseCommand):
     help = "Subscribe to appointment cancellations"
 
-    def connect_to_redis(self, max_retries=30, delay=5):
+    def connect_to_redis(self, max_retries=30, delay=10):
         """Connect to Redis with retry logic"""
         for attempt in range(max_retries):
             try:
@@ -148,19 +148,26 @@ class Command(BaseCommand):
                         earning.tip_amount = tip_amount
                         earning.save()
 
+                        # Create appropriate notification message based on tip amount
+                        currency = self.get_currency(job.detailer.country)
+                        if tip_amount and tip_amount > 0:
+                            notification_message = f'You have received a {rating} star review and a tip amount of {currency} {tip_amount}'
+                        else:
+                            notification_message = f'You have received a {rating} star review'
+
                         self.create_notification(
                             job.detailer.user, 
                             'Review Received', 
                             'review_received', 
                             'success', 
-                            f'You have received a review with a rating of {rating} and a tip amount of {self.get_currency(job.detailer.country)} {tip_amount}'
+                            notification_message
                             )
 
                         if job.detailer.user.allow_push_notifications and job.detailer.user.notification_token:
                             send_push_notification(
                                 job.detailer.user.id, 
                                 'Review Received', 
-                                f'You have received a review with a rating of {rating} and a tip amount of {self.get_currency(job.detailer.country)} {tip_amount}', 
+                                notification_message, 
                                 'review_received'
                             )
 

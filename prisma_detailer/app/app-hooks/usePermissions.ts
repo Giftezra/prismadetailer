@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import * as Notifications from "expo-notifications";
 import * as Location from "expo-location";
 import * as SecureStore from "expo-secure-store";
-import { Platform, Alert } from "react-native";
+import { Platform } from "react-native";
+import { useAlertContext } from "../contexts/AlertContext";
+import { useSnackbar } from "../contexts/SnackbarContext";
 
 /**
  * Permission status types
@@ -32,6 +34,8 @@ export interface PermissionStatus {
  * - Graceful degradation when permissions are denied
  */
 export const usePermissions = () => {
+  const { setAlertConfig, setIsVisible } = useAlertContext();
+
   const [permissionStatus, setPermissionStatus] = useState<PermissionStatus>({
     notifications: {
       granted: false,
@@ -46,53 +50,6 @@ export const usePermissions = () => {
   });
 
   const [isLoading, setIsLoading] = useState(true);
-
-  /**
-   * Load saved permission preferences from SecureStore
-   */
-  const loadSavedPermissions = async () => {
-    try {
-      const savedNotifications = await SecureStore.getItemAsync(
-        "notification_permission"
-      );
-      const savedLocation = await SecureStore.getItemAsync(
-        "location_permission"
-      );
-
-      if (savedNotifications) {
-        setPermissionStatus((prev) => ({
-          ...prev,
-          notifications: JSON.parse(savedNotifications),
-        }));
-      }
-
-      if (savedLocation) {
-        setPermissionStatus((prev) => ({
-          ...prev,
-          location: JSON.parse(savedLocation),
-        }));
-      }
-    } catch (error) {
-      console.error("Error loading saved permissions:", error);
-    }
-  };
-
-  /**
-   * Save permission status to SecureStore
-   */
-  const savePermissionStatus = async (
-    type: "notifications" | "location",
-    status: any
-  ) => {
-    try {
-      await SecureStore.setItemAsync(
-        `${type}_permission`,
-        JSON.stringify(status)
-      );
-    } catch (error) {
-      console.error(`Error saving ${type} permission:`, error);
-    }
-  };
 
   /**
    * Check current notification permission status
@@ -112,7 +69,6 @@ export const usePermissions = () => {
         notifications: permissionInfo,
       }));
 
-      await savePermissionStatus("notifications", permissionInfo);
       return permissionInfo;
     } catch (error) {
       console.error("Error checking notification permission:", error);
@@ -139,7 +95,6 @@ export const usePermissions = () => {
         location: permissionInfo,
       }));
 
-      await savePermissionStatus("location", permissionInfo);
       return permissionInfo;
     } catch (error) {
       console.error("Error checking location permission:", error);
@@ -156,22 +111,17 @@ export const usePermissions = () => {
       const currentStatus = await Notifications.getPermissionsAsync();
 
       if (!currentStatus.canAskAgain) {
-        Alert.alert(
-          "Notification Permission Required",
-          "Please enable notifications in your device settings to receive important updates about your bookings and services.",
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Open Settings",
-              onPress: () => {
-                // For notifications, we can use Linking to open app settings
-                import("expo-linking").then(({ openSettings }) =>
-                  openSettings()
-                );
-              },
-            },
-          ]
-        );
+        // Permission was permanently denied - don't show alert, just return false
+        const permissionInfo = {
+          granted: false,
+          canAskAgain: false,
+          status: "denied" as const,
+        };
+
+        setPermissionStatus((prev) => ({
+          ...prev,
+          notifications: permissionInfo,
+        }));
         return false;
       }
 
@@ -189,8 +139,6 @@ export const usePermissions = () => {
         notifications: permissionInfo,
       }));
 
-      await savePermissionStatus("notifications", permissionInfo);
-
       if (status === "granted") {
         // Configure notification handler for Android
         if (Platform.OS === "android") {
@@ -204,15 +152,43 @@ export const usePermissions = () => {
 
         return true;
       } else {
-        Alert.alert(
-          "Permission Denied",
-          "You can enable notifications later in the app settings.",
-          [{ text: "OK" }]
-        );
         return false;
       }
     } catch (error) {
       console.error("Error requesting notification permission:", error);
+      return false;
+    }
+  };
+
+  /**
+   * Toggle notification permission - for use in settings
+   * This handles both enabling and disabling notifications
+   */
+  const toggleNotificationPermission = async (
+    enable: boolean
+  ): Promise<boolean> => {
+    try {
+      if (enable) {
+        // User wants to enable notifications
+        return await requestNotificationPermission();
+      } else {
+        // User wants to disable notifications
+        // We can't actually disable system permissions, but we can update our state
+        const permissionInfo = {
+          granted: false,
+          canAskAgain: true,
+          status: "denied" as const,
+        };
+
+        setPermissionStatus((prev) => ({
+          ...prev,
+          notifications: permissionInfo,
+        }));
+
+        return true; // Return true because we successfully updated our state
+      }
+    } catch (error) {
+      console.error("Error toggling notification permission:", error);
       return false;
     }
   };
@@ -226,22 +202,16 @@ export const usePermissions = () => {
       const currentStatus = await Location.getForegroundPermissionsAsync();
 
       if (!currentStatus.canAskAgain) {
-        Alert.alert(
-          "Location Permission Required",
-          "Please enable location services in your device settings to find nearby services and provide accurate location-based features.",
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Open Settings",
-              onPress: () => {
-                // For location, we can use Linking to open app settings
-                import("expo-linking").then(({ openSettings }) =>
-                  openSettings()
-                );
-              },
-            },
-          ]
-        );
+        setAlertConfig({
+          isVisible: true,
+          title: "Location Permission Required",
+          message:
+            "Please enable location services in your device settings to find nearby services and provide accurate location-based features.",
+          type: "warning",
+          onConfirm: () => {
+            import("expo-linking").then(({ openSettings }) => openSettings());
+          },
+        });
         return false;
       }
 
@@ -259,20 +229,72 @@ export const usePermissions = () => {
         location: permissionInfo,
       }));
 
-      await savePermissionStatus("location", permissionInfo);
-
       if (status === "granted") {
         return true;
       } else {
-        Alert.alert(
-          "Permission Denied",
-          "You can enable location services later in the app settings.",
-          [{ text: "OK" }]
-        );
+        setAlertConfig({
+          isVisible: true,
+          title: "Permission Denied",
+          message:
+            "You can enable location services later in the app settings.",
+          type: "warning",
+          onClose: () => {
+            setIsVisible(false);
+          },
+        });
         return false;
       }
     } catch (error) {
       console.error("Error requesting location permission:", error);
+      return false;
+    }
+  };
+
+  /**
+   * Toggle location permission - for use in settings
+   * This handles both enabling and disabling location access
+   */
+  const toggleLocationPermission = async (
+    enable: boolean
+  ): Promise<boolean> => {
+    try {
+      if (enable) {
+        // User wants to enable location
+        return await requestLocationPermission();
+      } else {
+        // User wants to disable location
+        // We can't actually disable system permissions, but we can update our state
+        // and show guidance to the user
+        const permissionInfo = {
+          granted: false,
+          canAskAgain: true,
+          status: "denied" as const,
+        };
+
+        setPermissionStatus((prev) => ({
+          ...prev,
+          location: permissionInfo,
+        }));
+
+        // Show alert to guide user to device settings
+        setAlertConfig({
+          isVisible: true,
+          title: "Disable Location Access",
+          message:
+            "To completely disable location access, please go to your device Settings > Apps > Prisma Valet > Permissions and turn off Location.",
+          type: "warning",
+          onConfirm: () => {
+            import("expo-linking").then(({ openSettings }) => openSettings());
+          },
+          onClose: () => {
+            setIsVisible(false);
+          },
+        });
+
+        return true; // Return true because we successfully updated our state
+      }
+    } catch (error) {
+      console.error("Error toggling location permission:", error);
       return false;
     }
   };
@@ -309,38 +331,12 @@ export const usePermissions = () => {
     setIsLoading(true);
 
     try {
-      await loadSavedPermissions();
       await checkNotificationPermission();
       await checkLocationPermission();
     } catch (error) {
       console.error("Error initializing permissions:", error);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  /**
-   * Reset all permission preferences
-   */
-  const resetPermissions = async () => {
-    try {
-      await SecureStore.deleteItemAsync("notification_permission");
-      await SecureStore.deleteItemAsync("location_permission");
-
-      setPermissionStatus({
-        notifications: {
-          granted: false,
-          canAskAgain: true,
-          status: "undetermined",
-        },
-        location: {
-          granted: false,
-          canAskAgain: true,
-          status: "undetermined",
-        },
-      });
-    } catch (error) {
-      console.error("Error resetting permissions:", error);
     }
   };
 
@@ -355,8 +351,9 @@ export const usePermissions = () => {
     checkNotificationPermission,
     checkLocationPermission,
     requestNotificationPermission,
+    toggleNotificationPermission,
     requestLocationPermission,
+    toggleLocationPermission,
     requestAllPermissions,
-    resetPermissions,
   };
 };

@@ -6,7 +6,7 @@ import { formatCurrency } from "@/app/utils/converters";
 import { EarningsAnalyticsProps } from "@/app/interfaces/EarningInterface";
 import LinearGradientComponent from "../../helpers/LinearGradientComponent";
 
-const EarningsAnalyticsCard : React.FC<EarningsAnalyticsProps>  = ({
+const EarningsAnalyticsCard: React.FC<EarningsAnalyticsProps> = ({
   total_lifetime_earnings,
   average_weekly_earnings,
   average_monthly_earnings,

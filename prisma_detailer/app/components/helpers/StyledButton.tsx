@@ -29,6 +29,7 @@ const StyledButton: React.FC<StyledButtonProps> = ({
   const secondaryButtonColor = useThemeColor({}, "secondaryButton");
   const buttonTextColor = useThemeColor({}, "buttonText");
   const borderColor = useThemeColor({}, "borders");
+  const textColor = useThemeColor({}, "text");
 
   /**
    * Get button styling based on variant
@@ -147,7 +148,7 @@ const StyledButton: React.FC<StyledButtonProps> = ({
       activeOpacity={0.8}
     >
       {icon && icon}
-      <StyledText variant={textVariant} style={{ color: buttonTextColor }}>
+      <StyledText variant={textVariant} style={{ color: textColor }}>
         {children}
       </StyledText>
     </TouchableOpacity>

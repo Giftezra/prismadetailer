@@ -91,9 +91,8 @@ const ForgotPasswordScreen = () => {
             variant="small"
             onPress={() => router.back()}
             style={styles.backButton}
-          >
-            Back to Sign In
-          </StyledButton>
+            title="Back to Sign In"
+          />
         </ScrollView>
       </View>
     );
@@ -142,9 +141,8 @@ const ForgotPasswordScreen = () => {
             onPress={handleSendResetEmail}
             disabled={isLoading}
             style={styles.resetButton}
-          >
-            {isLoading ? "Sending..." : "Send Reset Link"}
-          </StyledButton>
+            title={isLoading ? "Sending..." : "Send Reset Link"}
+          />
         </View>
       </ScrollView>
     </View>
@@ -153,7 +151,7 @@ const ForgotPasswordScreen = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,

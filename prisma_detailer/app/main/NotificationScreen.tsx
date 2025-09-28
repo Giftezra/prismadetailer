@@ -5,7 +5,6 @@ import {
   View,
   FlatList,
   TouchableOpacity,
-  Alert,
   RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,12 +13,14 @@ import { NotificationItem } from "@/app/components/ui/notifications/Notification
 import { Notification } from "@/app/interfaces/NotificationInterface";
 import StyledText from "@/app/components/helpers/StyledText";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { useAlertContext } from "@/app/contexts/AlertContext";
 
 const NotificationScreen = () => {
   const backgroundColor = useThemeColor({}, "background");
   const textColor = useThemeColor({}, "text");
   const primaryColor = useThemeColor({}, "primary");
   const iconColor = useThemeColor({}, "icons");
+  const { setAlertConfig, setIsVisible } = useAlertContext();
   const {
     notifications,
     unreadCount,
@@ -37,19 +38,25 @@ const NotificationScreen = () => {
 
     // Here you can add navigation to specific screens based on notification type
     // For example, navigate to booking details, payment history, etc.
-    Alert.alert(notification.title, notification.message, [{ text: "OK" }]);
+    setAlertConfig({
+      isVisible: true,
+      title: notification.title,
+      message: notification.message,
+      type: "success",
+      onClose: () => setIsVisible(false),
+    });
   };
 
   const handleMarkAllAsRead = () => {
     if (unreadCount > 0) {
-      Alert.alert(
-        "Mark All as Read",
-        "Are you sure you want to mark all notifications as read?",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Mark All Read", onPress: markAllAsRead },
-        ]
-      );
+      setAlertConfig({
+        isVisible: true,
+        title: "Mark All as Read",
+        message: "Are you sure you want to mark all notifications as read?",
+        type: "warning",
+        onClose: () => setIsVisible(false),
+        onConfirm: markAllAsRead,
+      });
     }
   };
 

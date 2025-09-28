@@ -322,19 +322,16 @@ const styles = StyleSheet.create({
     shadowOpacity:0.25,
   },
   heroTitle: {
-    color: "#FFFFFF",
     textAlign: "center",
     marginBottom: 12,
     fontWeight: "bold",
   },
   heroSubtitle: {
-    color: "#FFFFFF",
     textAlign: "center",
     marginBottom: 16,
     opacity: 0.9,
   },
   heroDescription: {
-    color: "#FFFFFF",
     textAlign: "center",
     marginBottom: 32,
     opacity: 0.8,

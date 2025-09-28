@@ -8,14 +8,13 @@ import { RootState, useAppSelector } from "../store/my_store";
  * @param amount
  * @returns
  */
-export const formatCurrency = (amount: number) => {
-  const user = useAppSelector((state: RootState) => state.auth.user);
-  if (user?.country?.toLocaleUpperCase() === "united kingdom") {
+export const formatCurrency = (amount: number, country?: string) => {
+  if (country && country.toLocaleUpperCase() === "united kingdom") {
     return amount.toLocaleString("en-GB", {
       style: "currency",
       currency: "GBP",
     });
-  } else if (user?.country?.toLocaleUpperCase() === "ireland") {
+  } else if (country && country.toLocaleUpperCase() === "ireland") {
     return amount.toLocaleString("en-GB", {
       style: "currency",
       currency: "EUR",

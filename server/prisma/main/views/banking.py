@@ -180,7 +180,7 @@ class BankingView(APIView):
             send_push_notification.delay(
                 request.user.id,
                 "Security Alert",
-                f"{bank_account.account_name} You just set this bank account as your primary bank account",
+                f"{bank_account.account_name} You just set this bank account number {bank_account.account_number} as your primary bank account",
                 "bank_account"
             )
             return Response({"message": f"{bank_account.account_name} set as primary successfully"}, status=status.HTTP_200_OK)

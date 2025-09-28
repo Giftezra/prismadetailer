@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { View, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { View, TouchableOpacity, StyleSheet } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -9,6 +9,7 @@ import {
 } from "@/app/interfaces/NotificationInterface";
 import StyledText from "@/app/components/helpers/StyledText";
 import { useThemeColor } from "@/hooks/useThemeColor";
+import { useAlertContext } from "@/app/contexts/AlertContext";
 
 interface NotificationItemProps {
   notification: Notification;
@@ -20,13 +21,11 @@ const getNotificationIcon = (
   type: NotificationType,
   status: NotificationStatus
 ) => {
-
   const errorColor = useThemeColor({}, "error");
   const successColor = useThemeColor({}, "success");
   const warningColor = useThemeColor({}, "warning");
   const primaryColor = useThemeColor({}, "primary");
-  const iconColor = useThemeColor({}, "icons");     
-
+  const iconColor = useThemeColor({}, "icons");
 
   const iconConfig = {
     [NotificationType.BOOKING_CONFIRMED]: {
@@ -60,6 +59,18 @@ const getNotificationIcon = (
     [NotificationType.SYSTEM]: {
       name: "settings" as const,
       color: iconColor,
+    },
+    [NotificationType.APPOINTMENT_STARTED]: {
+      name: "play-circle" as const,
+      color: primaryColor,
+    },
+    [NotificationType.BOOKING_CREATED]: {
+      name: "add-circle" as const,
+      color: primaryColor,
+    },
+    [NotificationType.PENDING]: {
+      name: "hourglass" as const,
+      color: warningColor,
     },
   };
 
@@ -96,27 +107,23 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
   const textColor = useThemeColor({}, "text");
   const primaryColor = useThemeColor({}, "primary");
   const iconColor = useThemeColor({}, "icons");
+  const { setAlertConfig, setIsVisible } = useAlertContext();
 
   const icon = getNotificationIcon(notification.type, notification.status);
   const swipeableRef = useRef<Swipeable>(null);
 
   const handleDelete = () => {
-    Alert.alert(
-      "Delete Notification",
-      "Are you sure you want to delete this notification?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            onDelete(notification.id);
-            // Close the swipeable after deletion
-            swipeableRef.current?.close();
-          },
-        },
-      ]
-    );
+    setAlertConfig({
+      isVisible: true,
+      title: "Delete Notification",
+      message: "Are you sure you want to delete this notification?",
+      type: "warning",
+      onClose: () => setIsVisible(false),
+      onConfirm: () => {
+        onDelete(notification.id);
+        swipeableRef.current?.close();
+      },
+    });
   };
 
   const renderRightActions = () => {
@@ -148,9 +155,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
         style={[
           styles.container,
           {
-            backgroundColor: notification.isRead
-              ? cardColor
-              : backgroundColor,
+            backgroundColor: notification.isRead ? cardColor : backgroundColor,
             borderColor: textColor,
           },
         ]}
@@ -160,10 +165,7 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({
         {/* Unread indicator */}
         {!notification.isRead && (
           <View
-            style={[
-              styles.unreadIndicator,
-              { backgroundColor: primaryColor },
-            ]}
+            style={[styles.unreadIndicator, { backgroundColor: primaryColor }]}
           />
         )}
 

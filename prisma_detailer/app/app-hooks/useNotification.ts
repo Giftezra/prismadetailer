@@ -17,6 +17,7 @@ import {
   savePushTokenToStorage,
   isPushTokenSavedToServer,
 } from "../utils/storage";
+import { useAlertContext } from "../contexts/AlertContext";
 
 /**
  * Custom hook for managing notifications in the application.
@@ -70,6 +71,9 @@ export const useNotification = () => {
 
   // Get notification service for push token management
   const { expoPushToken } = useNotificationService();
+
+  // Get AlertContext for showing error messages
+  const { setAlertConfig, setIsVisible } = useAlertContext();
 
   /**
    * Process notifications by converting timestamp strings to Date objects.
@@ -199,14 +203,25 @@ export const useNotification = () => {
         await savePushTokenToStorage(token);
         return true;
       } else {
-        // Log
-        console.log(
-          "Failed to save push token: Server returned unsuccessful response"
-        );
+        // Show error alert
+        setAlertConfig({
+          isVisible: true,
+          title: "Token Save Failed",
+          message:
+            "Failed to save push token: Server returned unsuccessful response",
+          type: "error",
+          onClose: () => setIsVisible(false),
+        });
         return false;
       }
     } catch (error) {
-      console.error("Error saving push token:", error);
+      setAlertConfig({
+        isVisible: true,
+        title: "Token Save Error",
+        message: `Error saving push token: ${error}`,
+        type: "error",
+        onClose: () => setIsVisible(false),
+      });
       return false;
     } finally {
       setIsSavingToken(false);

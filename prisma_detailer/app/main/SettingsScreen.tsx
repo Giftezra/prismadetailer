@@ -22,6 +22,8 @@ import SettingSection from "../components/ui/settings/SettingSection";
 import SettingItem from "../components/ui/settings/SettingItem";
 import StyledText from "../components/helpers/StyledText";
 import useProfile from "../app-hooks/useProfile";
+import { usePermissions } from "../app-hooks/usePermissions";
+import { Snackbar } from "react-native-paper";
 
 /**
  * Main Settings Screen Component
@@ -45,6 +47,12 @@ const SettingScreen = () => {
     isLoadingUpdateMarketingEmailToken,
   } = useProfile();
 
+  const {
+    toggleNotificationPermission,
+    toggleLocationPermission,
+    permissionStatus,
+  } = usePermissions();
+
   // State for managing which sections are expanded
   const [expandedSections, setExpandedSections] = useState<{
     notifications: boolean;
@@ -61,25 +69,38 @@ const SettingScreen = () => {
     userProfile.allow_email_notifications ?? false
   );
   const [pushNotifications, setPushNotifications] = useState(
-    userProfile.allow_push_notifications ?? false
+    userProfile.allow_push_notifications &&
+      permissionStatus.notifications.granted
   );
   const [marketingNotifications, setMarketingNotifications] = useState(
     userProfile.allow_marketing_emails ?? false
   );
 
   // General settings state
-  const [autoSave, setAutoSave] = useState(true);
-  const [locationServices, setLocationServices] = useState(true);
-  const [analytics, setAnalytics] = useState(false);
+  const [locationServices, setLocationServices] = useState(
+    permissionStatus.location.granted
+  );
+
+  // Snackbar state for user feedback
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
 
   // Sync notification settings with server data when userProfile changes
   useEffect(() => {
     if (userProfile) {
       setEmailNotifications(userProfile.allow_email_notifications ?? false);
-      setPushNotifications(userProfile.allow_push_notifications ?? false);
+      setPushNotifications(
+        userProfile.allow_push_notifications &&
+          permissionStatus.notifications.granted
+      );
       setMarketingNotifications(userProfile.allow_marketing_emails ?? false);
     }
-  }, [userProfile]);
+  }, [userProfile, permissionStatus.notifications.granted]);
+
+  // Sync location settings with actual permission status
+  useEffect(() => {
+    setLocationServices(permissionStatus.location.granted);
+  }, [permissionStatus.location.granted]);
 
   /**
    * Toggle the expanded state of a section
@@ -99,8 +120,6 @@ const SettingScreen = () => {
    * @param value - The new boolean value
    */
   const handleNotificationToggle = async (type: string, value: boolean) => {
-    // Update notification settings
-
     // Update local state immediately for better UX
     switch (type) {
       case "email":
@@ -121,7 +140,30 @@ const SettingScreen = () => {
         success = await updateEmailNotificationSetting(value);
         break;
       case "push":
-        success = await updatePushNotificationSetting(value);
+        // For push notifications, handle both permission and server setting
+        if (value) {
+          // User wants to enable - request permission first
+          const permissionGranted = await toggleNotificationPermission(true);
+          if (permissionGranted) {
+            success = await updatePushNotificationSetting(true);
+            setSnackbarMessage("Push notifications enabled successfully!");
+          } else {
+            success = false;
+            if (permissionStatus.notifications.canAskAgain) {
+              setSnackbarMessage(
+                "Permission denied. Please try again or enable in device settings."
+              );
+            } else {
+              setSnackbarMessage(
+                "Permission was permanently denied. Please enable notifications in device settings."
+              );
+            }
+          }
+        } else {
+          // User wants to disable - just update server setting
+          success = await updatePushNotificationSetting(false);
+          setSnackbarMessage("Push notifications disabled");
+        }
         break;
       case "marketing":
         success = await updateMarketingEmailSetting(value);
@@ -133,15 +175,33 @@ const SettingScreen = () => {
       switch (type) {
         case "email":
           setEmailNotifications(!value);
+          setSnackbarMessage("Failed to update email notification setting");
           break;
         case "push":
           setPushNotifications(!value);
           break;
         case "marketing":
           setMarketingNotifications(!value);
+          setSnackbarMessage("Failed to update marketing notification setting");
           break;
       }
+    } else {
+      // Show success message for other notification types
+      if (type === "email") {
+        setSnackbarMessage(
+          value ? "Email notifications enabled" : "Email notifications disabled"
+        );
+      } else if (type === "marketing") {
+        setSnackbarMessage(
+          value
+            ? "Marketing notifications enabled"
+            : "Marketing notifications disabled"
+        );
+      }
     }
+
+    // Show the snackbar
+    setSnackbarVisible(true);
   };
 
   /**
@@ -164,17 +224,31 @@ const SettingScreen = () => {
    * @param type - The setting type (autoSave, location, analytics)
    * @param value - The new boolean value
    */
-  const handleGeneralToggle = (type: string, value: boolean) => {
-    // Update settings
+  const handleGeneralToggle = async (type: string, value: boolean) => {
     switch (type) {
-      case "autoSave":
-        setAutoSave(value);
-        break;
       case "location":
-        setLocationServices(value);
-        break;
-      case "analytics":
-        setAnalytics(value);
+        // For location services, handle both permission and local state
+        if (value) {
+          // User wants to enable location
+          const success = await toggleLocationPermission(true);
+          if (success) {
+            // The useEffect will update the state based on actual permission status
+            setSnackbarMessage("Location services enabled successfully!");
+          } else {
+            setSnackbarMessage("Failed to enable location services");
+          }
+        } else {
+          // User wants to disable location
+          const success = await toggleLocationPermission(false);
+          if (success) {
+            setSnackbarMessage(
+              "Please disable location access in device settings"
+            );
+          } else {
+            setSnackbarMessage("Failed to update location settings");
+          }
+        }
+        setSnackbarVisible(true);
         break;
     }
   };
@@ -217,7 +291,7 @@ const SettingScreen = () => {
             <SettingItem
               title="Push Notifications"
               description="Get instant notifications on your device"
-              value={pushNotifications}
+              value={pushNotifications ?? false}
               onValueChange={(value) => handleNotificationToggle("push", value)}
               disabled={isLoadingUpdatePushNotificationToken}
             />
@@ -269,9 +343,7 @@ const SettingScreen = () => {
           {/* 
             GENERAL SECTION
             Contains general app settings
-            - Auto save for progress preservation
             - Location services for app functionality
-            - Analytics for app improvement data
           */}
           <SettingSection
             title="General"
@@ -280,26 +352,23 @@ const SettingScreen = () => {
             onToggle={() => toggleSection("general")}
           >
             <SettingItem
-              title="Auto Save"
-              description="Automatically save your progress"
-              value={autoSave}
-              onValueChange={(value) => handleGeneralToggle("autoSave", value)}
-            />
-            <SettingItem
               title="Location Services"
               description="Allow app to access your location"
               value={locationServices}
               onValueChange={(value) => handleGeneralToggle("location", value)}
             />
-            <SettingItem
-              title="Analytics"
-              description="Help improve the app with usage data"
-              value={analytics}
-              onValueChange={(value) => handleGeneralToggle("analytics", value)}
-            />
           </SettingSection>
         </View>
       </ScrollView>
+
+      {/* Snackbar for user feedback */}
+      <Snackbar
+        visible={snackbarVisible}
+        onDismiss={() => setSnackbarVisible(false)}
+        duration={3000}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </View>
   );
 };

@@ -6,7 +6,7 @@ import { formatCurrency, formatDate } from "@/app/utils/converters";
 import { EarningsSummaryCardProps } from "@/app/interfaces/EarningInterface";
 import LinearGradientComponent from "../../helpers/LinearGradientComponent";
 
-const EarningsSummaryCard : React.FC<EarningsSummaryCardProps> = ({
+const EarningsSummaryCard: React.FC<EarningsSummaryCardProps> = ({
   total_earned,
   total_tips,
   total_jobs,

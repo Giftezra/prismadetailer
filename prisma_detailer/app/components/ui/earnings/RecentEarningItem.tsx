@@ -24,14 +24,16 @@ const RecentEarningItem = ({
       <View style={styles.earningHeader}>
         <View style={styles.earningInfo}>
           <StyledText variant="bodySmall" style={{ opacity: 0.7 }}>
-            {earning.job_reference}
+            {earning.job_reference || "N/A"}
           </StyledText>
-          <StyledText variant="bodyMedium">{earning.client_name}</StyledText>
+          <StyledText variant="bodyMedium">
+            {earning.client_name || "Unknown Client"}
+          </StyledText>
           <StyledText
             variant="bodySmall"
             style={{ color: textColor, opacity: 0.7 }}
           >
-            {earning.service_type}
+            {earning.service_type || "Service"}
           </StyledText>
         </View>
         <View style={styles.earningAmount}>
@@ -41,11 +43,6 @@ const RecentEarningItem = ({
           >
             {formatCurrency(earning.total_earned || 0)}
           </StyledText>
-          {earning.tip_amount && earning.tip_amount > 0 && (
-            <StyledText variant="bodySmall" style={{ opacity: 0.7 }}>
-              {formatCurrency(earning.tip_amount)} tip
-            </StyledText>
-          )}
         </View>
       </View>
 
@@ -62,12 +59,12 @@ const RecentEarningItem = ({
           {earning.commission_amount &&
             earning.tip_amount &&
             earning.tip_amount > 0 && (
-              <StyledText
-                variant="bodySmall"
-                style={{ color: textColor, opacity: 0.7 }}
-              >
-                +
-              </StyledText>
+             <StyledText
+              variant="bodySmall"
+              style={{ color: textColor, opacity: 0.7 }}
+            >
+              +
+            </StyledText>
             )}
           {earning.tip_amount && earning.tip_amount > 0 && (
             <StyledText

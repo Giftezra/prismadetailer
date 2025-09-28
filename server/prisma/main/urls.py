@@ -28,10 +28,11 @@ urlpatterns = [
     path('earnings/<str:action>/', EarningView.as_view(), name='earnings'),
     path('terms/<str:action>/', TermsView.as_view(), name='terms'),
     path('notifications/<str:action>/', NotificationsView.as_view(), name='notifications'),
+    # Password reset endpoints
     path('auth/password-reset/', RequestPasswordResetView.as_view(), name='request_password_reset'),
     path('auth/validate-reset-token/', ValidateResetTokenView.as_view(), name='validate_reset_token'),
     path('auth/reset-password/', ResetPasswordView.as_view(), name='reset_password'),
-    path('reset-password/', WebResetPasswordView.as_view(), name='web_reset_password'),
+    path('auth/web-reset-password/', WebResetPasswordView.as_view(), name='web_reset_password'),
 ]
 
 if settings.DEBUG:

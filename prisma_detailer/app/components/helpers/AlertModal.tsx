@@ -59,15 +59,12 @@ const AlertModal = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <LinearGradient
-          colors={[backgroundColor, textColor]}
-          start={{ x: 0, y: 1 }}
-          end={{ x: 2, y: 4 }}
+        <View
           style={[
             styles.modalContainer,
             {
               backgroundColor: cardColor,
-              borderColor: borderColor,
+              borderColor: borderColor + "30",
               shadowColor: "gray",
             },
           ]}
@@ -83,14 +80,13 @@ const AlertModal = ({
             children={message}
           />
 
-          <View style={styles.buttonContainer}>
+          <View
+            style={[styles.buttonContainer, { borderTopColor: borderColor }]}
+          >
             {onClose && (
               <TouchableOpacity
                 onPress={onClose}
-                style={[
-                  styles.button,
-                  { borderColor: borderColor },
-                ]}
+                style={[styles.button, { borderColor: borderColor }]}
                 activeOpacity={0.7}
               >
                 <StyledText
@@ -107,21 +103,18 @@ const AlertModal = ({
                   onConfirm?.();
                   onClose?.();
                 }}
-                style={[
-                  styles.button,
-                  { backgroundColor: getTitleColor(), borderColor },
-                ]}
+                style={[styles.button]}
                 activeOpacity={0.8}
               >
                 <StyledText
-                  children="Okay"
+                  children="Confirm"
                   variant="labelMedium"
-                  style={styles.confirmButtonText}
+                  style={[styles.confirmButtonText, { color: textColor }]}
                 />
               </TouchableOpacity>
             )}
           </View>
-        </LinearGradient>
+        </View>
       </View>
     </Modal>
   );
@@ -136,7 +129,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   modalContainer: {
-    borderRadius: 30,
+    borderRadius: 10,
     borderWidth: 1,
     padding: 15,
     width: Math.min(screenWidth - 40, 350),
@@ -166,32 +159,26 @@ const styles = StyleSheet.create({
     letterSpacing: 0.1,
   },
   buttonContainer: {
+    borderTopWidth: 1,
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: 12,
+    marginBottom: -10,
   },
   button: {
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
-    minWidth: 100,
+    minWidth: 80,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1.5,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.7,
-    shadowRadius: 6,
-    elevation: 4,
+    flex: 1,
   },
   cancelButtonText: {
     fontWeight: "500",
     fontSize: 15,
   },
   confirmButtonText: {
-    color: "#FFFFFF",
     fontWeight: "500",
     fontSize: 15,
   },
