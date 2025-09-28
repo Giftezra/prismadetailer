@@ -219,11 +219,6 @@ class WebResetPasswordView(APIView):
                 'error': 'Password must contain at least one uppercase letter'
             })
         
-        if not any(c.isdigit() for c in new_password):
-            return render(request, 'password_reset_form.html', {
-                'token': token,
-                'error': 'Password must contain at least one number'
-            })
         
         try:
             reset_token = PasswordResetToken.objects.get(token=token)
