@@ -91,8 +91,11 @@ const ForgotPasswordScreen = () => {
             variant="small"
             onPress={() => router.back()}
             style={styles.backButton}
-            title="Back to Sign In"
-          />
+          >
+            <StyledText variant="bodyMedium" style={{ color: textColor }}>
+              Back to Sign In
+            </StyledText>
+          </StyledButton>
         </ScrollView>
       </View>
     );
@@ -105,7 +108,7 @@ const ForgotPasswordScreen = () => {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="chevron-back" size={24} color={textColor} />
+          <Ionicons name="arrow-back" size={24} color={textColor} />
         </TouchableOpacity>
 
         <View style={styles.header}>
@@ -141,8 +144,11 @@ const ForgotPasswordScreen = () => {
             onPress={handleSendResetEmail}
             disabled={isLoading}
             style={styles.resetButton}
-            title={isLoading ? "Sending..." : "Send Reset Link"}
-          />
+          >
+            <StyledText variant="bodyMedium" style={{ color: textColor }}>
+              {isLoading ? "Sending..." : "Send Reset Link"}
+            </StyledText>
+          </StyledButton>
         </View>
       </ScrollView>
     </View>

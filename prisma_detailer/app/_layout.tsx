@@ -9,9 +9,12 @@ import { AlertProvider } from "./contexts/AlertContext";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SnackbarProvider } from "./contexts/SnackbarContext";
+import { useUpdateMonitor } from "@/hooks/useUpdateMonitor";
 
 export default function RootLayout() {
   const backgroundColor = useThemeColor({}, "background");
+
+  useUpdateMonitor();
 
   return (
     <SafeAreaProvider>
