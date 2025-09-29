@@ -366,7 +366,6 @@ class BookingView(APIView):
     #         return False
 
     #     except Exception as e:
-    #         print(f"Error checking detailer availability: {str(e)}")
     #         return False
         
 
