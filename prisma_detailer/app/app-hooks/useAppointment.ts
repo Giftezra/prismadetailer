@@ -230,14 +230,7 @@ export const useAppointment = () => {
     return slots;
   }, [selectedDay]);
 
-  /**
-   * Navigate to a specific month
-   *
-   * Updates the selected month and resets the selected day.
-   * This is used when user clicks on a month in the month selector.
-   *
-   * @param month - dayjs object representing the target month
-   */
+  
   const navigateToMonth = (month: dayjs.Dayjs) => {
     setSelectedMonth(month);
     setSelectedDay(null); // Reset selected day when changing months
