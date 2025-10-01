@@ -14,6 +14,7 @@ import {
   useAcceptAppointmentMutation,
 } from "@/app/store/api/appointmentsApi";
 import { useAlertContext } from "../contexts/AlertContext";
+import { useSnackbar } from "../contexts/SnackbarContext";
 
 /**
  * Custom hook for managing appointment calendar functionality
@@ -31,6 +32,8 @@ import { useAlertContext } from "../contexts/AlertContext";
  * @returns Object containing state, data, and action functions
  */
 export const useAppointment = () => {
+  const { showSnackbarWithConfig } = useSnackbar();
+
   const [selectedMonth, setSelectedMonth] = useState(dayjs());
   const [selectedDay, setSelectedDay] = useState<dayjs.Dayjs | null>(null);
   const { setAlertConfig, setIsVisible } = useAlertContext();
@@ -333,14 +336,10 @@ export const useAppointment = () => {
       try {
         const response = await startAppointment({ id }).unwrap();
         if (response && response.message) {
-          setAlertConfig({
-            title: "Success",
+          showSnackbarWithConfig({
             message: response.message,
             type: "success",
-            isVisible: true,
-            onConfirm() {
-              setIsVisible(false);
-            },
+            duration: 3000,
           });
         }
       } catch (error: any) {
@@ -349,18 +348,14 @@ export const useAppointment = () => {
           error?.data?.error ||
           error?.message ||
           "Failed to start appointment";
-        setAlertConfig({
-          title: "Error",
+        showSnackbarWithConfig({
           message: errorMessage,
           type: "error",
-          isVisible: true,
-          onConfirm() {
-            setIsVisible(false);
-          },
+          duration: 3000,
         });
       }
     },
-    [startAppointment, setAlertConfig, setIsVisible]
+    [startAppointment, showSnackbarWithConfig]
   );
 
   /**
@@ -373,16 +368,10 @@ export const useAppointment = () => {
       try {
         const response = await completeAppointment({ id }).unwrap();
         if (response && response.message) {
-          setAlertConfig({
-            title: "Success",
+          showSnackbarWithConfig({
             message: response.message,
             type: "success",
-            isVisible: true,
-            onConfirm() {
-              setIsVisible(false);
-              refetchAllAppointments();
-              refetchAppointmentDetails();
-            },
+            duration: 3000,
           });
         }
       } catch (error: any) {
@@ -391,18 +380,14 @@ export const useAppointment = () => {
           error?.data?.error ||
           error?.message ||
           "Failed to complete appointment";
-        setAlertConfig({
-          title: "Error",
+        showSnackbarWithConfig({
           message: errorMessage,
           type: "error",
-          isVisible: true,
-          onConfirm() {
-            setIsVisible(false);
-          },
+          duration: 3000,
         });
       }
     },
-    [completeAppointment, setAlertConfig, setIsVisible]
+    [completeAppointment, showSnackbarWithConfig]
   );
 
   /**
@@ -415,14 +400,10 @@ export const useAppointment = () => {
       try {
         const response = await cancelAppointment({ id }).unwrap();
         if (response && response.message) {
-          setAlertConfig({
-            title: "Success",
+          showSnackbarWithConfig({
             message: response.message,
             type: "success",
-            isVisible: true,
-            onConfirm() {
-              setIsVisible(false);
-            },
+            duration: 3000,
           });
         }
       } catch (error: any) {
@@ -431,18 +412,14 @@ export const useAppointment = () => {
           error?.data?.error ||
           error?.message ||
           "Failed to cancel appointment";
-        setAlertConfig({
-          title: "Error",
+        showSnackbarWithConfig({
           message: errorMessage,
           type: "error",
-          isVisible: true,
-          onConfirm() {
-            setIsVisible(false);
-          },
+          duration: 3000,
         });
       }
     },
-    [cancelAppointment, setAlertConfig, setIsVisible]
+    [cancelAppointment, showSnackbarWithConfig]
   );
 
   /**
@@ -455,17 +432,10 @@ export const useAppointment = () => {
       try {
         const response = await acceptAppointment({ id }).unwrap();
         if (response && response.message) {
-          setAlertConfig({
-            title: "Success",
+          showSnackbarWithConfig({
             message: response.message,
             type: "success",
-            isVisible: true,
-            onConfirm() {
-              setIsVisible(false);
-              refetchAllAppointments();
-              refetchAppointmentDetails();
-              router.back();
-            },
+            duration: 3000,
           });
         }
       } catch (error: any) {
@@ -474,18 +444,14 @@ export const useAppointment = () => {
           error?.data?.error ||
           error?.message ||
           "Failed to accept appointment";
-        setAlertConfig({
-          title: "Error",
+        showSnackbarWithConfig({
           message: errorMessage,
           type: "error",
-          isVisible: true,
-          onConfirm() {
-            setIsVisible(false);
-          },
+          duration: 3000,
         });
       }
     },
-    [acceptAppointment, setAlertConfig, setIsVisible]
+    [acceptAppointment, showSnackbarWithConfig]
   );
 
   return {
