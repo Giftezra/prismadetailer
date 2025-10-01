@@ -124,10 +124,14 @@ class BookingView(APIView):
                         "error": "Invalid end_time format"
                     }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Create timezone-aware datetime for proper handling
-            appointment_datetime_naive = datetime.combine(appointment_date, appointment_time)
-            # Convert to timezone-aware datetime (assuming client sends in local timezone)
-            appointment_datetime = timezone.make_aware(appointment_datetime_naive)
+            # Client sends the correct local time (Europe/London timezone)
+            # Just combine and mark as timezone-aware without any conversion
+            from zoneinfo import ZoneInfo
+            appointment_datetime = datetime.combine(
+                appointment_date, 
+                appointment_time, 
+                tzinfo=ZoneInfo('Europe/London')
+            )
             
             # Check for conflicting jobs
             conflicting_jobs = Job.objects.filter(
@@ -141,8 +145,6 @@ class BookingView(APIView):
                 job_start = job.appointment_time
                 job_end_minutes = job_start.hour * 60 + job_start.minute + service_type.duration
                 job_end = time(job_end_minutes // 60, job_end_minutes % 60)
-                
-                # Check for time overlap (including 30-minute travel buffer)
                 travel_buffer = 30  # minutes
                 job_end_with_buffer_minutes = job_end.hour * 60 + job_end.minute + travel_buffer
                 job_end_with_buffer = time(job_end_with_buffer_minutes // 60, job_end_with_buffer_minutes % 60)
