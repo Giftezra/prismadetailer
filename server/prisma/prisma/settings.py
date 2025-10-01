@@ -210,6 +210,10 @@ DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 ASGI_APPLICATION = "prisma.asgi.application"
 
 
+# Ensure log directory exists to prevent FileHandler failures in containers
+LOG_DIR = BASE_DIR / 'logs'
+os.makedirs(LOG_DIR, exist_ok=True)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
