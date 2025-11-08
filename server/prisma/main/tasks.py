@@ -41,11 +41,22 @@ def send_booking_confirmation_email(detailer_email, booking_reference, appointme
 
 """ Publish the job acceptance to redis so that the client app will receive the notification and then create the job in the database"""
 @shared_task
-def publish_job_acceptance(booking_reference):
+def publish_job_acceptance(booking_reference, detailer_email, detailer_name, detailer_phone, detailer_rating=0.0):
     try:
         r = redis.Redis(host='prisma_redis', port=6379, db=0)
         channel = 'job_acceptance'
-        message = json.dumps(booking_reference)
+        
+        # Structure the message as expected by subscribe_redis.py
+        message_data = {
+            'booking_reference': booking_reference,
+            'detailer': {
+                'name': detailer_name,
+                'phone': detailer_phone,
+                'rating': detailer_rating
+            }
+        }
+        
+        message = json.dumps(message_data)
         result = r.publish(channel, message)
         return f"Job acceptance published to redis: {result}"
     except Exception as e:
@@ -55,11 +66,39 @@ def publish_job_acceptance(booking_reference):
 @shared_task
 def publish_job_started(booking_reference):
     try:
+        from main.models import Job
+        from main.util.media_helper import get_full_media_url
+        
+        # Get the job with its before images
+        try:
+            job = Job.objects.get(booking_reference=booking_reference)
+            
+            # Collect ONLY before images
+            before_images = []
+            for img in job.images.filter(image_type='before'):
+                before_images.append({
+                    'image_url': get_full_media_url(img.image.url),
+                    'uploaded_at': img.uploaded_at.isoformat()
+                })
+            
+            # Structure the message with booking reference and before images
+            message_data = {
+                'booking_reference': booking_reference,
+                'before_images': before_images
+            }
+            
+        except Job.DoesNotExist:
+            # If job not found, send just the booking reference (backwards compatible)
+            message_data = {
+                'booking_reference': booking_reference,
+                'before_images': []
+            }
+        
         r = redis.Redis(host='prisma_redis', port=6379, db=0)
         channel = 'job_started'
-        message = json.dumps(booking_reference)
+        message = json.dumps(message_data)
         result = r.publish(channel, message)
-        return f"Job started published to redis: {result}"
+        return f"Job started published to redis with before images: {result}"
     except Exception as e:
         return f"Failed to publish job started to redis: {str(e)}"
 
@@ -67,11 +106,39 @@ def publish_job_started(booking_reference):
 @shared_task
 def publish_job_completed(booking_reference):
     try:
+        from main.models import Job
+        from main.util.media_helper import get_full_media_url
+        
+        # Get the job with its after images
+        try:
+            job = Job.objects.get(booking_reference=booking_reference)
+            
+            # Collect ONLY after images
+            after_images = []
+            for img in job.images.filter(image_type='after'):
+                after_images.append({
+                    'image_url': get_full_media_url(img.image.url),
+                    'uploaded_at': img.uploaded_at.isoformat()
+                })
+            
+            # Structure the message with booking reference and after images
+            message_data = {
+                'booking_reference': booking_reference,
+                'after_images': after_images
+            }
+            
+        except Job.DoesNotExist:
+            # If job not found, send just the booking reference (backwards compatible)
+            message_data = {
+                'booking_reference': booking_reference,
+                'after_images': []
+            }
+        
         r = redis.Redis(host='prisma_redis', port=6379, db=0)
         channel = 'job_completed'
-        message = json.dumps(booking_reference)
+        message = json.dumps(message_data)
         result = r.publish(channel, message)
-        return f"Job completed published to redis: {result}"
+        return f"Job completed published to redis with after images: {result}"
     except Exception as e:
         return f"Failed to publish job completed to redis: {str(e)}"
 

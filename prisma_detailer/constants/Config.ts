@@ -17,6 +17,10 @@ export const API_CONFIG = {
   websocketUrl:
     config.websockets_url,
 };
+
+export const KEY_CONFIGS = {
+  googleApiKeys: config.googoleApiKeys,
+};
 // App Configuration
 export const APP_CONFIG = {
   name: Constants.expoConfig?.name || "Prisma Detailer",

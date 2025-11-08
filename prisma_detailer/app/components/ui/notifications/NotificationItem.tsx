@@ -201,10 +201,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 5,
-    marginHorizontal: 5,
-    marginVertical: 4,
-    borderRadius: 5,
-    borderWidth: 1,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,

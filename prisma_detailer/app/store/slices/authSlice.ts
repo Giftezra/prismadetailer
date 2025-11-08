@@ -51,6 +51,12 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
     },
 
+    
+    refreshTokenSuccess: (state, action) => {
+      state.access = action.payload.access;
+      state.refresh = action.payload.refresh;
+    }, 
+
     /**
      * Clear the sign up data from the state
      * @param state - The current state of the auth slice
@@ -81,5 +87,6 @@ export const {
   setAccessToken,
   setRefreshToken,
   setConfirmPassword,
+  refreshTokenSuccess,
 } = authSlice.actions;
 export default authSlice.reducer;

@@ -28,7 +28,10 @@ const appointmentsApi = createApi({
      * @param id - The id of the appointment
      * @returns {JobDetailsProps} The appointment details
      */
-    getAppointmentDetails: builder.query<JobDetailsProps, { id: string | null }>({
+    getAppointmentDetails: builder.query<
+      JobDetailsProps,
+      { id: string | null }
+    >({
       query: ({ id }) => ({
         url: `/api/v1/appointments/get_appointment_details/`,
         method: "GET",
@@ -46,6 +49,7 @@ const appointmentsApi = createApi({
       query: ({ id }) => ({
         url: `/api/v1/appointments/complete_appointment/`,
         method: "PATCH",
+        data: { id },
       }),
     }),
 
@@ -87,6 +91,50 @@ const appointmentsApi = createApi({
         data: { id },
       }),
     }),
+
+    /**
+     * Upload before images for a job
+     * @param formData - FormData containing job_id and image files
+     * @returns {message: string, images: Array} The upload response with image details
+     */
+    uploadBeforeImages: builder.mutation<
+      {
+        message: string;
+        images: Array<{ id: number; image_url: string; uploaded_at: string }>;
+      },
+      FormData
+    >({
+      query: (formData) => ({
+        url: `/api/v1/appointments/upload_before_images/`,
+        method: "POST",
+        data: formData,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }),
+    }),
+
+    /**
+     * Upload after images for a job
+     * @param formData - FormData containing job_id and image files
+     * @returns {message: string, images: Array} The upload response with image details
+     */
+    uploadAfterImages: builder.mutation<
+      {
+        message: string;
+        images: Array<{ id: number; image_url: string; uploaded_at: string }>;
+      },
+      FormData
+    >({
+      query: (formData) => ({
+        url: `/api/v1/appointments/upload_after_images/`,
+        method: "POST",
+        data: formData,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }),
+    }),
   }),
 });
 
@@ -97,5 +145,7 @@ export const {
   useCancelAppointmentMutation,
   useAcceptAppointmentMutation,
   useStartAppointmentMutation,
+  useUploadBeforeImagesMutation,
+  useUploadAfterImagesMutation,
 } = appointmentsApi;
 export default appointmentsApi;

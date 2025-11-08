@@ -12,7 +12,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.giftezraifeanyi.prisma.detailer",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "This app requires camera access to capture before and after photos of vehicle detailing services.",
+        "NSMicrophoneUsageDescription": "Microphone access is needed for video recording if supported in future."
       }
     },
     "android": {
@@ -25,7 +27,9 @@
       "package": "com.giftezra.ifeanyi.prisma_detailer",
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -57,6 +61,12 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location to find nearby services and provide location-based features."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to capture before and after photos of vehicle detailing services."
+        }
       ]
     ],
     "updates": {
@@ -72,9 +82,10 @@
       "typedRoutes": true
     },
     "extra": {
-      "detailer_app_url": "https://detailer.prismavalet.com",
-      "customer_app_url": "https://client.prismavalet.com",
-      "websockets_url": "wss://detailer.prismavalet.com/ws/detailer/",
+      "detailer_app_url": "https://1406609c54f0.ngrok-free.app/detailer",
+      "customer_app_url": "https://1406609c54f0.ngrok-free.app/client",
+      "websockets_url": "wss://1406609c54f0.ngrok-free.app/ws/detailer/",
+      "googoleApiKeys": "AIzaSyAW00mf-OWgmU_lQ2yLiy3RLWkAVpIdE0U",
       "router": {},
       "eas": {
         "projectId": "19cf1878-0602-4768-b678-6886a2b94358"

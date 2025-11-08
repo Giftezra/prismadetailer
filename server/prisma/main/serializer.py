@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Detailer, ServiceType, TimeSlot, Job, Earning, BankAccount, Review, TrainingRecord, Availability
+from .models import User, Detailer, ServiceType, TimeSlot, Job, JobImage, Earning, BankAccount, Review, TrainingRecord, Availability
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import ValidationError
 from main.util.media_helper import get_full_media_url
@@ -24,6 +24,19 @@ class TimeSlotSerializer(serializers.ModelSerializer):
     class Meta:
         model = TimeSlot
         fields = '__all__'
+
+class JobImageSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = JobImage
+        fields = ['id', 'job', 'image_type', 'image', 'image_url', 'uploaded_at']
+        read_only_fields = ['uploaded_at']
+    
+    def get_image_url(self, obj):
+        if obj.image:
+            return get_full_media_url(obj.image.url)
+        return None
 
 class JobSerializer(serializers.ModelSerializer):
     class Meta:

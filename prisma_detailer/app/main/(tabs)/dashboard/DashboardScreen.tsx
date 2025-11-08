@@ -7,6 +7,7 @@ import QuickStatsCard from "../../../components/ui/dashboard/QuickStatsCard";
 import RecentActivityCard from "../../../components/ui/dashboard/RecentActivityCard";
 import QuickActionsCard from "../../../components/ui/dashboard/QuickActionsCard";
 import { useDashboard } from "../../../app-hooks/useDashboard";
+import { useAppointment } from "../../../app-hooks/useAppointment";
 import ModalServices from "@/app/services/ModalServices";
 import RecentJobList from "@/app/components/ui/dashboard/RecentJobList";
 
@@ -21,14 +22,15 @@ const DashboardScreen = () => {
   const {
     handleQuickActions,
     viewNextAppointment,
-    beginJob,
-    completeJob,
     callClient,
     quickStats,
     recentJobs,
     refetchAllData,
     todayOverview,
   } = useDashboard();
+
+  // Use existing handleJobPress from useAppointment for navigation
+  const { handleJobPress } = useAppointment();
 
   return (
     <View style={{ flex: 1 }}>
@@ -62,8 +64,8 @@ const DashboardScreen = () => {
           <TodayOverviewCard
             data={todayOverview}
             onViewNextAppointment={viewNextAppointment}
-            onStartCurrentJob={beginJob}
-            onCompleteCurrentJob={completeJob}
+            onStartCurrentJob={handleJobPress}
+            onCompleteCurrentJob={handleJobPress}
             onViewChat={() => setViewChat(!viewChat)}
             onCallClient={callClient}
           />

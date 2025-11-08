@@ -1,29 +1,22 @@
 from django.conf import settings
 
 def get_full_media_url(relative_url):
-    """
-    Convert a relative media URL to a full URL.
-    
-    Args:
-        relative_url (str): Relative URL like '/media/products/images/...'
-        
-    Returns:
-        str: Full URL with the server base URL
-    """
     if not relative_url:
         return None
     
+    # Check if URL is already absolute (starts with http:// or https://)
+    if relative_url.startswith('http://') or relative_url.startswith('https://'):
+        return relative_url
+    
     # Get the base URL from settings
-    base_url = getattr(settings, 'BASE_URL', 'http://localhost:8000')
+    base_url = getattr(settings, 'BASE_URL', None)
+    if not base_url:
+        # Use the ngrok URL directly as fallback
+        base_url = os.getenv('BASE_URL')
     
     # Remove leading slash if present to avoid double slashes
     if relative_url.startswith('/'):
         relative_url = relative_url[1:]
     
-    # For ngrok URLs, we need to ensure the path is correct
-    # The media files are served under /media/ path
-    if not relative_url.startswith('media/'):
-        relative_url = f"media/{relative_url}"
-    
     # Combine base URL with relative URL
-    return f"{base_url}/{relative_url}" 
+    return f"{base_url}/main/{relative_url}" 

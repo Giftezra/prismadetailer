@@ -3,6 +3,7 @@ from datetime import timedelta
 import os
 import dj_database_url
 from celery.schedules import crontab
+from google.oauth2 import service_account
 
 
 
@@ -12,12 +13,12 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 BASE_URL= os.getenv('BASE_URL')
 
-ALLOWED_ORIGINS = [BASE_URL, 'https://prismavalet.com', 'https://www.prismavalet.com']
-CSRF_TRUSTED_ORIGINS = [BASE_URL, 'https://prismavalet.com', 'https://www.prismavalet.com']
-CORS_ALLOWED_ORIGINS = [BASE_URL, 'https://prismavalet.com', 'https://www.prismavalet.com']  
+ALLOWED_ORIGINS = [BASE_URL, 'https://prismavalet.com', 'https://www.prismavalet.com', "https://1406609c54f0.ngrok-free.app"] 
+CSRF_TRUSTED_ORIGINS = [BASE_URL, 'https://prismavalet.com', 'https://www.prismavalet.com', "https://1406609c54f0.ngrok-free.app"]
+CORS_ALLOWED_ORIGINS = [BASE_URL, 'https://prismavalet.com', 'https://www.prismavalet.com', "https://1406609c54f0.ngrok-free.app"]  
 CORS_ALLOW_CREDENTIALS = True
 DEBUG=os.getenv('DEBUG') == 'True'
-ALLOWED_HOSTS=[os.getenv('ALLOWED_HOSTS'), 'localhost', '127.0.0.1']
+ALLOWED_HOSTS=['*']
 
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -77,6 +78,31 @@ DATABASES = {
         ssl_require=True
     )
 }
+
+
+GS_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'prisma-6fc48-642e49c334e8.json')
+GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
+    GS_CREDENTIALS_PATH,
+    scopes=['https://www.googleapis.com/auth/cloud-platform'],
+)
+GS_BUCKET_NAME = 'prisma-valet-bucket'
+GS_LOCATION = 'detailer-app'
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'storages.backends.gcloud.GoogleCloudStorage',
+        'OPTIONS': {
+            'bucket_name': GS_BUCKET_NAME,
+            'location': GS_LOCATION,
+            'credentials': GS_CREDENTIALS,
+            'default_acl': None,
+        },
+    },
+    'staticfiles': {
+        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    },
+}
+
 
 
 # Password validation

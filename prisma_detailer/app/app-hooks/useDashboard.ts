@@ -31,8 +31,6 @@ import {
   useGetQuickStatsQuery,
   useGetRecentJobsQuery,
   useGetTodayOverviewQuery,
-  useStartCurrentJobMutation,
-  useCompleteCurrentJobMutation,
 } from "../store/api/dashboardApi";
 import { useAlertContext } from "../contexts/AlertContext";
 import * as Linking from "expo-linking";
@@ -97,13 +95,6 @@ export const useDashboard = () => {
     isLoading: isLoadingTodayOverview,
     refetch: refetchTodayOverview,
   } = useGetTodayOverviewQuery();
-
-  // Start current job mutation
-  const [startCurrentJob, { isLoading: isLoadingStartCurrentJob }] =
-    useStartCurrentJobMutation();
-  // Complete current job mutation
-  const [completeCurrentJob, { isLoading: isLoadingCompleteCurrentJob }] =
-    useCompleteCurrentJobMutation();
 
   const { setAlertConfig, setIsVisible } = useAlertContext();
   const { refreshNotifications } = useNotification();
@@ -244,83 +235,6 @@ export const useDashboard = () => {
   }, []);
 
   /**
-   * Start/Continue Current Job Handler
-   *
-   * Handles the action when a user wants to start or continue their current job.
-   * Currently logs the action for debugging purposes.
-   *
-   * TODO: Implement actual job starting/continuing functionality
-   */
-  const beginJob = useCallback(
-    async (id: string) => {
-      try {
-        const result = await startCurrentJob({ id }).unwrap();
-        if (result && result.message) {
-          setAlertConfig({
-            title: "Job Started",
-            message: result.message,
-            type: "success",
-            onConfirm() {
-              refetchTodayOverview();
-              setIsVisible(false);
-            },
-            isVisible: true,
-          });
-        }
-      } catch (error: any) {
-        setAlertConfig({
-          title: "Error",
-          message: error?.data?.message || "Failed to start job",
-          type: "error",
-          onConfirm() {
-            setIsVisible(false);
-          },
-          isVisible: true,
-        });
-      }
-    },
-    [startCurrentJob, refetchTodayOverview, setAlertConfig, setIsVisible]
-  );
-
-  /**
-   * Complete Current Job Handler
-   * Handles the action when a user wants to complete their current job.
-   * Currently logs the action for debugging purposes.
-   * @param id: string - The ID of the job to complete
-   * TODO: Implement actual job completing functionality
-   */
-  const completeJob = useCallback(
-    async (id: string) => {
-      try {
-        const result = await completeCurrentJob({ id }).unwrap();
-        if (result && result.message) {
-          setAlertConfig({
-            title: "Job Completed",
-            message: result.message,
-            type: "success",
-            onConfirm: async () => {
-              await refetchAllData();
-              setIsVisible(false);
-            },
-            isVisible: true,
-          });
-        }
-      } catch (error: any) {
-        setAlertConfig({
-          title: "Error",
-          message: error?.data?.message || "Failed to complete job",
-          type: "error",
-          onConfirm: () => {
-            setIsVisible(false);
-          },
-          isVisible: true,
-        });
-      }
-    },
-    [completeCurrentJob, refetchTodayOverview, setAlertConfig, setIsVisible]
-  );
-
-  /**
    * Call the detailer using the phone number. this method will take the user out of the app
    * and into their dialer
    * @param phoneNumber - The phone number to call
@@ -351,7 +265,6 @@ export const useDashboard = () => {
   return {
     // Action handlers for user interactions
     viewNextAppointment,
-    beginJob,
     handleQuickActions,
 
     // Dashboard data with fallback values for consistent UI experience
@@ -370,14 +283,12 @@ export const useDashboard = () => {
     isLoadingQuickStats,
     isLoadingRecentJobs,
     isLoadingTodayOverview,
-    isLoadingStartCurrentJob,
     // Today's overview with fallback data
     todayOverview: todayOverview || {
       totalAppointments: 0,
       completedJobs: 0,
       pendingJobs: 0,
     },
-    completeJob,
     callClient,
     // Data refresh functionality
     refetchAllData,

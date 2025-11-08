@@ -104,6 +104,14 @@ const NotificationScreen = () => {
       {renderHeader()}
 
       <FlatList
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[primaryColor]}
+            tintColor={primaryColor}
+          />
+        }
         data={notifications}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
@@ -115,14 +123,6 @@ const NotificationScreen = () => {
         )}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[primaryColor]}
-            tintColor={primaryColor}
-          />
-        }
         ListEmptyComponent={renderEmptyState}
       />
     </View>
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   listContainer: {
-    paddingVertical: 8,
+    gap:1,
     flexGrow: 1,
   },
   emptyContainer: {

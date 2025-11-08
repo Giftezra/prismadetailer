@@ -112,8 +112,139 @@ const handleImageSelection = async (imageUri: string) => {
       uri: imageUri,
       filename: filename,
     };
-
   } catch (error) {
     console.error("Error processing image:", error);
   }
+};
+
+/**
+ * Captures an image using ONLY the camera (no gallery access).
+ * This ensures images are freshly taken, not selected from existing photos.
+ * Used for before/after job images where freshness is critical.
+ *
+ * @returns {Promise<{ uri: string; type: string; filename: string } | null>} Image data or null if cancelled
+ * @throws {Error} If camera permissions are denied or capture fails
+ */
+export const captureCameraOnlyImage = async (): Promise<{
+  uri: string;
+  type: string;
+  filename: string;
+} | null> => {
+  try {
+    // Request camera permissions
+    const { status } = await ExpoImagePicker.requestCameraPermissionsAsync();
+
+    if (status !== "granted") {
+      Alert.alert(
+        "Camera Permission Required",
+        "Please allow camera access to capture before/after images of your work."
+      );
+      return null;
+    }
+
+    const result = await ExpoImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      allowsEditing: false,
+      aspect: [4, 3],
+      quality: 0.8, // Slightly reduced quality for faster upload
+    });
+
+    if (result.canceled || !result.assets[0]) {
+      return null;
+    }
+
+    const asset = result.assets[0];
+    const timestamp = Date.now();
+    const filename = `job_image_${timestamp}.jpg`;
+
+    return {
+      uri: asset.uri,
+      type: "image/jpeg",
+      filename: filename,
+    };
+  } catch (error) {
+    console.error("Error capturing image:", error);
+    Alert.alert("Error", "Failed to capture image. Please try again.");
+    return null;
+  }
+};
+
+/**
+ * Captures multiple images using ONLY the camera (no gallery access).
+ * Allows capturing up to a specified number of images in sequence.
+ *
+ * @param {number} maxImages - Maximum number of images to capture (default: 5)
+ * @returns {Promise<Array<{ uri: string; type: string; filename: string }>>} Array of captured images
+ */
+export const captureMultipleCameraImages = async (
+  maxImages: number = 5
+): Promise<Array<{ uri: string; type: string; filename: string }>> => {
+  const images: Array<{ uri: string; type: string; filename: string }> = [];
+
+  for (let i = 0; i < maxImages; i++) {
+    const shouldContinue = await new Promise<boolean>((resolve) => {
+      if (i === 0) {
+        // First image, no prompt
+        resolve(true);
+      } else {
+        Alert.alert(
+          "Capture Another Image?",
+          `You have captured ${i} image${
+            i > 1 ? "s" : ""
+          }. Would you like to capture another?`,
+          [
+            { text: "Done", onPress: () => resolve(false), style: "cancel" },
+            { text: "Capture More", onPress: () => resolve(true) },
+          ]
+        );
+      }
+    });
+
+    if (!shouldContinue) break;
+
+    const image = await captureCameraOnlyImage();
+    if (image) {
+      images.push(image);
+    } else {
+      // User cancelled, stop capturing
+      break;
+    }
+  }
+
+  return images;
+};
+
+/**
+ * Prepares image data for FormData upload to API.
+ * Converts image data to the format expected by React Native's FormData.
+ *
+ * @param {Array<{ uri: string; type: string; filename: string }>} images - Array of image data
+ * @returns {FormData} FormData object ready for upload
+ */
+export const prepareImagesForUpload = (
+  images: Array<{ uri: string; type: string; filename: string }>,
+  jobId: string
+): FormData => {
+  const formData = new FormData();
+
+  // Add job_id
+  formData.append("job_id", jobId);
+
+  // Add each image with indexed key
+  images.forEach((image, index) => {
+    formData.append(`image_${index}`, {
+      uri: image.uri,
+      type: image.type,
+      name: image.filename,
+    } as any);
+  });
+
+  return formData;
+};
+
+export {
+  uriToFile,
+  handleCameraSelection,
+  handleGallerySelection,
+  handleImageSelection,
 };

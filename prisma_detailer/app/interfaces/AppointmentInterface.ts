@@ -59,8 +59,8 @@ export interface JobDetailsProps {
   specialInstruction?: string;
   valetType?: string;
   addons?: string[];
-  before_images?: string;
-  after_images?: string;
+  before_images?: Array<{ id: number; image_url: string; uploaded_at: string }>;
+  after_images?: Array<{ id: number; image_url: string; uploaded_at: string }>;
   loyalty_tier?: string;
   loyalty_benefits?: string[];
 }

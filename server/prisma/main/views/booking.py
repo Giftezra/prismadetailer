@@ -259,17 +259,7 @@ class BookingView(APIView):
 
             # Return success response with appointment ID
             response_data = {
-                'detailer':{
-                    'name': detailer.user.get_full_name(),
-                    'phone': detailer.user.phone,
-                    'rating': detailer.rating,
-                },
-                'job':{
-                    'booking_reference': job.booking_reference,
-                    'appointment_date': job.appointment_date,
-                    'appointment_time': job.appointment_time,
-                    'address': job.address,
-                }
+                "success": True,
             }
             return Response(response_data, status=status.HTTP_201_CREATED)
             

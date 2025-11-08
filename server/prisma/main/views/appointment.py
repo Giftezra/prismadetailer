@@ -2,7 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-from main.models import Job
+from main.models import Job, JobImage
+from main.serializer import JobImageSerializer
 from datetime import datetime
 from main.util.media_helper import get_full_media_url
 from main.tasks import publish_job_acceptance, publish_job_started, publish_job_completed
@@ -21,6 +22,8 @@ class AppointmentView(APIView):
         "cancel_appointment": '_cancel_appointment',
         "complete_appointment": '_complete_appointment',
         "start_appointment": '_start_appointment',
+        "upload_before_images": '_upload_before_images',
+        "upload_after_images": '_upload_after_images',
     }   
 
     def get(self, request, *args, **kwargs):
@@ -40,13 +43,20 @@ class AppointmentView(APIView):
         handler = getattr(self, self.action_handler[action])
         return handler(request)
     
+    def post(self, request, *args, **kwargs):
+        action = kwargs.get('action')
+        if action not in self.action_handler:
+            return Response({"error": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
+        handler = getattr(self, self.action_handler[action])
+        return handler(request)
+    
 
     def _get_all_appointments(self, request):
         try:
             # Get the date from the request and use the date to query the jobs
             # model.
             date = datetime.strptime(request.query_params.get('date'), '%Y-%m-%d').date()
-            appointments = Job.objects.filter(appointment_date__date=date, detailer__user=request.user)
+            appointments = Job.objects.filter(appointment_date__date=date, detailer__user=request.user).exclude(status='cancelled')
             # Return the appointments in a list if it exists
             appointment_list = []
             if appointments.exists():
@@ -73,7 +83,7 @@ class AppointmentView(APIView):
     
     def _get_appointment_details(self, request):
         try:
-            appointment = Job.objects.get(id=request.query_params.get('id'), detailer__user=request.user)
+            appointment = Job.objects.get(id=request.query_params.get('id'), detailer__user=request.user, status__in=['pending', 'accepted', 'in_progress', 'completed'])
             if not appointment:
                 return Response({"error": "Appointment Details not found"}, status=status.HTTP_404_NOT_FOUND)
             
@@ -108,8 +118,20 @@ class AppointmentView(APIView):
                 'addons': appointment.addons.all().values_list('name', flat=True) if appointment.addons.all().exists() else [],
                 'loyalty_tier': appointment.loyalty_tier if appointment.loyalty_tier else 'bronze',
                 'loyalty_benefits': appointment.loyalty_benefits if appointment.loyalty_benefits else [],
-                'before_images': get_full_media_url(appointment.before_photo.url) if appointment.before_photo else '',
-                'after_images': get_full_media_url(appointment.after_photo.url) if appointment.after_photo else '',
+                'before_images': [
+                    {
+                        'id': img.id,
+                        'image_url': get_full_media_url(img.image.url),
+                        'uploaded_at': img.uploaded_at.isoformat()
+                    } for img in appointment.images.filter(image_type='before')
+                ],
+                'after_images': [
+                    {
+                        'id': img.id,
+                        'image_url': get_full_media_url(img.image.url),
+                        'uploaded_at': img.uploaded_at.isoformat()
+                    } for img in appointment.images.filter(image_type='after')
+                ],
             }
             return Response(appointment_detaile, status=status.HTTP_200_OK)
         except Exception as e:
@@ -137,7 +159,13 @@ class AppointmentView(APIView):
             appointment.save()
 
             # trigger the job acceptance to redis
-            publish_job_acceptance.delay(appointment.booking_reference)
+            publish_job_acceptance.delay(
+                appointment.booking_reference,
+                appointment.detailer.user.email,
+                appointment.detailer.user.get_full_name(),
+                appointment.detailer.user.phone,
+                appointment.detailer.rating
+                )
 
             return Response({"message": "Appointment accepted"}, status=status.HTTP_200_OK)
         except Exception as e:
@@ -225,5 +253,135 @@ class AppointmentView(APIView):
             publish_job_completed.delay(appointment.booking_reference)
 
             return Response({"message": "Appointment completed successfully"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    def _upload_before_images(self, request):
+        """
+        Upload before images for a job.
+        Called when detailer starts the job or during the job.
+        Accepts multiple images via multipart/form-data.
+        
+        Args:
+            request: HTTP request containing job_id and image files
+        
+        Returns:
+            Response: JSON with uploaded image details or error
+        """
+        try:
+            job_id = request.data.get('job_id')
+            if not job_id:
+                return Response({"error": "job_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Get the job and verify it belongs to the authenticated detailer
+            try:
+                job = Job.objects.get(id=job_id, detailer__user=request.user)
+            except Job.DoesNotExist:
+                return Response({"error": "Job not found or access denied"}, status=status.HTTP_404_NOT_FOUND)
+            
+            # Check if job is in accepted or in_progress status
+            if job.status not in ['accepted', 'in_progress']:
+                return Response({
+                    "error": "Can only upload before images for accepted or in-progress jobs"
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Get all image files from request.FILES
+            # Handle multiple images with keys like 'image_0', 'image_1', etc.
+            uploaded_images = []
+            image_count = 0
+            
+            for key in request.FILES:
+                if key.startswith('image'):
+                    image_file = request.FILES[key]
+                    
+                    # Create JobImage instance
+                    job_image = JobImage.objects.create(
+                        job=job,
+                        image_type='before',
+                        image=image_file,
+                        uploaded_by=request.user
+                    )
+                    
+                    uploaded_images.append({
+                        'id': job_image.id,
+                        'image_url': get_full_media_url(job_image.image.url),
+                        'uploaded_at': job_image.uploaded_at.isoformat()
+                    })
+                    image_count += 1
+            
+            if image_count == 0:
+                return Response({"error": "No images provided"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response({
+                "message": f"{image_count} before image(s) uploaded successfully",
+                "images": uploaded_images
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    def _upload_after_images(self, request):
+        """
+        Upload after images for a job.
+        Called before completing the job.
+        Accepts multiple images via multipart/form-data.
+        
+        Args:
+            request: HTTP request containing job_id and image files
+        
+        Returns:
+            Response: JSON with uploaded image details or error
+        """
+        try:
+            job_id = request.data.get('job_id')
+            if not job_id:
+                return Response({"error": "job_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Get the job and verify it belongs to the authenticated detailer
+            try:
+                job = Job.objects.get(id=job_id, detailer__user=request.user)
+            except Job.DoesNotExist:
+                return Response({"error": "Job not found or access denied"}, status=status.HTTP_404_NOT_FOUND)
+            
+            # Check if job is in_progress
+            if job.status != 'in_progress':
+                return Response({
+                    "error": "Can only upload after images for in-progress jobs"
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Get all image files from request.FILES
+            # Handle multiple images with keys like 'image_0', 'image_1', etc.
+            uploaded_images = []
+            image_count = 0
+            
+            for key in request.FILES:
+                if key.startswith('image'):
+                    image_file = request.FILES[key]
+                    
+                    # Create JobImage instance
+                    job_image = JobImage.objects.create(
+                        job=job,
+                        image_type='after',
+                        image=image_file,
+                        uploaded_by=request.user
+                    )
+                    
+                    uploaded_images.append({
+                        'id': job_image.id,
+                        'image_url': get_full_media_url(job_image.image.url),
+                        'uploaded_at': job_image.uploaded_at.isoformat()
+                    })
+                    image_count += 1
+            
+            if image_count == 0:
+                return Response({"error": "No images provided"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response({
+                "message": f"{image_count} after image(s) uploaded successfully",
+                "images": uploaded_images
+            }, status=status.HTTP_201_CREATED)
+            
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

@@ -12,6 +12,8 @@ import {
   useCompleteAppointmentMutation,
   useCancelAppointmentMutation,
   useAcceptAppointmentMutation,
+  useUploadBeforeImagesMutation,
+  useUploadAfterImagesMutation,
 } from "@/app/store/api/appointmentsApi";
 import { useAlertContext } from "../contexts/AlertContext";
 import { useSnackbar } from "../contexts/SnackbarContext";
@@ -69,6 +71,12 @@ export const useAppointment = () => {
     acceptAppointment,
     { isLoading: isLoadingAcceptAppointment, error: errorAcceptAppointment },
   ] = useAcceptAppointmentMutation();
+
+  const [uploadBeforeImages, { isLoading: isLoadingUploadBeforeImages }] =
+    useUploadBeforeImagesMutation();
+
+  const [uploadAfterImages, { isLoading: isLoadingUploadAfterImages }] =
+    useUploadAfterImagesMutation();
 
   const {
     data: appointmentDetails,
@@ -230,7 +238,6 @@ export const useAppointment = () => {
     return slots;
   }, [selectedDay]);
 
-  
   const navigateToMonth = (month: dayjs.Dayjs) => {
     setSelectedMonth(month);
     setSelectedDay(null); // Reset selected day when changing months
@@ -447,6 +454,74 @@ export const useAppointment = () => {
     [acceptAppointment, showSnackbarWithConfig]
   );
 
+  /**
+   * Upload before images for an appointment
+   * @param formData - FormData containing job_id and images
+   * @returns {message: string, images: Array} Response with uploaded image details
+   */
+  const handleUploadBeforeImages = useCallback(
+    async (formData: FormData) => {
+      try {
+        const response = await uploadBeforeImages(formData).unwrap();
+        if (response && response.message) {
+          showSnackbarWithConfig({
+            message: response.message,
+            type: "success",
+            duration: 3000,
+          });
+        }
+        return response;
+      } catch (error: any) {
+        const errorMessage =
+          error?.data?.message ||
+          error?.data?.error ||
+          error?.message ||
+          "Failed to upload before images";
+        showSnackbarWithConfig({
+          message: errorMessage,
+          type: "error",
+          duration: 3000,
+        });
+        throw error;
+      }
+    },
+    [uploadBeforeImages, showSnackbarWithConfig]
+  );
+
+  /**
+   * Upload after images for an appointment
+   * @param formData - FormData containing job_id and images
+   * @returns {message: string, images: Array} Response with uploaded image details
+   */
+  const handleUploadAfterImages = useCallback(
+    async (formData: FormData) => {
+      try {
+        const response = await uploadAfterImages(formData).unwrap();
+        if (response && response.message) {
+          showSnackbarWithConfig({
+            message: response.message,
+            type: "success",
+            duration: 3000,
+          });
+        }
+        return response;
+      } catch (error: any) {
+        const errorMessage =
+          error?.data?.message ||
+          error?.data?.error ||
+          error?.message ||
+          "Failed to upload after images";
+        showSnackbarWithConfig({
+          message: errorMessage,
+          type: "error",
+          duration: 3000,
+        });
+        throw error;
+      }
+    },
+    [uploadAfterImages, showSnackbarWithConfig]
+  );
+
   return {
     // State
     selectedMonth,
@@ -475,6 +550,10 @@ export const useAppointment = () => {
     handleCompleteAppointment,
     handleCancelAppointment,
     handleAcceptAppointment,
+    handleUploadBeforeImages,
+    handleUploadAfterImages,
+    isLoadingUploadBeforeImages,
+    isLoadingUploadAfterImages,
     refetchAllAppointments,
   };
 };

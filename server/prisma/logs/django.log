@@ -1,0 +1,546 @@
+INFO 2025-10-12 21:07:55,699 cli 1 133080053922688 Starting server at tcp:port=8000:interface=0.0.0.0
+INFO 2025-10-12 21:07:55,701 server 1 133080053922688 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-10-12 21:07:55,703 server 1 133080053922688 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-10-12 21:07:55,708 server 1 133080053922688 Listening on TCP address 0.0.0.0:8000
+INFO 2025-10-12 21:08:54,618 server 1 133080053922688 Killed 0 pending application instances
+INFO 2025-10-12 21:10:46,936 cli 1 130757970094976 Starting server at tcp:port=8000:interface=0.0.0.0
+INFO 2025-10-12 21:10:46,940 server 1 130757970094976 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-10-12 21:10:46,941 server 1 130757970094976 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-10-12 21:10:46,944 server 1 130757970094976 Listening on TCP address 0.0.0.0:8000
+INFO 2025-10-12 21:16:06,788 server 1 130757970094976 Killed 0 pending application instances
+INFO 2025-10-12 21:26:55,663 cli 1 133305433512832 Starting server at tcp:port=8000:interface=0.0.0.0
+INFO 2025-10-12 21:26:55,665 server 1 133305433512832 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-10-12 21:26:55,666 server 1 133305433512832 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-10-12 21:26:55,669 server 1 133305433512832 Listening on TCP address 0.0.0.0:8000
+INFO 2025-10-12 21:36:37,488 server 1 133305433512832 Killed 0 pending application instances
+INFO 2025-10-12 21:37:29,006 cli 1 130115809721216 Starting server at tcp:port=8000:interface=0.0.0.0
+INFO 2025-10-12 21:37:29,008 server 1 130115809721216 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-10-12 21:37:29,009 server 1 130115809721216 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-10-12 21:37:29,012 server 1 130115809721216 Listening on TCP address 0.0.0.0:8000
+INFO 2025-10-12 21:43:02,336 server 1 130115809721216 Killed 0 pending application instances
+INFO 2025-10-12 21:43:26,145 cli 1 140049834011520 Starting server at tcp:port=8000:interface=0.0.0.0
+INFO 2025-10-12 21:43:26,147 server 1 140049834011520 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-10-12 21:43:26,149 server 1 140049834011520 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-10-12 21:43:26,154 server 1 140049834011520 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-04 23:46:14,711 cli 1 124874400095104 Starting server at tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-04 23:46:14,714 server 1 124874400095104 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-04 23:46:14,716 server 1 124874400095104 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-04 23:46:14,725 server 1 124874400095104 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-05 00:16:27,143 server 1 124874400095104 Killed 0 pending application instances
+INFO 2025-11-05 00:17:26,210 cli 1 134215553735552 Starting server at tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-05 00:17:26,211 server 1 134215553735552 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-05 00:17:26,213 server 1 134215553735552 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-05 00:17:26,215 server 1 134215553735552 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-05 00:30:49,673 server 1 134215553735552 Killed 0 pending application instances
+INFO 2025-11-05 00:32:11,823 cli 1 129800800721792 Starting server at tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-05 00:32:11,824 server 1 129800800721792 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-05 00:32:11,826 server 1 129800800721792 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-05 00:32:11,829 server 1 129800800721792 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-05 11:09:00,560 server 1 129800800721792 Killed 0 pending application instances
+INFO 2025-11-05 11:10:41,266 cli 1 132406643112832 Starting server at tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-05 11:10:41,268 server 1 132406643112832 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-05 11:10:41,269 server 1 132406643112832 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-05 11:10:41,272 server 1 132406643112832 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-05 12:48:47,590 server 1 132406643112832 Killed 0 pending application instances
+INFO 2025-11-05 12:49:47,976 cli 1 134029217594240 Starting server at tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-05 12:49:47,978 server 1 134029217594240 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-05 12:49:47,979 server 1 134029217594240 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-05 12:49:47,984 server 1 134029217594240 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-06 09:51:39,030 server 1 134029217594240 Killed 0 pending application instances
+INFO 2025-11-06 09:53:23,731 cli 1 125878182620032 Starting server at tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-06 09:53:23,733 server 1 125878182620032 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-06 09:53:23,734 server 1 125878182620032 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-06 09:53:23,736 server 1 125878182620032 Listening on TCP address 0.0.0.0:8000
+WARNING 2025-11-06 10:04:37,590 log 1 125878075913920 Forbidden (Origin checking failed - https://1406609c54f0.ngrok-free.app does not match any trusted origins.): /detailer-admin/login/
+WARNING 2025-11-06 10:05:57,552 log 1 125878075913920 Forbidden (Origin checking failed - https://1406609c54f0.ngrok-free.app does not match any trusted origins.): /detailer-admin/login/
+WARNING 2025-11-06 10:06:02,038 log 1 125878075913920 Forbidden (Origin checking failed - https://1406609c54f0.ngrok-free.app does not match any trusted origins.): /detailer-admin/login/
+WARNING 2025-11-06 10:07:02,600 log 1 125878075913920 Forbidden (Origin checking failed - https://1406609c54f0.ngrok-free.app does not match any trusted origins.): /detailer-admin/login/
+WARNING 2025-11-06 22:47:03,835 log 1 125878075913920 Forbidden (Origin checking failed - https://1406609c54f0.ngrok-free.app does not match any trusted origins.): /detailer-admin/login/
+INFO 2025-11-06 22:52:02,165 server 1 125878182620032 Killed 0 pending application instances
+INFO 2025-11-06 22:54:45,305 autoreload 8 139129389890432 Watching for file changes with StatReloader
+INFO 2025-11-06 22:54:47,424 server 8 139129284196032 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-06 22:54:47,425 server 8 139129284196032 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-06 22:54:47,428 server 8 139129284196032 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-06 22:55:00,372 runserver 8 139129284196032 HTTP POST /detailer-admin/login/?next=/detailer-admin/ 302 [1.04, 172.18.0.13:33450]
+INFO 2025-11-06 22:55:01,088 runserver 8 139129284196032 HTTP GET /detailer-admin/ 200 [0.60, 172.18.0.13:33458]
+INFO 2025-11-06 23:13:29,443 runserver 8 139129284196032 HTTP GET /detailer-admin/main/job/ 200 [3.49, 172.18.0.13:56680]
+INFO 2025-11-06 23:13:30,231 runserver 8 139129284196032 HTTP GET /detailer-admin/jsi18n/ 200 [0.54, 172.18.0.13:56690]
+INFO 2025-11-06 23:13:56,397 runserver 8 139129284196032 HTTP GET /detailer-admin/main/job/25/change/ 200 [1.54, 172.18.0.13:57262]
+INFO 2025-11-06 23:13:57,073 runserver 8 139129284196032 HTTP GET /detailer-admin/jsi18n/ 200 [0.49, 172.18.0.13:53182]
+INFO 2025-11-06 23:14:23,627 runserver 8 139129284196032 HTTP POST /detailer-admin/main/job/25/change/ 302 [1.76, 172.18.0.13:55722]
+INFO 2025-11-06 23:14:26,662 runserver 8 139129284196032 HTTP GET /detailer-admin/main/job/ 200 [2.94, 172.18.0.13:55730]
+INFO 2025-11-06 23:14:27,334 runserver 8 139129284196032 HTTP GET /detailer-admin/jsi18n/ 200 [0.52, 172.18.0.13:60538]
+INFO 2025-11-06 23:17:54,737 runserver 8 139129284196032 HTTP GET /detailer-admin/main/user/ 200 [0.71, 172.18.0.13:54398]
+INFO 2025-11-06 23:17:55,397 runserver 8 139129284196032 HTTP GET /detailer-admin/jsi18n/ 200 [0.47, 172.18.0.13:54410]
+INFO 2025-11-06 23:18:06,032 runserver 8 139129284196032 HTTP GET /detailer-admin/main/user/2/change/ 200 [7.78, 172.18.0.13:46254]
+INFO 2025-11-06 23:18:06,691 runserver 8 139129284196032 HTTP GET /detailer-admin/jsi18n/ 200 [0.49, 172.18.0.13:46256]
+WARNING 2025-11-06 23:21:18,279 log 8 139129252734656 Unauthorized: /api/v1/notifications/get_notifications/
+WARNING 2025-11-06 23:21:18,281 runserver 8 139129284196032 HTTP GET /api/v1/notifications/get_notifications/ 401 [0.02, 172.18.0.13:60504]
+WARNING 2025-11-06 23:21:18,320 log 8 139129252734656 Unauthorized: /api/v1/dashboard/get_recent_jobs/
+WARNING 2025-11-06 23:21:18,323 log 8 139129252734656 Unauthorized: /api/v1/dashboard/get_today_overview/
+WARNING 2025-11-06 23:21:18,324 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_recent_jobs/ 401 [0.03, 172.18.0.13:60514]
+WARNING 2025-11-06 23:21:18,328 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_today_overview/ 401 [0.03, 172.18.0.13:60520]
+WARNING 2025-11-06 23:21:18,335 log 8 139128888882880 Unauthorized: /api/v1/dashboard/get_quick_stats/
+WARNING 2025-11-06 23:21:18,336 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_quick_stats/ 401 [0.03, 172.18.0.13:60532]
+WARNING 2025-11-06 23:21:18,762 log 8 139129252734656 Unauthorized: /api/v1/notifications/save_notification_token/
+WARNING 2025-11-06 23:21:18,764 runserver 8 139129284196032 HTTP PATCH /api/v1/notifications/save_notification_token/ 401 [0.02, 172.18.0.13:60538]
+WARNING 2025-11-06 23:21:18,798 log 8 139128888882880 Unauthorized: /api/v1/notifications/save_notification_token/
+WARNING 2025-11-06 23:21:18,802 runserver 8 139129284196032 HTTP PATCH /api/v1/notifications/save_notification_token/ 401 [0.02, 172.18.0.13:60554]
+WARNING 2025-11-06 23:21:37,629 log 8 139129252734656 Unauthorized: /api/v1/notifications/get_notifications/
+WARNING 2025-11-06 23:21:37,631 runserver 8 139129284196032 HTTP GET /api/v1/notifications/get_notifications/ 401 [0.01, 172.18.0.13:55884]
+WARNING 2025-11-06 23:21:37,668 log 8 139128888882880 Unauthorized: /api/v1/profile/get_profile_statistics/
+WARNING 2025-11-06 23:21:37,669 runserver 8 139129284196032 HTTP GET /api/v1/profile/get_profile_statistics/ 401 [0.01, 172.18.0.13:55890]
+WARNING 2025-11-06 23:21:37,878 log 8 139129252734656 Unauthorized: /api/v1/notifications/save_notification_token/
+WARNING 2025-11-06 23:21:37,879 runserver 8 139129284196032 HTTP PATCH /api/v1/notifications/save_notification_token/ 401 [0.01, 172.18.0.13:55902]
+WARNING 2025-11-06 23:21:53,377 log 8 139128888882880 Unauthorized: /api/v1/authentication/login/
+WARNING 2025-11-06 23:21:53,379 runserver 8 139129284196032 HTTP POST /api/v1/authentication/login/ 401 [0.68, 172.18.0.13:38680]
+WARNING 2025-11-06 23:22:08,531 log 8 139129252734656 Unauthorized: /api/v1/authentication/login/
+WARNING 2025-11-06 23:22:08,533 runserver 8 139129284196032 HTTP POST /api/v1/authentication/login/ 401 [0.69, 172.18.0.13:42102]
+WARNING 2025-11-06 23:23:31,301 log 8 139128888882880 Unauthorized: /api/v1/authentication/login/
+WARNING 2025-11-06 23:23:31,303 runserver 8 139129284196032 HTTP POST /api/v1/authentication/login/ 401 [0.72, 172.18.0.13:47566]
+WARNING 2025-11-06 23:23:41,634 log 8 139129252734656 Unauthorized: /api/v1/authentication/login/
+WARNING 2025-11-06 23:23:41,636 runserver 8 139129284196032 HTTP POST /api/v1/authentication/login/ 401 [0.69, 172.18.0.13:39738]
+WARNING 2025-11-06 23:23:58,051 log 8 139128888882880 Unauthorized: /api/v1/authentication/login/
+WARNING 2025-11-06 23:23:58,053 runserver 8 139129284196032 HTTP POST /api/v1/authentication/login/ 401 [0.71, 172.18.0.13:44692]
+INFO 2025-11-06 23:24:07,979 runserver 8 139129284196032 HTTP POST /api/v1/authentication/login/ 200 [0.90, 172.18.0.13:58720]
+INFO 2025-11-06 23:24:26,918 runserver 8 139129284196032 HTTP POST /api/v1/authentication/login/ 200 [0.79, 172.18.0.13:41728]
+INFO 2025-11-06 23:24:28,349 runserver 8 139129284196032 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.51, 172.18.0.13:41736]
+INFO 2025-11-06 23:24:28,406 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.52, 172.18.0.13:41756]
+INFO 2025-11-06 23:24:28,581 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.70, 172.18.0.13:41738]
+INFO 2025-11-06 23:24:28,657 runserver 8 139129284196032 HTTP PATCH /api/v1/notifications/save_notification_token/ 200 [0.48, 172.18.0.13:41770]
+INFO 2025-11-06 23:24:28,923 runserver 8 139129284196032 HTTP PATCH /api/v1/notifications/save_notification_token/ 200 [0.48, 172.18.0.13:41776]
+INFO 2025-11-06 23:24:28,927 dashboard 8 139129266370240 Weekly: 0 + 0 = 0
+INFO 2025-11-06 23:24:28,927 dashboard 8 139129266370240 Monthly: 0 + 0 = 0
+INFO 2025-11-06 23:24:28,928 dashboard 8 139129266370240 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-06 23:24:28,929 dashboard 8 139129266370240 Recent tips: 0
+INFO 2025-11-06 23:24:28,933 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.05, 172.18.0.13:41750]
+INFO 2025-11-06 23:25:38,847 runserver 8 139129284196032 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 200 [0.58, 172.18.0.13:47952]
+INFO 2025-11-06 23:25:42,588 runserver 8 139129284196032 HTTP GET /api/v1/appointments/get_appointment_details/?id=25 200 [0.70, 172.18.0.13:47958]
+INFO 2025-11-06 23:31:01,651 runserver 8 139129284196032 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.54, 172.18.0.13:44572]
+INFO 2025-11-06 23:31:01,660 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.55, 172.18.0.13:44582]
+INFO 2025-11-06 23:31:01,839 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.73, 172.18.0.13:44560]
+INFO 2025-11-06 23:31:02,303 dashboard 8 139129244341952 Weekly: 0 + 0 = 0
+INFO 2025-11-06 23:31:02,304 dashboard 8 139129244341952 Monthly: 0 + 0 = 0
+INFO 2025-11-06 23:31:02,306 dashboard 8 139129244341952 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-06 23:31:02,307 dashboard 8 139129244341952 Recent tips: 0
+INFO 2025-11-06 23:31:02,313 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.20, 172.18.0.13:44592]
+INFO 2025-11-06 23:31:02,567 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.52, 172.18.0.13:44608]
+INFO 2025-11-06 23:31:02,573 runserver 8 139129284196032 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.51, 172.18.0.13:44614]
+INFO 2025-11-06 23:31:02,776 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.71, 172.18.0.13:44628]
+INFO 2025-11-06 23:31:03,089 dashboard 8 139129266370240 Weekly: 0 + 0 = 0
+INFO 2025-11-06 23:31:03,090 dashboard 8 139129266370240 Monthly: 0 + 0 = 0
+INFO 2025-11-06 23:31:03,090 dashboard 8 139129266370240 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-06 23:31:03,091 dashboard 8 139129266370240 Recent tips: 0
+INFO 2025-11-06 23:31:03,096 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.08, 172.18.0.13:44598]
+INFO 2025-11-06 23:31:12,251 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.53, 172.18.0.13:37850]
+INFO 2025-11-06 23:31:12,270 runserver 8 139129284196032 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.53, 172.18.0.13:37862]
+INFO 2025-11-06 23:31:12,493 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.73, 172.18.0.13:37864]
+INFO 2025-11-06 23:31:12,836 dashboard 8 139129266370240 Weekly: 0 + 0 = 0
+INFO 2025-11-06 23:31:12,837 dashboard 8 139129266370240 Monthly: 0 + 0 = 0
+INFO 2025-11-06 23:31:12,838 dashboard 8 139129266370240 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-06 23:31:12,839 dashboard 8 139129266370240 Recent tips: 0
+INFO 2025-11-06 23:31:12,846 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.17, 172.18.0.13:37838]
+INFO 2025-11-06 23:31:23,068 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.48, 172.18.0.13:50522]
+INFO 2025-11-06 23:31:23,076 runserver 8 139129284196032 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.50, 172.18.0.13:50504]
+INFO 2025-11-06 23:31:23,255 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.67, 172.18.0.13:50518]
+INFO 2025-11-06 23:31:23,612 dashboard 8 139129266370240 Weekly: 0 + 0 = 0
+INFO 2025-11-06 23:31:23,613 dashboard 8 139129266370240 Monthly: 0 + 0 = 0
+INFO 2025-11-06 23:31:23,614 dashboard 8 139129266370240 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-06 23:31:23,614 dashboard 8 139129266370240 Recent tips: 0
+INFO 2025-11-06 23:31:23,620 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.08, 172.18.0.13:50502]
+WARNING 2025-11-07 00:42:00,629 log 8 139129244341952 Unauthorized: /api/v1/notifications/get_notifications/
+WARNING 2025-11-07 00:42:00,632 log 8 139129252734656 Unauthorized: /api/v1/dashboard/get_quick_stats/
+WARNING 2025-11-07 00:42:00,637 log 8 139128888882880 Unauthorized: /api/v1/dashboard/get_recent_jobs/
+WARNING 2025-11-07 00:42:00,638 log 8 139128863704768 Unauthorized: /api/v1/dashboard/get_today_overview/
+WARNING 2025-11-07 00:42:00,647 runserver 8 139129284196032 HTTP GET /api/v1/notifications/get_notifications/ 401 [0.17, 172.18.0.13:43696]
+WARNING 2025-11-07 00:42:00,651 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_quick_stats/ 401 [0.17, 172.18.0.13:43694]
+WARNING 2025-11-07 00:42:00,656 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_recent_jobs/ 401 [0.18, 172.18.0.13:43720]
+WARNING 2025-11-07 00:42:00,657 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_today_overview/ 401 [0.21, 172.18.0.13:43698]
+WARNING 2025-11-07 00:42:00,887 log 8 139128888882880 Not Found: /api/v1/auth/refresh/
+WARNING 2025-11-07 00:42:00,889 log 8 139128888882880 Not Found: /api/v1/auth/refresh/
+WARNING 2025-11-07 00:42:00,890 runserver 8 139129284196032 HTTP POST /api/v1/auth/refresh/ 404 [0.12, 172.18.0.13:43728]
+WARNING 2025-11-07 00:42:00,892 runserver 8 139129284196032 HTTP POST /api/v1/auth/refresh/ 404 [0.12, 172.18.0.13:43730]
+WARNING 2025-11-07 00:42:00,895 log 8 139129252734656 Not Found: /api/v1/auth/refresh/
+WARNING 2025-11-07 00:42:00,896 log 8 139129244341952 Not Found: /api/v1/auth/refresh/
+WARNING 2025-11-07 00:42:00,898 runserver 8 139129284196032 HTTP POST /api/v1/auth/refresh/ 404 [0.11, 172.18.0.13:43746]
+WARNING 2025-11-07 00:42:00,900 runserver 8 139129284196032 HTTP POST /api/v1/auth/refresh/ 404 [0.11, 172.18.0.13:43732]
+WARNING 2025-11-07 00:42:08,517 log 8 139128888882880 Unauthorized: /api/v1/appointments/get_all_appointments/
+WARNING 2025-11-07 00:42:08,518 runserver 8 139129284196032 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 401 [0.01, 172.18.0.13:57420]
+WARNING 2025-11-07 00:42:08,681 log 8 139128863704768 Not Found: /api/v1/auth/refresh/
+WARNING 2025-11-07 00:42:08,682 runserver 8 139129284196032 HTTP POST /api/v1/auth/refresh/ 404 [0.02, 172.18.0.13:57434]
+WARNING 2025-11-07 00:43:00,275 log 8 139129244341952 Unauthorized: /api/v1/dashboard/get_quick_stats/
+WARNING 2025-11-07 00:43:00,277 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_quick_stats/ 401 [0.02, 172.18.0.13:53852]
+WARNING 2025-11-07 00:43:00,350 log 8 139128888882880 Unauthorized: /api/v1/notifications/get_notifications/
+WARNING 2025-11-07 00:43:00,351 log 8 139128888882880 Unauthorized: /api/v1/dashboard/get_today_overview/
+WARNING 2025-11-07 00:43:00,352 runserver 8 139129284196032 HTTP GET /api/v1/notifications/get_notifications/ 401 [0.02, 172.18.0.13:53858]
+WARNING 2025-11-07 00:43:00,355 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_today_overview/ 401 [0.03, 172.18.0.13:53862]
+WARNING 2025-11-07 00:43:00,365 log 8 139129244341952 Unauthorized: /api/v1/dashboard/get_recent_jobs/
+WARNING 2025-11-07 00:43:00,366 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_recent_jobs/ 401 [0.02, 172.18.0.13:53874]
+INFO 2025-11-07 00:43:01,770 runserver 8 139129284196032 HTTP POST /api/v1/authentication/refresh/ 200 [1.25, 172.18.0.13:53918]
+INFO 2025-11-07 00:43:01,877 runserver 8 139129284196032 HTTP POST /api/v1/authentication/refresh/ 200 [1.36, 172.18.0.13:53902]
+INFO 2025-11-07 00:43:01,885 runserver 8 139129284196032 HTTP POST /api/v1/authentication/refresh/ 200 [1.43, 172.18.0.13:53890]
+INFO 2025-11-07 00:43:01,890 runserver 8 139129284196032 HTTP POST /api/v1/authentication/refresh/ 200 [1.37, 172.18.0.13:53910]
+INFO 2025-11-07 00:43:02,385 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.49, 172.18.0.13:53930]
+INFO 2025-11-07 00:43:02,588 runserver 8 139129284196032 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.50, 172.18.0.13:53936]
+INFO 2025-11-07 00:43:02,875 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.78, 172.18.0.13:53942]
+INFO 2025-11-07 00:43:03,078 dashboard 8 139128872097472 Weekly: 0 + 0 = 0
+INFO 2025-11-07 00:43:03,079 dashboard 8 139128872097472 Monthly: 0 + 0 = 0
+INFO 2025-11-07 00:43:03,080 dashboard 8 139128872097472 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 00:43:03,080 dashboard 8 139128872097472 Recent tips: 0
+INFO 2025-11-07 00:43:03,083 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.07, 172.18.0.13:53932]
+INFO 2025-11-07 00:43:06,547 runserver 8 139129284196032 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 200 [0.56, 172.18.0.13:53944]
+INFO 2025-11-07 00:43:10,295 runserver 8 139129284196032 HTTP GET /api/v1/appointments/get_appointment_details/?id=25 200 [0.64, 172.18.0.13:53956]
+INFO 2025-11-07 00:43:49,889 runserver 8 139129284196032 HTTP POST /api/v1/appointments/upload_before_images/ 201 [2.41, 172.18.0.13:58396]
+INFO 2025-11-07 00:45:51,285 runserver 8 139129284196032 HTTP POST /api/v1/appointments/upload_before_images/ 201 [0.71, 172.18.0.13:50974]
+INFO 2025-11-07 00:46:12,248 runserver 8 139129284196032 HTTP POST /api/v1/appointments/upload_before_images/ 201 [0.67, 172.18.0.13:40478]
+INFO 2025-11-07 00:48:42,684 runserver 8 139129284196032 HTTP POST /api/v1/appointments/upload_before_images/ 201 [0.69, 172.18.0.13:43982]
+INFO 2025-11-07 00:54:08,861 runserver 8 139129284196032 HTTP POST /api/v1/appointments/upload_before_images/ 201 [0.87, 172.18.0.13:48554]
+INFO 2025-11-07 00:54:17,292 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.47, 172.18.0.13:33512]
+INFO 2025-11-07 00:54:17,306 runserver 8 139129284196032 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.49, 172.18.0.13:33476]
+INFO 2025-11-07 00:54:17,582 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.77, 172.18.0.13:33488]
+INFO 2025-11-07 00:54:17,925 dashboard 8 139129266370240 Weekly: 0 + 0 = 0
+INFO 2025-11-07 00:54:17,926 dashboard 8 139129266370240 Monthly: 0 + 0 = 0
+INFO 2025-11-07 00:54:17,926 dashboard 8 139129266370240 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 00:54:17,927 dashboard 8 139129266370240 Recent tips: 0
+INFO 2025-11-07 00:54:17,933 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.12, 172.18.0.13:33504]
+INFO 2025-11-07 00:54:43,348 runserver 8 139129284196032 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 200 [0.57, 172.18.0.13:37506]
+INFO 2025-11-07 00:54:46,325 runserver 8 139129284196032 HTTP GET /api/v1/appointments/get_appointment_details/?id=25 200 [0.67, 172.18.0.13:37508]
+INFO 2025-11-07 00:57:48,248 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.50, 172.18.0.13:51498]
+INFO 2025-11-07 00:57:48,277 runserver 8 139129284196032 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.53, 172.18.0.13:51484]
+INFO 2025-11-07 00:57:48,563 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.82, 172.18.0.13:51500]
+INFO 2025-11-07 00:57:48,826 dashboard 8 139129235949248 Weekly: 0 + 0 = 0
+INFO 2025-11-07 00:57:48,826 dashboard 8 139129235949248 Monthly: 0 + 0 = 0
+INFO 2025-11-07 00:57:48,827 dashboard 8 139129235949248 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 00:57:48,827 dashboard 8 139129235949248 Recent tips: 0
+INFO 2025-11-07 00:57:48,831 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.08, 172.18.0.13:51516]
+INFO 2025-11-07 00:57:50,740 runserver 8 139129284196032 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 200 [0.57, 172.18.0.13:51522]
+INFO 2025-11-07 00:57:53,649 runserver 8 139129284196032 HTTP GET /api/v1/appointments/get_appointment_details/?id=25 200 [0.70, 172.18.0.13:52960]
+INFO 2025-11-07 00:58:15,204 runserver 8 139129284196032 HTTP GET /detailer-admin/main/job/ 200 [2.91, 172.18.0.13:38310]
+INFO 2025-11-07 00:58:15,813 runserver 8 139129284196032 HTTP GET /detailer-admin/jsi18n/ 200 [0.47, 172.18.0.13:38320]
+INFO 2025-11-07 00:58:21,670 runserver 8 139129284196032 HTTP GET /detailer-admin/main/job/25/change/ 200 [1.34, 172.18.0.13:38336]
+INFO 2025-11-07 00:58:22,251 runserver 8 139129284196032 HTTP GET /detailer-admin/jsi18n/ 200 [0.45, 172.18.0.13:38350]
+WARNING 2025-11-07 01:00:36,954 log 8 139129252734656 Unauthorized: /api/v1/appointments/get_all_appointments/
+WARNING 2025-11-07 01:00:36,956 runserver 8 139129284196032 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 401 [0.02, 172.18.0.13:45960]
+INFO 2025-11-07 01:00:38,126 runserver 8 139129284196032 HTTP POST /api/v1/authentication/refresh/ 200 [1.04, 172.18.0.13:45964]
+INFO 2025-11-07 01:00:38,962 runserver 8 139129284196032 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 200 [0.65, 172.18.0.13:45978]
+INFO 2025-11-07 01:03:29,496 runserver 8 139129284196032 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.48, 172.18.0.13:34864]
+INFO 2025-11-07 01:03:29,526 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.53, 172.18.0.13:34854]
+INFO 2025-11-07 01:03:29,796 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.77, 172.18.0.13:34876]
+INFO 2025-11-07 01:03:30,122 dashboard 8 139128872097472 Weekly: 0 + 0 = 0
+INFO 2025-11-07 01:03:30,123 dashboard 8 139128872097472 Monthly: 0 + 0 = 0
+INFO 2025-11-07 01:03:30,123 dashboard 8 139128872097472 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 01:03:30,124 dashboard 8 139128872097472 Recent tips: 0
+INFO 2025-11-07 01:03:30,129 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.13, 172.18.0.13:34856]
+INFO 2025-11-07 01:03:35,675 runserver 8 139129284196032 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 200 [0.56, 172.18.0.13:34880]
+INFO 2025-11-07 01:03:39,171 runserver 8 139129284196032 HTTP GET /api/v1/appointments/get_appointment_details/?id=25 200 [0.64, 172.18.0.13:40910]
+INFO 2025-11-07 01:04:40,021 runserver 8 139129284196032 HTTP POST /api/v1/appointments/upload_before_images/ 201 [2.52, 172.18.0.13:34688]
+INFO 2025-11-07 01:04:40,948 runserver 8 139129284196032 HTTP PATCH /api/v1/appointments/start_appointment/ 200 [0.75, 172.18.0.13:34698]
+INFO 2025-11-07 01:04:51,323 runserver 8 139129284196032 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 200 [0.59, 172.18.0.13:50988]
+INFO 2025-11-07 01:04:56,810 runserver 8 139129284196032 HTTP GET /api/v1/appointments/get_appointment_details/?id=25 200 [0.67, 172.18.0.13:51486]
+INFO 2025-11-07 01:05:10,163 runserver 8 139129284196032 HTTP GET /detailer-admin/main/job/ 200 [4.11, 172.18.0.13:56032]
+INFO 2025-11-07 01:05:19,344 runserver 8 139129284196032 HTTP GET /api/v1/appointments/get_appointment_details/?id=25 200 [0.69, 172.18.0.13:42834]
+INFO 2025-11-07 01:05:52,900 runserver 8 139129284196032 HTTP GET /api/v1/earnings/get_payout_history/ 200 [0.54, 172.18.0.13:39382]
+INFO 2025-11-07 01:05:53,083 runserver 8 139129284196032 HTTP GET /api/v1/earnings/get_recent_earnings/ 200 [0.72, 172.18.0.13:39372]
+INFO 2025-11-07 01:05:53,182 runserver 8 139129284196032 HTTP GET /api/v1/earnings/get_earnings_summary/ 200 [0.82, 172.18.0.13:39364]
+INFO 2025-11-07 01:05:55,577 runserver 8 139129284196032 HTTP GET /api/v1/earnings/get_earnings_analytics/ 200 [3.27, 172.18.0.13:39348]
+INFO 2025-11-07 01:06:54,751 runserver 8 139129284196032 HTTP POST /api/v1/appointments/upload_after_images/ 201 [1.42, 172.18.0.13:54348]
+INFO 2025-11-07 01:06:55,736 runserver 8 139129284196032 HTTP PATCH /api/v1/appointments/complete_appointment/ 200 [0.82, 172.18.0.13:54354]
+INFO 2025-11-07 01:07:02,906 runserver 8 139129284196032 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 200 [0.56, 172.18.0.13:55488]
+INFO 2025-11-07 01:07:08,764 runserver 8 139129284196032 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.48, 172.18.0.13:44754]
+INFO 2025-11-07 01:07:08,878 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.64, 172.18.0.13:44728]
+INFO 2025-11-07 01:07:08,973 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.68, 172.18.0.13:44768]
+INFO 2025-11-07 01:07:09,295 dashboard 8 139128880490176 Weekly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:07:09,296 dashboard 8 139128880490176 Monthly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:07:09,296 dashboard 8 139128880490176 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 01:07:09,297 dashboard 8 139128880490176 Recent tips: 0
+INFO 2025-11-07 01:07:09,302 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.03, 172.18.0.13:44744]
+INFO 2025-11-07 01:10:53,547 runserver 8 139129284196032 HTTP PATCH /api/v1/notifications/mark_all_notifications_as_read/ 200 [0.51, 172.18.0.13:58758]
+INFO 2025-11-07 01:10:55,676 runserver 8 139129284196032 HTTP GET /api/v1/notifications/get_notifications/ 200 [2.03, 172.18.0.13:58768]
+INFO 2025-11-07 01:12:17,947 runserver 8 139129284196032 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.50, 172.18.0.13:53014]
+INFO 2025-11-07 01:12:18,144 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.69, 172.18.0.13:53028]
+INFO 2025-11-07 01:12:18,180 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.74, 172.18.0.13:52988]
+INFO 2025-11-07 01:12:18,588 dashboard 8 139129266370240 Weekly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:12:18,589 dashboard 8 139129266370240 Monthly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:12:18,590 dashboard 8 139129266370240 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 01:12:18,591 dashboard 8 139129266370240 Recent tips: 0
+INFO 2025-11-07 01:12:18,597 runserver 8 139129284196032 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.16, 172.18.0.13:53002]
+INFO 2025-11-07 01:17:47,931 autoreload 8 139129389890432 /app/main/models.py changed, reloading.
+INFO 2025-11-07 01:17:53,487 autoreload 144 134402464172928 Watching for file changes with StatReloader
+INFO 2025-11-07 01:17:54,612 server 144 134402358113984 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-07 01:17:54,613 server 144 134402358113984 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-07 01:17:54,616 server 144 134402358113984 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-07 01:18:39,957 autoreload 144 134402464172928 /app/main/models.py changed, reloading.
+INFO 2025-11-07 01:18:43,570 autoreload 146 138319353367424 Watching for file changes with StatReloader
+INFO 2025-11-07 01:18:44,805 server 146 138319247701696 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-07 01:18:44,806 server 146 138319247701696 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-07 01:18:44,808 server 146 138319247701696 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-07 01:20:32,482 autoreload 146 138319353367424 /app/main/tasks.py changed, reloading.
+INFO 2025-11-07 01:20:36,683 autoreload 148 131947369159552 Watching for file changes with StatReloader
+INFO 2025-11-07 01:20:38,173 server 148 131947263162048 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-07 01:20:38,175 server 148 131947263162048 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-07 01:20:38,177 server 148 131947263162048 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-07 01:20:41,591 autoreload 148 131947369159552 /app/main/tasks.py changed, reloading.
+INFO 2025-11-07 01:20:44,608 autoreload 150 130003193256832 Watching for file changes with StatReloader
+INFO 2025-11-07 01:20:46,296 server 150 130003087914688 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-07 01:20:46,297 server 150 130003087914688 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-07 01:20:46,300 server 150 130003087914688 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-07 01:20:59,842 autoreload 150 130003193256832 /app/main/tasks.py changed, reloading.
+INFO 2025-11-07 01:21:02,996 autoreload 152 135471063894912 Watching for file changes with StatReloader
+INFO 2025-11-07 01:21:04,172 server 152 135470957721280 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-07 01:21:04,173 server 152 135470957721280 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-07 01:21:04,174 server 152 135470957721280 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-07 01:21:09,036 autoreload 152 135471063894912 /app/main/tasks.py changed, reloading.
+INFO 2025-11-07 01:21:13,160 autoreload 154 131802399644544 Watching for file changes with StatReloader
+INFO 2025-11-07 01:21:15,566 autoreload 154 131802399644544 /app/main/tasks.py changed, reloading.
+INFO 2025-11-07 01:21:18,609 autoreload 156 125742804937600 Watching for file changes with StatReloader
+INFO 2025-11-07 01:21:21,004 autoreload 156 125742804937600 /app/main/tasks.py changed, reloading.
+INFO 2025-11-07 01:21:23,381 autoreload 158 123818790574976 Watching for file changes with StatReloader
+INFO 2025-11-07 01:21:24,757 autoreload 158 123818790574976 /app/main/tasks.py changed, reloading.
+INFO 2025-11-07 01:21:28,877 autoreload 160 125772052695936 Watching for file changes with StatReloader
+INFO 2025-11-07 01:21:31,252 autoreload 160 125772052695936 /app/main/tasks.py changed, reloading.
+INFO 2025-11-07 01:21:33,827 autoreload 162 124326352038784 Watching for file changes with StatReloader
+INFO 2025-11-07 01:21:36,239 autoreload 162 124326352038784 /app/main/tasks.py changed, reloading.
+INFO 2025-11-07 01:21:38,919 autoreload 164 124183302548352 Watching for file changes with StatReloader
+INFO 2025-11-07 01:21:40,788 autoreload 164 124183302548352 /app/main/tasks.py changed, reloading.
+INFO 2025-11-07 01:21:43,073 autoreload 166 130097208519552 Watching for file changes with StatReloader
+INFO 2025-11-07 01:22:37,696 autoreload 166 130097208519552 /app/main/tasks.py changed, reloading.
+INFO 2025-11-07 01:22:41,628 autoreload 168 139262494706560 Watching for file changes with StatReloader
+INFO 2025-11-07 01:22:43,063 server 168 139262389384896 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-07 01:22:43,065 server 168 139262389384896 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-07 01:22:43,066 server 168 139262389384896 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-07 01:22:48,255 autoreload 168 139262494706560 /app/main/tasks.py changed, reloading.
+INFO 2025-11-07 01:22:51,568 autoreload 170 124787736480640 Watching for file changes with StatReloader
+INFO 2025-11-07 01:22:52,706 server 170 124787630274240 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-07 01:22:52,707 server 170 124787630274240 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-07 01:22:52,709 server 170 124787630274240 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-07 01:23:07,388 autoreload 170 124787736480640 /app/main/tasks.py changed, reloading.
+INFO 2025-11-07 01:23:09,918 autoreload 172 140360062749568 Watching for file changes with StatReloader
+INFO 2025-11-07 01:23:10,930 server 172 140359956952768 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-07 01:23:10,932 server 172 140359956952768 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-07 01:23:10,933 server 172 140359956952768 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-07 01:23:36,400 autoreload 172 140360062749568 /app/main/tasks.py changed, reloading.
+INFO 2025-11-07 01:23:39,401 autoreload 174 138045439511424 Watching for file changes with StatReloader
+INFO 2025-11-07 01:23:40,638 server 174 138045333436096 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-07 01:23:40,639 server 174 138045333436096 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-07 01:23:40,640 server 174 138045333436096 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-07 01:23:48,595 autoreload 174 138045439511424 /app/main/models.py changed, reloading.
+INFO 2025-11-07 01:23:51,401 autoreload 176 133700904176512 Watching for file changes with StatReloader
+INFO 2025-11-07 01:23:52,391 server 176 133700798904000 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-07 01:23:52,392 server 176 133700798904000 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-07 01:23:52,393 server 176 133700798904000 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-07 01:28:01,086 runserver 176 133700798904000 HTTP GET /detailer-admin/main/job/24/change/ 200 [1.42, 172.18.0.13:60338]
+INFO 2025-11-07 01:28:01,730 runserver 176 133700798904000 HTTP GET /detailer-admin/jsi18n/ 200 [0.44, 172.18.0.13:57374]
+INFO 2025-11-07 01:28:15,219 runserver 176 133700798904000 HTTP POST /detailer-admin/main/job/24/change/ 302 [1.20, 172.18.0.13:35944]
+INFO 2025-11-07 01:28:19,680 runserver 176 133700798904000 HTTP GET /detailer-admin/main/job/ 200 [4.38, 172.18.0.13:35960]
+INFO 2025-11-07 01:28:20,277 runserver 176 133700798904000 HTTP GET /detailer-admin/jsi18n/ 200 [0.48, 172.18.0.13:35962]
+WARNING 2025-11-07 01:28:34,923 log 176 133700690892480 Unauthorized: /api/v1/dashboard/get_recent_jobs/
+WARNING 2025-11-07 01:28:34,923 log 176 133700682499776 Unauthorized: /api/v1/dashboard/get_today_overview/
+WARNING 2025-11-07 01:28:34,926 runserver 176 133700798904000 HTTP GET /api/v1/dashboard/get_recent_jobs/ 401 [0.03, 172.18.0.13:60378]
+WARNING 2025-11-07 01:28:34,928 runserver 176 133700798904000 HTTP GET /api/v1/dashboard/get_today_overview/ 401 [0.03, 172.18.0.13:60384]
+WARNING 2025-11-07 01:28:34,953 log 176 133700690892480 Unauthorized: /api/v1/notifications/delete_notification/
+WARNING 2025-11-07 01:28:34,954 log 176 133700682499776 Unauthorized: /api/v1/notifications/get_notifications/
+WARNING 2025-11-07 01:28:34,955 runserver 176 133700798904000 HTTP DELETE /api/v1/notifications/delete_notification/ 401 [0.02, 172.18.0.13:60408]
+WARNING 2025-11-07 01:28:34,956 log 176 133700690892480 Unauthorized: /api/v1/dashboard/get_quick_stats/
+WARNING 2025-11-07 01:28:34,958 runserver 176 133700798904000 HTTP GET /api/v1/notifications/get_notifications/ 401 [0.03, 172.18.0.13:60396]
+WARNING 2025-11-07 01:28:34,959 runserver 176 133700798904000 HTTP GET /api/v1/dashboard/get_quick_stats/ 401 [0.03, 172.18.0.13:60412]
+INFO 2025-11-07 01:28:36,023 runserver 176 133700798904000 HTTP POST /api/v1/authentication/refresh/ 200 [0.97, 172.18.0.13:60418]
+INFO 2025-11-07 01:28:36,127 runserver 176 133700798904000 HTTP POST /api/v1/authentication/refresh/ 200 [1.03, 172.18.0.13:60448]
+INFO 2025-11-07 01:28:36,129 runserver 176 133700798904000 HTTP POST /api/v1/authentication/refresh/ 200 [1.04, 172.18.0.13:60426]
+INFO 2025-11-07 01:28:36,159 runserver 176 133700798904000 HTTP POST /api/v1/authentication/refresh/ 200 [1.06, 172.18.0.13:60436]
+INFO 2025-11-07 01:28:36,174 runserver 176 133700798904000 HTTP POST /api/v1/authentication/refresh/ 200 [1.08, 172.18.0.13:60432]
+INFO 2025-11-07 01:28:36,735 runserver 176 133700798904000 HTTP DELETE /api/v1/notifications/delete_notification/ 200 [0.52, 172.18.0.13:60450]
+INFO 2025-11-07 01:28:36,849 runserver 176 133700798904000 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.44, 172.18.0.13:60490]
+INFO 2025-11-07 01:28:36,951 runserver 176 133700798904000 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.59, 172.18.0.13:60458]
+INFO 2025-11-07 01:28:37,242 runserver 176 133700798904000 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.84, 172.18.0.13:60474]
+INFO 2025-11-07 01:28:37,309 dashboard 176 133700665714368 Weekly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:28:37,310 dashboard 176 133700665714368 Monthly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:28:37,311 dashboard 176 133700665714368 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 01:28:37,311 dashboard 176 133700665714368 Recent tips: 0
+INFO 2025-11-07 01:28:37,315 runserver 176 133700798904000 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [0.99, 172.18.0.13:60452]
+INFO 2025-11-07 01:28:37,452 runserver 176 133700798904000 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.43, 172.18.0.13:60494]
+INFO 2025-11-07 01:28:38,681 runserver 176 133700798904000 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.56, 172.18.0.13:60522]
+INFO 2025-11-07 01:28:38,822 runserver 176 133700798904000 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.72, 172.18.0.13:60514]
+INFO 2025-11-07 01:28:39,010 runserver 176 133700798904000 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.89, 172.18.0.13:60516]
+INFO 2025-11-07 01:28:39,189 dashboard 176 133700711872192 Weekly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:28:39,189 dashboard 176 133700711872192 Monthly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:28:39,190 dashboard 176 133700711872192 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 01:28:39,191 dashboard 176 133700711872192 Recent tips: 0
+INFO 2025-11-07 01:28:39,195 runserver 176 133700798904000 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.13, 172.18.0.13:60502]
+INFO 2025-11-07 01:28:46,296 runserver 176 133700798904000 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 200 [0.58, 172.18.0.13:40568]
+INFO 2025-11-07 01:31:30,702 runserver 176 133700798904000 HTTP GET /api/v1/appointments/get_appointment_details/?id=25 200 [1.06, 172.18.0.13:42078]
+INFO 2025-11-07 01:31:50,444 runserver 176 133700798904000 HTTP GET /api/v1/appointments/get_appointment_details/?id=24 200 [0.89, 172.18.0.13:39870]
+WARNING 2025-11-07 01:32:36,310 log 176 133700682499776 Bad Request: /api/v1/appointments/upload_before_images/
+WARNING 2025-11-07 01:32:36,312 runserver 176 133700798904000 HTTP POST /api/v1/appointments/upload_before_images/ 400 [0.53, 172.18.0.13:35078]
+WARNING 2025-11-07 01:32:42,129 log 176 133700690892480 Bad Request: /api/v1/appointments/upload_before_images/
+WARNING 2025-11-07 01:32:42,130 runserver 176 133700798904000 HTTP POST /api/v1/appointments/upload_before_images/ 400 [0.48, 172.18.0.13:35086]
+WARNING 2025-11-07 01:32:58,476 log 176 133700682499776 Bad Request: /api/v1/appointments/upload_before_images/
+WARNING 2025-11-07 01:32:58,477 runserver 176 133700798904000 HTTP POST /api/v1/appointments/upload_before_images/ 400 [0.48, 172.18.0.13:55862]
+INFO 2025-11-07 01:40:04,149 runserver 176 133700798904000 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.54, 172.18.0.13:47282]
+INFO 2025-11-07 01:40:04,301 runserver 176 133700798904000 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.67, 172.18.0.13:47292]
+INFO 2025-11-07 01:40:04,517 runserver 176 133700798904000 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.91, 172.18.0.13:47272]
+INFO 2025-11-07 01:40:04,784 dashboard 176 133700711872192 Weekly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:40:04,784 dashboard 176 133700711872192 Monthly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:40:04,785 dashboard 176 133700711872192 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 01:40:04,785 dashboard 176 133700711872192 Recent tips: 0
+INFO 2025-11-07 01:40:04,791 runserver 176 133700798904000 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.18, 172.18.0.13:47270]
+INFO 2025-11-07 01:40:05,735 runserver 176 133700798904000 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.47, 172.18.0.13:47320]
+INFO 2025-11-07 01:40:05,857 runserver 176 133700798904000 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.61, 172.18.0.13:47308]
+INFO 2025-11-07 01:40:06,097 runserver 176 133700798904000 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.84, 172.18.0.13:47318]
+INFO 2025-11-07 01:40:06,247 dashboard 176 133700711872192 Weekly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:40:06,247 dashboard 176 133700711872192 Monthly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:40:06,249 dashboard 176 133700711872192 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 01:40:06,249 dashboard 176 133700711872192 Recent tips: 0
+INFO 2025-11-07 01:40:06,258 runserver 176 133700798904000 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.04, 172.18.0.13:47294]
+INFO 2025-11-07 01:40:07,132 runserver 176 133700798904000 HTTP GET /api/v1/appointments/get_appointment_details/?id=24 200 [0.73, 172.18.0.13:40066]
+WARNING 2025-11-07 01:43:47,014 log 176 133700690892480 Unauthorized: /api/v1/appointments/upload_before_images/
+WARNING 2025-11-07 01:43:47,016 runserver 176 133700798904000 HTTP POST /api/v1/appointments/upload_before_images/ 401 [0.02, 172.18.0.13:35148]
+INFO 2025-11-07 01:43:48,186 runserver 176 133700798904000 HTTP POST /api/v1/authentication/refresh/ 200 [1.04, 172.18.0.13:35150]
+WARNING 2025-11-07 01:43:49,067 log 176 133700682499776 Bad Request: /api/v1/appointments/upload_before_images/
+WARNING 2025-11-07 01:43:49,068 runserver 176 133700798904000 HTTP POST /api/v1/appointments/upload_before_images/ 400 [0.44, 172.18.0.13:56456]
+WARNING 2025-11-07 01:47:09,358 log 176 133700690892480 Bad Request: /api/v1/appointments/upload_before_images/
+WARNING 2025-11-07 01:47:09,360 runserver 176 133700798904000 HTTP POST /api/v1/appointments/upload_before_images/ 400 [0.51, 172.18.0.13:40262]
+WARNING 2025-11-07 01:47:17,505 log 176 133700682499776 Bad Request: /api/v1/appointments/upload_before_images/
+WARNING 2025-11-07 01:47:17,506 runserver 176 133700798904000 HTTP POST /api/v1/appointments/upload_before_images/ 400 [0.46, 172.18.0.13:40274]
+WARNING 2025-11-07 01:47:37,219 log 176 133700690892480 Bad Request: /api/v1/appointments/upload_before_images/
+WARNING 2025-11-07 01:47:37,221 runserver 176 133700798904000 HTTP POST /api/v1/appointments/upload_before_images/ 400 [0.51, 172.18.0.13:41876]
+INFO 2025-11-07 01:48:52,412 autoreload 176 133700904176512 /app/main/models.py changed, reloading.
+INFO 2025-11-07 01:48:57,256 autoreload 238 131401509096320 Watching for file changes with StatReloader
+INFO 2025-11-07 01:48:58,407 server 238 131401403856576 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-07 01:48:58,408 server 238 131401403856576 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-07 01:48:58,409 server 238 131401403856576 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-07 01:53:16,595 runserver 238 131401403856576 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.59, 172.18.0.13:42080]
+INFO 2025-11-07 01:53:16,744 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.74, 172.18.0.13:42064]
+INFO 2025-11-07 01:53:16,920 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.92, 172.18.0.13:42072]
+INFO 2025-11-07 01:53:17,172 dashboard 238 131401286407872 Weekly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:53:17,172 dashboard 238 131401286407872 Monthly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:53:17,173 dashboard 238 131401286407872 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 01:53:17,174 dashboard 238 131401286407872 Recent tips: 0
+INFO 2025-11-07 01:53:17,179 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.17, 172.18.0.13:42094]
+INFO 2025-11-07 01:53:52,993 runserver 238 131401403856576 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 200 [0.67, 172.18.0.13:38668]
+INFO 2025-11-07 01:54:27,640 runserver 238 131401403856576 HTTP GET /api/v1/appointments/get_appointment_details/?id=24 200 [0.74, 172.18.0.13:54066]
+INFO 2025-11-07 01:55:43,610 runserver 238 131401403856576 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.53, 172.18.0.13:45418]
+INFO 2025-11-07 01:55:43,723 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.62, 172.18.0.13:45436]
+INFO 2025-11-07 01:55:43,927 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.85, 172.18.0.13:45404]
+INFO 2025-11-07 01:55:44,175 dashboard 238 131401384982208 Weekly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:55:44,177 dashboard 238 131401384982208 Monthly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:55:44,178 dashboard 238 131401384982208 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 01:55:44,178 dashboard 238 131401384982208 Recent tips: 0
+INFO 2025-11-07 01:55:44,183 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.10, 172.18.0.13:45428]
+INFO 2025-11-07 01:55:46,815 runserver 238 131401403856576 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 200 [0.66, 172.18.0.13:52990]
+INFO 2025-11-07 01:55:49,900 runserver 238 131401403856576 HTTP GET /api/v1/appointments/get_appointment_details/?id=24 200 [0.71, 172.18.0.13:52994]
+INFO 2025-11-07 01:56:16,834 runserver 238 131401403856576 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.51, 172.18.0.13:47544]
+INFO 2025-11-07 01:56:16,981 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.64, 172.18.0.13:47558]
+INFO 2025-11-07 01:56:17,177 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.85, 172.18.0.13:47552]
+INFO 2025-11-07 01:56:17,441 dashboard 238 131401303193280 Weekly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:56:17,442 dashboard 238 131401303193280 Monthly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:56:17,443 dashboard 238 131401303193280 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 01:56:17,444 dashboard 238 131401303193280 Recent tips: 0
+INFO 2025-11-07 01:56:17,448 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.10, 172.18.0.13:47568]
+INFO 2025-11-07 01:56:19,439 runserver 238 131401403856576 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 200 [0.60, 172.18.0.13:47570]
+INFO 2025-11-07 01:56:22,350 runserver 238 131401403856576 HTTP GET /api/v1/appointments/get_appointment_details/?id=24 200 [0.72, 172.18.0.13:47572]
+INFO 2025-11-07 01:58:18,875 runserver 238 131401403856576 HTTP GET /api/v1/notifications/get_notifications/ 200 [2.10, 172.18.0.13:44004]
+INFO 2025-11-07 01:58:19,054 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [2.25, 172.18.0.13:44024]
+INFO 2025-11-07 01:58:19,203 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [2.40, 172.18.0.13:44018]
+INFO 2025-11-07 01:58:19,448 dashboard 238 131401286407872 Weekly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:58:19,449 dashboard 238 131401286407872 Monthly: 28.00 + 0 = 28.00
+INFO 2025-11-07 01:58:19,450 dashboard 238 131401286407872 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 01:58:19,450 dashboard 238 131401286407872 Recent tips: 0
+INFO 2025-11-07 01:58:19,454 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [2.67, 172.18.0.13:44008]
+INFO 2025-11-07 01:58:29,970 runserver 238 131401403856576 HTTP GET /api/v1/appointments/get_appointment_details/?id=24 200 [0.72, 172.18.0.13:33246]
+WARNING 2025-11-07 02:03:58,723 log 238 131401269622464 Unauthorized: /api/v1/notifications/get_notifications/
+WARNING 2025-11-07 02:03:58,723 log 238 131401278015168 Unauthorized: /api/v1/dashboard/get_today_overview/
+WARNING 2025-11-07 02:03:58,723 log 238 131401261229760 Unauthorized: /api/v1/dashboard/get_recent_jobs/
+WARNING 2025-11-07 02:03:58,727 runserver 238 131401403856576 HTTP GET /api/v1/notifications/get_notifications/ 401 [0.08, 172.18.0.13:35964]
+WARNING 2025-11-07 02:03:58,727 log 238 131401269622464 Unauthorized: /api/v1/dashboard/get_quick_stats/
+WARNING 2025-11-07 02:03:58,729 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_today_overview/ 401 [0.08, 172.18.0.13:35966]
+WARNING 2025-11-07 02:03:58,731 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_recent_jobs/ 401 [0.08, 172.18.0.13:35984]
+WARNING 2025-11-07 02:03:58,732 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_quick_stats/ 401 [0.08, 172.18.0.13:35970]
+INFO 2025-11-07 02:03:59,938 runserver 238 131401403856576 HTTP POST /api/v1/authentication/refresh/ 200 [1.04, 172.18.0.13:49986]
+INFO 2025-11-07 02:04:00,038 runserver 238 131401403856576 HTTP POST /api/v1/authentication/refresh/ 200 [1.17, 172.18.0.13:49968]
+INFO 2025-11-07 02:04:00,046 runserver 238 131401403856576 HTTP POST /api/v1/authentication/refresh/ 200 [1.14, 172.18.0.13:49992]
+INFO 2025-11-07 02:04:00,053 runserver 238 131401403856576 HTTP POST /api/v1/authentication/refresh/ 200 [1.15, 172.18.0.13:49972]
+INFO 2025-11-07 02:04:00,738 runserver 238 131401403856576 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.48, 172.18.0.13:50012]
+INFO 2025-11-07 02:04:00,776 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.63, 172.18.0.13:50002]
+INFO 2025-11-07 02:04:01,081 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.82, 172.18.0.13:50014]
+INFO 2025-11-07 02:04:01,287 dashboard 238 131401286407872 Weekly: 28.00 + 0 = 28.00
+INFO 2025-11-07 02:04:01,287 dashboard 238 131401286407872 Monthly: 28.00 + 0 = 28.00
+INFO 2025-11-07 02:04:01,288 dashboard 238 131401286407872 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 02:04:01,289 dashboard 238 131401286407872 Recent tips: 0
+INFO 2025-11-07 02:04:01,293 runserver 238 131401403856576 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.08, 172.18.0.13:50008]
+INFO 2025-11-07 02:04:10,385 runserver 238 131401403856576 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-15 200 [0.48, 172.18.0.13:50026]
+INFO 2025-11-07 02:04:12,701 runserver 238 131401403856576 HTTP GET /api/v1/appointments/get_appointment_details/?id=24 200 [0.73, 172.18.0.13:53414]
+INFO 2025-11-07 02:04:13,973 runserver 238 131401403856576 HTTP GET /api/v1/appointments/get_appointment_details/?id=24 200 [0.71, 172.18.0.13:53420]
+WARNING 2025-11-07 02:05:15,509 log 238 131401278015168 Bad Request: /api/v1/appointments/upload_before_images/
+WARNING 2025-11-07 02:05:15,512 runserver 238 131401403856576 HTTP POST /api/v1/appointments/upload_before_images/ 400 [0.58, 172.18.0.13:41664]
+WARNING 2025-11-07 02:05:34,556 log 238 131401269622464 Bad Request: /api/v1/appointments/upload_before_images/
+WARNING 2025-11-07 02:05:34,558 runserver 238 131401403856576 HTTP POST /api/v1/appointments/upload_before_images/ 400 [0.55, 172.18.0.13:40484]
+WARNING 2025-11-07 02:15:21,134 log 238 131401278015168 Bad Request: /api/v1/appointments/upload_before_images/
+WARNING 2025-11-07 02:15:21,137 runserver 238 131401403856576 HTTP POST /api/v1/appointments/upload_before_images/ 400 [0.53, 172.18.0.13:56958]
+WARNING 2025-11-07 02:15:28,057 log 238 131401269622464 Bad Request: /api/v1/appointments/upload_before_images/
+WARNING 2025-11-07 02:15:28,060 runserver 238 131401403856576 HTTP POST /api/v1/appointments/upload_before_images/ 400 [0.53, 172.18.0.13:33514]
+INFO 2025-11-07 02:18:27,886 autoreload 238 131401509096320 /app/main/models.py changed, reloading.
+INFO 2025-11-07 02:18:31,573 autoreload 285 135775926242176 Watching for file changes with StatReloader
+INFO 2025-11-07 02:18:32,580 server 285 135775820707520 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-07 02:18:32,581 server 285 135775820707520 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-07 02:18:32,583 server 285 135775820707520 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-07 02:18:48,693 runserver 285 135775820707520 HTTP POST /api/v1/appointments/upload_before_images/ 201 [2.82, 172.18.0.13:50706]
+INFO 2025-11-07 02:18:49,587 runserver 285 135775820707520 HTTP PATCH /api/v1/appointments/start_appointment/ 200 [0.72, 172.18.0.13:50714]
+WARNING 2025-11-07 02:19:02,191 log 285 135775717942976 Unauthorized: /api/v1/appointments/get_all_appointments/
+WARNING 2025-11-07 02:19:02,193 runserver 285 135775820707520 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 401 [0.02, 172.18.0.13:36686]
+INFO 2025-11-07 02:19:03,378 runserver 285 135775820707520 HTTP POST /api/v1/authentication/refresh/ 200 [0.99, 172.18.0.13:36692]
+INFO 2025-11-07 02:19:04,217 runserver 285 135775820707520 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 200 [0.63, 172.18.0.13:36694]
+INFO 2025-11-07 02:19:08,489 runserver 285 135775820707520 HTTP GET /api/v1/appointments/get_appointment_details/?id=24 200 [0.78, 172.18.0.13:57112]
+INFO 2025-11-07 02:20:30,049 runserver 285 135775820707520 HTTP POST /api/v1/appointments/upload_after_images/ 201 [2.25, 172.18.0.13:34190]
+INFO 2025-11-07 02:20:31,062 runserver 285 135775820707520 HTTP PATCH /api/v1/appointments/complete_appointment/ 200 [0.84, 172.18.0.13:34194]
+INFO 2025-11-07 02:20:39,068 runserver 285 135775820707520 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.49, 172.18.0.13:56404]
+INFO 2025-11-07 02:20:39,271 runserver 285 135775820707520 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.69, 172.18.0.13:56418]
+INFO 2025-11-07 02:20:39,315 runserver 285 135775820707520 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.81, 172.18.0.13:56392]
+INFO 2025-11-07 02:20:39,648 dashboard 285 135775709550272 Weekly: 112.00 + 0 = 112.00
+INFO 2025-11-07 02:20:39,649 dashboard 285 135775709550272 Monthly: 112.00 + 0 = 112.00
+INFO 2025-11-07 02:20:39,649 dashboard 285 135775709550272 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 02:20:39,650 dashboard 285 135775709550272 Recent tips: 0
+INFO 2025-11-07 02:20:39,657 runserver 285 135775820707520 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.09, 172.18.0.13:56396]
+INFO 2025-11-07 02:20:48,555 runserver 285 135775820707520 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 200 [0.62, 172.18.0.13:59202]
+INFO 2025-11-07 02:20:51,575 runserver 285 135775820707520 HTTP GET /api/v1/appointments/get_appointment_details/?id=24 200 [0.75, 172.18.0.13:59216]
+WARNING 2025-11-07 22:30:35,333 log 285 135775717942976 Unauthorized: /api/v1/dashboard/get_quick_stats/
+WARNING 2025-11-07 22:30:35,345 log 285 135775324731072 Unauthorized: /api/v1/dashboard/get_today_overview/
+WARNING 2025-11-07 22:30:35,335 log 285 135775676856000 Unauthorized: /api/v1/notifications/get_notifications/
+WARNING 2025-11-07 22:30:35,349 log 285 135775316338368 Unauthorized: /api/v1/dashboard/get_recent_jobs/
+WARNING 2025-11-07 22:30:35,381 runserver 285 135775820707520 HTTP GET /api/v1/dashboard/get_quick_stats/ 401 [0.47, 172.18.0.13:59648]
+WARNING 2025-11-07 22:30:35,406 runserver 285 135775820707520 HTTP GET /api/v1/dashboard/get_today_overview/ 401 [0.51, 172.18.0.13:59644]
+WARNING 2025-11-07 22:30:35,420 runserver 285 135775820707520 HTTP GET /api/v1/notifications/get_notifications/ 401 [0.52, 172.18.0.13:59646]
+WARNING 2025-11-07 22:30:35,422 runserver 285 135775820707520 HTTP GET /api/v1/dashboard/get_recent_jobs/ 401 [0.56, 172.18.0.13:59642]
+INFO 2025-11-07 22:30:36,894 runserver 285 135775820707520 HTTP POST /api/v1/authentication/refresh/ 200 [1.29, 172.18.0.13:59690]
+INFO 2025-11-07 22:30:36,986 runserver 285 135775820707520 HTTP POST /api/v1/authentication/refresh/ 200 [1.38, 172.18.0.13:59684]
+INFO 2025-11-07 22:30:37,049 runserver 285 135775820707520 HTTP POST /api/v1/authentication/refresh/ 200 [1.45, 172.18.0.13:59676]
+INFO 2025-11-07 22:30:37,053 runserver 285 135775820707520 HTTP POST /api/v1/authentication/refresh/ 200 [1.44, 172.18.0.13:59706]
+INFO 2025-11-07 22:30:37,740 runserver 285 135775820707520 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.49, 172.18.0.13:59746]
+INFO 2025-11-07 22:30:37,788 runserver 285 135775820707520 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.69, 172.18.0.13:59714]
+INFO 2025-11-07 22:30:37,972 runserver 285 135775820707520 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.81, 172.18.0.13:59726]
+INFO 2025-11-07 22:30:38,352 dashboard 285 135775685248704 Weekly: 112.00 + 0 = 112.00
+INFO 2025-11-07 22:30:38,357 dashboard 285 135775685248704 Monthly: 112.00 + 0 = 112.00
+INFO 2025-11-07 22:30:38,358 dashboard 285 135775685248704 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 22:30:38,358 dashboard 285 135775685248704 Recent tips: 0
+INFO 2025-11-07 22:30:38,362 runserver 285 135775820707520 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.11, 172.18.0.13:59740]
+INFO 2025-11-07 22:31:27,554 runserver 285 135775820707520 HTTP GET /api/v1/earnings/get_payout_history/ 200 [0.60, 172.18.0.13:36166]
+INFO 2025-11-07 22:31:27,819 runserver 285 135775820707520 HTTP GET /api/v1/earnings/get_earnings_summary/ 200 [0.88, 172.18.0.13:36140]
+INFO 2025-11-07 22:31:27,995 runserver 285 135775820707520 HTTP GET /api/v1/earnings/get_recent_earnings/ 200 [1.09, 172.18.0.13:36130]
+INFO 2025-11-07 22:31:32,606 runserver 285 135775820707520 HTTP GET /api/v1/earnings/get_earnings_analytics/ 200 [5.65, 172.18.0.13:36150]
+INFO 2025-11-07 22:31:50,074 runserver 285 135775820707520 HTTP GET /api/v1/profile/get_profile_statistics/ 200 [0.68, 172.18.0.13:58152]
+INFO 2025-11-07 22:31:52,203 runserver 285 135775820707520 HTTP GET /api/v1/banking/get_bank_accounts/ 200 [0.46, 172.18.0.13:58162]
+INFO 2025-11-07 22:32:00,036 runserver 285 135775820707520 HTTP PATCH /api/v1/banking/set_default_bank_account/ 200 [0.89, 172.18.0.13:43064]
+INFO 2025-11-07 22:32:00,933 runserver 285 135775820707520 HTTP GET /api/v1/banking/get_bank_accounts/ 200 [0.64, 172.18.0.13:43070]
+INFO 2025-11-07 22:32:26,742 runserver 285 135775820707520 HTTP PATCH /api/v1/banking/set_default_bank_account/ 200 [0.60, 172.18.0.13:38348]
+INFO 2025-11-07 22:32:27,438 runserver 285 135775820707520 HTTP GET /api/v1/banking/get_bank_accounts/ 200 [0.49, 172.18.0.13:33502]
+INFO 2025-11-07 22:37:50,053 runserver 285 135775820707520 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.53, 172.18.0.13:38192]
+INFO 2025-11-07 22:37:50,240 runserver 285 135775820707520 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.72, 172.18.0.13:38200]
+INFO 2025-11-07 22:37:50,344 runserver 285 135775820707520 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.82, 172.18.0.13:38208]
+INFO 2025-11-07 22:37:50,599 dashboard 285 135775709550272 Weekly: 112.00 + 0 = 112.00
+INFO 2025-11-07 22:37:50,600 dashboard 285 135775709550272 Monthly: 112.00 + 0 = 112.00
+INFO 2025-11-07 22:37:50,600 dashboard 285 135775709550272 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-07 22:37:50,601 dashboard 285 135775709550272 Recent tips: 0
+INFO 2025-11-07 22:37:50,606 runserver 285 135775820707520 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.08, 172.18.0.13:38218]
+INFO 2025-11-07 22:38:06,258 runserver 285 135775820707520 HTTP GET /api/v1/earnings/get_payout_history/ 200 [0.54, 172.18.0.13:58540]
+INFO 2025-11-07 22:38:06,588 runserver 285 135775820707520 HTTP GET /api/v1/earnings/get_earnings_summary/ 200 [0.86, 172.18.0.13:58546]
+INFO 2025-11-07 22:38:06,647 runserver 285 135775820707520 HTTP GET /api/v1/earnings/get_recent_earnings/ 200 [0.95, 172.18.0.13:58534]
+INFO 2025-11-07 22:38:09,044 runserver 285 135775820707520 HTTP GET /api/v1/earnings/get_earnings_analytics/ 200 [3.39, 172.18.0.13:58532]

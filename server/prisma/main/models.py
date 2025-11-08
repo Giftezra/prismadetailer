@@ -289,12 +289,7 @@ class Job(models.Model):
     loyalty_tier = models.CharField(max_length=20, choices=LOYALTY_TIER_CHOICES, default='bronze')
     loyalty_benefits = models.JSONField(default=list, blank=True, null=True)
     detailer = models.ForeignKey(Detailer, on_delete=models.CASCADE, related_name="jobs", blank=True, null=True)
-    
-    before_photo = models.ImageField(upload_to="jobs/before/", blank=True, null=True)
-    after_photo = models.ImageField(upload_to="jobs/after/", blank=True, null=True)
-
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0, blank=True, null=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -377,6 +372,44 @@ class Job(models.Model):
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Failed to update detailer rating: {e}")
+
+
+# -------------------------------
+# Job Images
+# -------------------------------
+def job_image_upload_path(instance, filename):
+    """
+    Generate upload path including image type (before/after)
+    Creates folder structure: jobs/images/{before|after}/YYYY/MM/DD/filename
+    """
+    return f'jobs/images/{instance.image_type}/{timezone.now().strftime("%Y/%m/%d")}/{filename}'
+
+
+class JobImage(models.Model):
+    """
+    Store multiple before/after images for a job.
+    Uploaded by detailer during job execution (camera only for freshness).
+    """
+    IMAGE_TYPE_CHOICES = [
+        ('before', 'Before'),
+        ('after', 'After'),
+    ]
+    
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='images')
+    image_type = models.CharField(max_length=10, choices=IMAGE_TYPE_CHOICES)
+    image = models.ImageField(upload_to=job_image_upload_path)
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['uploaded_at']
+        indexes = [
+            models.Index(fields=['job', 'image_type']),
+            models.Index(fields=['uploaded_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.image_type} image for Job {self.job.id}"
 
 
 class Earning(models.Model):

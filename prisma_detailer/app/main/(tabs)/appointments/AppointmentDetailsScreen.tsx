@@ -5,8 +5,9 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Image,
 } from "react-native";
-import React from "react";
+import React, { useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import StyledText from "@/app/components/helpers/StyledText";
@@ -16,6 +17,10 @@ import LinearGradientComponent from "@/app/components/helpers/LinearGradientComp
 import { JobDetailsProps } from "@/app/interfaces/AppointmentInterface";
 import { useAppointment } from "@/app/app-hooks/useAppointment";
 import { formatCurrency } from "@/app/utils/converters";
+import {
+  captureMultipleCameraImages,
+  prepareImagesForUpload,
+} from "@/app/utils/images";
 
 /**
  * AppointmentDetailsScreen Component
@@ -47,17 +52,123 @@ const AppointmentDetailsScreen = () => {
     handleCancelAppointment,
     handleCompleteAppointment,
     handleStartAppointment,
+    handleUploadBeforeImages,
+    handleUploadAfterImages,
+    isLoadingUploadBeforeImages,
+    isLoadingUploadAfterImages,
   } = useAppointment();
   const params = useLocalSearchParams();
   const appointmentDetails = params.appointmentDetails
     ? JSON.parse(params.appointmentDetails as string)
     : null;
 
+  // Local state for captured images (before upload)
+  const [capturedBeforeImages, setCapturedBeforeImages] = useState<
+    Array<{ uri: string; type: string; filename: string }>
+  >([]);
+  const [capturedAfterImages, setCapturedAfterImages] = useState<
+    Array<{ uri: string; type: string; filename: string }>
+  >([]);
+
   const backgroundColor = useThemeColor({}, "background");
   const cardColor = useThemeColor({}, "cards");
   const textColor = useThemeColor({}, "text");
   const tintColor = useThemeColor({}, "tint");
   const borderColor = useThemeColor({}, "borders");
+
+  /**
+   * Capture before images and store them locally (no upload yet)
+   */
+  const handleBeforeImageCapture = async () => {
+    try {
+      const images = await captureMultipleCameraImages(5);
+      if (images && images.length > 0) {
+        setCapturedBeforeImages((prev) => [...prev, ...images]);
+      }
+    } catch (error) {
+      console.error("Error capturing before images:", error);
+    }
+  };
+
+  /**
+   * Capture after images and store them locally (no upload yet)
+   */
+  const handleAfterImageCapture = async () => {
+    try {
+      const images = await captureMultipleCameraImages(5);
+      if (images && images.length > 0) {
+        setCapturedAfterImages((prev) => [...prev, ...images]);
+      }
+    } catch (error) {
+      console.error("Error capturing after images:", error);
+    }
+  };
+
+  /**
+   * Remove a before image from the preview
+   */
+  const removeBeforeImage = (index: number) => {
+    setCapturedBeforeImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  /**
+   * Remove an after image from the preview
+   */
+  const removeAfterImage = (index: number) => {
+    setCapturedAfterImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  /**
+   * Handle Start Job - Upload before images first, then start appointment
+   */
+  const handleStartJob = async () => {
+    if (!appointmentDetails?.id) return;
+
+    try {
+      // Upload before images if any were captured
+      if (capturedBeforeImages.length > 0) {
+        const formData = prepareImagesForUpload(
+          capturedBeforeImages,
+          appointmentDetails.id
+        );
+        await handleUploadBeforeImages(formData);
+      }
+
+      // Start the appointment
+      await handleStartAppointment(appointmentDetails.id);
+
+      // Clear captured images after successful upload
+      setCapturedBeforeImages([]);
+    } catch (error) {
+      console.error("Error starting job:", error);
+    }
+  };
+
+  /**
+   * Handle Complete Job - Upload after images first, then complete appointment
+   */
+  const handleCompleteJob = async () => {
+    if (!appointmentDetails?.id) return;
+
+    try {
+      // Upload after images if any were captured
+      if (capturedAfterImages.length > 0) {
+        const formData = prepareImagesForUpload(
+          capturedAfterImages,
+          appointmentDetails.id
+        );
+        await handleUploadAfterImages(formData);
+      }
+
+      // Complete the appointment
+      await handleCompleteAppointment(appointmentDetails.id);
+
+      // Clear captured images after successful upload
+      setCapturedAfterImages([]);
+    } catch (error) {
+      console.error("Error completing job:", error);
+    }
+  };
 
   /**
    * Get status style based on job status
@@ -149,21 +260,26 @@ const AppointmentDetailsScreen = () => {
           <View style={styles.buttonContainer}>
             <StyledButton
               key="start"
-              variant="small"
-              onPress={() => handleStartAppointment(appointmentDetails.id)}
-              style={[styles.actionButton, styles.startButton]}
+              variant="tonal"
+              onPress={handleStartJob}
+              disabled={
+                isLoadingUploadBeforeImages || capturedBeforeImages.length !== 4
+              }
             >
-              <StyledText variant="labelLarge" style={{ color: "white" }}>
-                Start Job
-              </StyledText>
+              {isLoadingUploadBeforeImages ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <StyledText variant="labelLarge">
+                  Start Job
+                </StyledText>
+              )}
             </StyledButton>
             <StyledButton
               key="cancel"
-              variant="small"
+              variant="tonal"
               onPress={() => handleCancelAppointment(appointmentDetails.id)}
-              style={[styles.actionButton, styles.cancelButton]}
             >
-              <StyledText variant="labelLarge" style={{ color: "white" }}>
+              <StyledText variant="labelLarge">
                 Cancel Job
               </StyledText>
             </StyledButton>
@@ -175,13 +291,18 @@ const AppointmentDetailsScreen = () => {
             <StyledButton
               key="complete"
               variant="tonal"
-              style={[styles.actionButton, styles.completeButton]}
-              onPress={() => handleCompleteAppointment(appointmentDetails.id)}
+              onPress={handleCompleteJob}
+              disabled={
+                isLoadingUploadAfterImages || capturedAfterImages.length !== 4
+              }
             >
-              <Ionicons name="checkmark-done" size={20} color="white" />
-              <StyledText variant="labelLarge" style={{ color: "white" }}>
-                Complete Job
-              </StyledText>
+              {isLoadingUploadAfterImages ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <StyledText variant="labelLarge">
+                  Complete Job
+                </StyledText>
+              )}
             </StyledButton>
           </View>
         );
@@ -507,68 +628,215 @@ const AppointmentDetailsScreen = () => {
           </View>
         </LinearGradientComponent>
 
-        {/* Before & After Images */}
-        <LinearGradientComponent
-          color1={cardColor}
-          color2={textColor}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 3, y: 1 }}
-          style={[styles.card, { borderColor }]}
-        >
-          <StyledText variant="labelMedium">Before & After Images</StyledText>
+        {/* Before Images - Only show when status is "accepted" */}
+        {appointmentDetails?.status === "accepted" && (
+          <LinearGradientComponent
+            color1={cardColor}
+            color2={textColor}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 3, y: 1 }}
+            style={[styles.card, { borderColor }]}
+          >
+            <StyledText variant="labelMedium">Before Images</StyledText>
 
-          {/* Before Images */}
-          <View style={styles.imageSection}>
-            <View style={styles.imageSectionHeader}>
-              <Ionicons name="images" size={20} color={tintColor} />
-              <StyledText variant="bodySmall">Before Images</StyledText>
-            </View>
-            <View style={styles.imageGrid}>
-              {appointmentDetails?.before_images ? (
-                <View style={styles.imagePlaceholder}>
-                  <Ionicons name="image" size={32} color={tintColor} />
-                  <StyledText variant="bodySmall">Before Image</StyledText>
-                </View>
-              ) : (
+            <View style={styles.imageSection}>
+              <View style={styles.imageSectionHeader}>
+                <Ionicons name="images" size={20} color={tintColor} />
+                <StyledText variant="bodySmall">
+                  Uploaded: {appointmentDetails?.before_images?.length || 0} |
+                  Captured: {capturedBeforeImages.length}
+                </StyledText>
+              </View>
+
+              <View style={styles.imageGrid}>
+                {/* Show already uploaded images */}
+                {appointmentDetails?.before_images &&
+                  appointmentDetails.before_images.map(
+                    (img: any, index: number) => (
+                      <View
+                        key={`uploaded-${index}`}
+                        style={styles.imageContainer}
+                      >
+                        <Image
+                          source={{ uri: img.image_url }}
+                          style={styles.uploadedImage}
+                        />
+                      </View>
+                    )
+                  )}
+
+                {/* Show captured images (not yet uploaded) with remove button */}
+                {capturedBeforeImages.map((img, index) => (
+                  <View key={`captured-${index}`} style={styles.imageContainer}>
+                    <Image
+                      source={{ uri: img.uri }}
+                      style={styles.uploadedImage}
+                    />
+                    <TouchableOpacity
+                      style={styles.removeButton}
+                      onPress={() => removeBeforeImage(index)}
+                    >
+                      <Ionicons name="close-circle" size={24} color="#dc3545" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+
+                {/* Capture button */}
                 <TouchableOpacity
                   style={[styles.uploadButton, { borderColor }]}
-                  onPress={() => {
-                    /* Upload before image */
-                  }}
+                  onPress={handleBeforeImageCapture}
                 >
                   <Ionicons name="camera" size={24} color={tintColor} />
-                  <StyledText variant="bodySmall">Add Before Image</StyledText>
+                  <StyledText variant="bodySmall">
+                    {capturedBeforeImages.length === 0
+                      ? "Capture Before Images"
+                      : "Capture More"}
+                  </StyledText>
                 </TouchableOpacity>
-              )}
+              </View>
             </View>
-          </View>
+          </LinearGradientComponent>
+        )}
 
-          {/* After Images */}
-          <View style={styles.imageSection}>
-            <View style={styles.imageSectionHeader}>
-              <Ionicons name="images" size={20} color={tintColor} />
-              <StyledText variant="bodySmall">After Images</StyledText>
-            </View>
-            <View style={styles.imageGrid}>
-              {appointmentDetails?.after_images ? (
-                <View style={styles.imagePlaceholder}>
-                  <Ionicons name="image" size={32} color={tintColor} />
-                  <StyledText variant="bodySmall">After Image</StyledText>
-                </View>
-              ) : (
+        {/* After Images - Only show when status is "in_progress" */}
+        {appointmentDetails?.status === "in_progress" && (
+          <LinearGradientComponent
+            color1={cardColor}
+            color2={textColor}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 3, y: 1 }}
+            style={[styles.card, { borderColor }]}
+          >
+            <StyledText variant="labelMedium">After Images</StyledText>
+
+            <View style={styles.imageSection}>
+              <View style={styles.imageSectionHeader}>
+                <Ionicons name="images" size={20} color={tintColor} />
+                <StyledText variant="bodySmall">
+                  Uploaded: {appointmentDetails?.after_images?.length || 0} |
+                  Captured: {capturedAfterImages.length}
+                </StyledText>
+              </View>
+
+              <View style={styles.imageGrid}>
+                {/* Show already uploaded images */}
+                {appointmentDetails?.after_images &&
+                  appointmentDetails.after_images.map(
+                    (img: any, index: number) => (
+                      <View
+                        key={`uploaded-${index}`}
+                        style={styles.imageContainer}
+                      >
+                        <Image
+                          source={{ uri: img.image_url }}
+                          style={styles.uploadedImage}
+                        />
+                      </View>
+                    )
+                  )}
+
+                {/* Show captured images (not yet uploaded) with remove button */}
+                {capturedAfterImages.map((img, index) => (
+                  <View key={`captured-${index}`} style={styles.imageContainer}>
+                    <Image
+                      source={{ uri: img.uri }}
+                      style={styles.uploadedImage}
+                    />
+                    <TouchableOpacity
+                      style={styles.removeButton}
+                      onPress={() => removeAfterImage(index)}
+                    >
+                      <Ionicons name="close-circle" size={24} color="#dc3545" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+
+                {/* Capture button */}
                 <TouchableOpacity
                   style={[styles.uploadButton, { borderColor }]}
-                  onPress={() => {
-                    /* Upload after image */
-                  }}
+                  onPress={handleAfterImageCapture}
                 >
                   <Ionicons name="camera" size={24} color={tintColor} />
-                  <StyledText variant="bodySmall">Add After Image</StyledText>
+                  <StyledText variant="bodySmall">
+                    {capturedAfterImages.length === 0
+                      ? "Capture After Images"
+                      : "Capture More"}
+                  </StyledText>
                 </TouchableOpacity>
-              )}
+              </View>
             </View>
-          </View>
-        </LinearGradientComponent>
+          </LinearGradientComponent>
+        )}
+
+        {/* Both Images - Show when completed or other statuses */}
+        {(appointmentDetails?.status === "completed" ||
+          appointmentDetails?.status === "cancelled" ||
+          appointmentDetails?.status === "pending") && (
+          <LinearGradientComponent
+            color1={cardColor}
+            color2={textColor}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 3, y: 1 }}
+            style={[styles.card, { borderColor }]}
+          >
+            <StyledText variant="labelMedium">Before & After Images</StyledText>
+
+            {/* Before Images */}
+            <View style={styles.imageSection}>
+              <View style={styles.imageSectionHeader}>
+                <Ionicons name="images" size={20} color={tintColor} />
+                <StyledText variant="bodySmall">
+                  Before Images (
+                  {appointmentDetails?.before_images?.length || 0})
+                </StyledText>
+              </View>
+              <View style={styles.imageGrid}>
+                {appointmentDetails?.before_images &&
+                appointmentDetails.before_images.length > 0 ? (
+                  appointmentDetails.before_images.map(
+                    (img: any, index: number) => (
+                      <View key={index} style={styles.imageContainer}>
+                        <Image
+                          source={{ uri: img.image_url }}
+                          style={styles.uploadedImage}
+                        />
+                      </View>
+                    )
+                  )
+                ) : (
+                  <StyledText variant="bodySmall">No before images</StyledText>
+                )}
+              </View>
+            </View>
+
+            {/* After Images */}
+            <View style={styles.imageSection}>
+              <View style={styles.imageSectionHeader}>
+                <Ionicons name="images" size={20} color={tintColor} />
+                <StyledText variant="bodySmall">
+                  After Images ({appointmentDetails?.after_images?.length || 0})
+                </StyledText>
+              </View>
+              <View style={styles.imageGrid}>
+                {appointmentDetails?.after_images &&
+                appointmentDetails.after_images.length > 0 ? (
+                  appointmentDetails.after_images.map(
+                    (img: any, index: number) => (
+                      <View key={index} style={styles.imageContainer}>
+                        <Image
+                          source={{ uri: img.image_url }}
+                          style={styles.uploadedImage}
+                        />
+                      </View>
+                    )
+                  )
+                ) : (
+                  <StyledText variant="bodySmall">No after images</StyledText>
+                )}
+              </View>
+            </View>
+          </LinearGradientComponent>
+        )}
 
         {/* Action Buttons */}
         <View style={styles.actionButtonsContainer}>
@@ -667,14 +935,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     paddingHorizontal: 4,
-  },
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
   },
   sleekActionButton: {
     flex: 1,
@@ -789,11 +1049,11 @@ const styles = StyleSheet.create({
   imageGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    gap: 5,
   },
   imagePlaceholder: {
-    width: 120,
-    height: 120,
+    width: 100,
+    height: 100,
     borderRadius: 8,
     borderWidth: 2,
     borderStyle: "dashed",
@@ -810,5 +1070,23 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
     justifyContent: "center",
     alignItems: "center",
+  },
+  imageContainer: {
+    width:'32%',
+    height:100,
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  uploadedImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  removeButton: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: 12,
   },
 });
