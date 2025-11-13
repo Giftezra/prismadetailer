@@ -13,9 +13,9 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 BASE_URL= os.getenv('BASE_URL')
 
-ALLOWED_ORIGINS = [BASE_URL, 'https://prismavalet.com', 'https://www.prismavalet.com', "https://1406609c54f0.ngrok-free.app"] 
-CSRF_TRUSTED_ORIGINS = [BASE_URL, 'https://prismavalet.com', 'https://www.prismavalet.com', "https://1406609c54f0.ngrok-free.app"]
-CORS_ALLOWED_ORIGINS = [BASE_URL, 'https://prismavalet.com', 'https://www.prismavalet.com', "https://1406609c54f0.ngrok-free.app"]  
+ALLOWED_ORIGINS = [BASE_URL, 'https://prismavalet.com', 'https://www.prismavalet.com', "https://381a4014244d.ngrok-free.app"] 
+CSRF_TRUSTED_ORIGINS = [BASE_URL, 'https://prismavalet.com', 'https://www.prismavalet.com', "https://381a4014244d.ngrok-free.app"]
+CORS_ALLOWED_ORIGINS = [BASE_URL, 'https://prismavalet.com', 'https://www.prismavalet.com', "https://381a4014244d.ngrok-free.app"]  
 CORS_ALLOW_CREDENTIALS = True
 DEBUG=os.getenv('DEBUG') == 'True'
 ALLOWED_HOSTS=['*']

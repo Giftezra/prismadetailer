@@ -544,3 +544,140 @@ INFO 2025-11-07 22:38:06,258 runserver 285 135775820707520 HTTP GET /api/v1/earn
 INFO 2025-11-07 22:38:06,588 runserver 285 135775820707520 HTTP GET /api/v1/earnings/get_earnings_summary/ 200 [0.86, 172.18.0.13:58546]
 INFO 2025-11-07 22:38:06,647 runserver 285 135775820707520 HTTP GET /api/v1/earnings/get_recent_earnings/ 200 [0.95, 172.18.0.13:58534]
 INFO 2025-11-07 22:38:09,044 runserver 285 135775820707520 HTTP GET /api/v1/earnings/get_earnings_analytics/ 200 [3.39, 172.18.0.13:58532]
+INFO 2025-11-13 01:31:47,176 autoreload 7 137354161060736 Watching for file changes with StatReloader
+INFO 2025-11-13 01:31:48,393 server 7 137354055513792 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-13 01:31:48,394 server 7 137354055513792 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-13 01:31:48,395 server 7 137354055513792 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-13 01:55:32,122 autoreload 7 137354161060736 /app/prisma/settings.py changed, reloading.
+INFO 2025-11-13 01:55:34,771 autoreload 9 133069075286912 Watching for file changes with StatReloader
+INFO 2025-11-13 01:55:36,970 server 9 133068969998016 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-13 01:55:36,971 server 9 133068969998016 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-13 01:55:36,972 server 9 133068969998016 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-13 01:56:54,698 runserver 9 133068969998016 HTTP GET /detailer-admin/ 302 [0.48, 172.18.0.7:40560]
+INFO 2025-11-13 01:56:54,813 runserver 9 133068969998016 HTTP GET /detailer-admin/login/?next=/detailer-admin/ 200 [0.04, 172.18.0.7:40576]
+INFO 2025-11-13 01:57:02,338 runserver 9 133068969998016 HTTP POST /detailer-admin/login/?next=/detailer-admin/ 302 [0.98, 172.18.0.7:45484]
+INFO 2025-11-13 01:57:02,955 runserver 9 133068969998016 HTTP GET /detailer-admin/ 200 [0.55, 172.18.0.7:45496]
+INFO 2025-11-13 02:04:50,589 autoreload 9 133069075286912 /app/main/serializer.py changed, reloading.
+INFO 2025-11-13 02:04:54,229 autoreload 15 123175376014208 Watching for file changes with StatReloader
+INFO 2025-11-13 02:04:55,213 server 15 123175270610624 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-13 02:04:55,214 server 15 123175270610624 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-13 02:04:55,216 server 15 123175270610624 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-13 02:04:59,733 autoreload 15 123175376014208 /app/main/serializer.py changed, reloading.
+INFO 2025-11-13 02:05:02,401 autoreload 17 132132599053184 Watching for file changes with StatReloader
+INFO 2025-11-13 02:05:03,710 server 17 132132493063872 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-13 02:05:03,711 server 17 132132493063872 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-13 02:05:03,713 server 17 132132493063872 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-13 02:06:46,320 autoreload 7 137205052742528 Watching for file changes with StatReloader
+INFO 2025-11-13 02:06:47,498 server 7 137204946958016 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-13 02:06:47,499 server 7 137204946958016 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-13 02:06:47,500 server 7 137204946958016 Listening on TCP address 0.0.0.0:8000
+WARNING 2025-11-13 02:19:34,388 log 7 137204919690944 Unauthorized: /api/v1/authentication/login/
+WARNING 2025-11-13 02:19:34,391 runserver 7 137204946958016 HTTP POST /api/v1/authentication/login/ 401 [0.68, 172.18.0.11:33154]
+INFO 2025-11-13 02:19:44,093 runserver 7 137204946958016 HTTP GET /detailer-admin/main/user/ 302 [0.46, 172.18.0.11:33164]
+INFO 2025-11-13 02:19:44,203 runserver 7 137204946958016 HTTP GET /detailer-admin/login/?next=/detailer-admin/main/user/ 200 [0.04, 172.18.0.11:33176]
+INFO 2025-11-13 02:19:51,327 runserver 7 137204946958016 HTTP POST /detailer-admin/login/?next=/detailer-admin/main/user/ 302 [1.00, 172.18.0.11:41270]
+INFO 2025-11-13 02:19:52,082 runserver 7 137204946958016 HTTP GET /detailer-admin/main/user/ 200 [0.68, 172.18.0.11:41276]
+INFO 2025-11-13 02:19:52,667 runserver 7 137204946958016 HTTP GET /detailer-admin/jsi18n/ 200 [0.46, 172.18.0.11:41280]
+INFO 2025-11-13 02:20:11,389 runserver 7 137204946958016 HTTP GET /detailer-admin/main/user/2/change/ 200 [7.17, 172.18.0.11:40756]
+INFO 2025-11-13 02:20:11,966 runserver 7 137204946958016 HTTP GET /detailer-admin/jsi18n/ 200 [0.46, 172.18.0.11:50132]
+INFO 2025-11-13 02:20:41,981 runserver 7 137204946958016 HTTP POST /api/v1/authentication/login/ 200 [0.76, 172.18.0.11:36380]
+INFO 2025-11-13 12:56:05,656 autoreload 7 139810341854080 Watching for file changes with StatReloader
+INFO 2025-11-13 12:56:06,504 server 7 139810235741888 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-13 12:56:06,505 server 7 139810235741888 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-13 12:56:06,505 server 7 139810235741888 Listening on TCP address 0.0.0.0:8000
+WARNING 2025-11-13 14:09:53,168 log 7 139809825740480 Unauthorized: /api/v1/dashboard/get_quick_stats/
+WARNING 2025-11-13 14:09:53,169 log 7 139809817347776 Unauthorized: /api/v1/dashboard/get_today_overview/
+WARNING 2025-11-13 14:09:53,170 log 7 139809808955072 Unauthorized: /api/v1/notifications/save_notification_token/
+WARNING 2025-11-13 14:09:53,170 log 7 139809800562368 Unauthorized: /api/v1/notifications/save_notification_token/
+WARNING 2025-11-13 14:09:53,171 log 7 139809792169664 Unauthorized: /api/v1/dashboard/get_recent_jobs/
+WARNING 2025-11-13 14:09:53,172 log 7 139809825740480 Unauthorized: /api/v1/notifications/get_notifications/
+WARNING 2025-11-13 14:09:53,178 runserver 7 139810235741888 HTTP GET /api/v1/dashboard/get_quick_stats/ 401 [0.34, 172.18.0.12:36980]
+WARNING 2025-11-13 14:09:53,182 runserver 7 139810235741888 HTTP GET /api/v1/dashboard/get_today_overview/ 401 [0.35, 172.18.0.12:36994]
+WARNING 2025-11-13 14:09:53,188 runserver 7 139810235741888 HTTP PATCH /api/v1/notifications/save_notification_token/ 401 [0.25, 172.18.0.12:37020]
+WARNING 2025-11-13 14:09:53,189 runserver 7 139810235741888 HTTP PATCH /api/v1/notifications/save_notification_token/ 401 [0.23, 172.18.0.12:37028]
+WARNING 2025-11-13 14:09:53,190 runserver 7 139810235741888 HTTP GET /api/v1/dashboard/get_recent_jobs/ 401 [0.35, 172.18.0.12:37004]
+WARNING 2025-11-13 14:09:53,191 runserver 7 139810235741888 HTTP GET /api/v1/notifications/get_notifications/ 401 [0.38, 172.18.0.12:36978]
+INFO 2025-11-13 14:09:54,494 runserver 7 139810235741888 HTTP POST /api/v1/authentication/refresh/ 200 [1.21, 172.18.0.12:37050]
+INFO 2025-11-13 14:09:54,650 runserver 7 139810235741888 HTTP POST /api/v1/authentication/refresh/ 200 [1.34, 172.18.0.12:37086]
+INFO 2025-11-13 14:09:54,655 runserver 7 139810235741888 HTTP POST /api/v1/authentication/refresh/ 200 [1.38, 172.18.0.12:37038]
+INFO 2025-11-13 14:09:54,665 runserver 7 139810235741888 HTTP POST /api/v1/authentication/refresh/ 200 [1.36, 172.18.0.12:37092]
+INFO 2025-11-13 14:09:54,683 runserver 7 139810235741888 HTTP POST /api/v1/authentication/refresh/ 200 [1.38, 172.18.0.12:37070]
+INFO 2025-11-13 14:09:54,690 runserver 7 139810235741888 HTTP POST /api/v1/authentication/refresh/ 200 [1.39, 172.18.0.12:37064]
+INFO 2025-11-13 14:09:55,283 runserver 7 139810235741888 HTTP PATCH /api/v1/notifications/save_notification_token/ 200 [0.49, 172.18.0.12:37144]
+INFO 2025-11-13 14:09:55,301 runserver 7 139810235741888 HTTP GET /api/v1/notifications/get_notifications/ 200 [0.53, 172.18.0.12:37128]
+INFO 2025-11-13 14:09:55,309 runserver 7 139810235741888 HTTP PATCH /api/v1/notifications/save_notification_token/ 200 [0.53, 172.18.0.12:37136]
+INFO 2025-11-13 14:09:55,335 runserver 7 139810235741888 HTTP GET /api/v1/dashboard/get_today_overview/ 200 [0.74, 172.18.0.12:37108]
+INFO 2025-11-13 14:09:55,540 runserver 7 139810235741888 HTTP GET /api/v1/dashboard/get_recent_jobs/ 200 [0.78, 172.18.0.12:37110]
+INFO 2025-11-13 14:09:55,844 dashboard 7 139809842525888 Weekly: 0 + 0 = 0
+INFO 2025-11-13 14:09:55,848 dashboard 7 139809842525888 Monthly: 112.00 + 0 = 112.00
+INFO 2025-11-13 14:09:55,849 dashboard 7 139809842525888 Rating: 5.0000000000000000 from 3 reviews
+INFO 2025-11-13 14:09:55,850 dashboard 7 139809842525888 Recent tips: 0
+INFO 2025-11-13 14:09:55,853 runserver 7 139810235741888 HTTP GET /api/v1/dashboard/get_quick_stats/ 200 [1.08, 172.18.0.12:37120]
+INFO 2025-11-13 14:10:49,285 runserver 7 139810235741888 HTTP GET /api/v1/earnings/get_payout_history/ 200 [0.59, 172.18.0.12:54932]
+INFO 2025-11-13 14:10:49,551 runserver 7 139810235741888 HTTP GET /api/v1/earnings/get_earnings_summary/ 200 [0.87, 172.18.0.12:54930]
+INFO 2025-11-13 14:10:49,702 runserver 7 139810235741888 HTTP GET /api/v1/earnings/get_recent_earnings/ 200 [1.02, 172.18.0.12:54914]
+INFO 2025-11-13 14:10:51,887 runserver 7 139810235741888 HTTP GET /api/v1/earnings/get_earnings_analytics/ 200 [3.19, 172.18.0.12:54936]
+INFO 2025-11-13 14:11:30,527 runserver 7 139810235741888 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-13 200 [0.50, 172.18.0.12:48690]
+INFO 2025-11-13 14:11:47,071 runserver 7 139810235741888 HTTP GET /api/v1/profile/get_profile_statistics/ 200 [0.70, 172.18.0.12:40920]
+INFO 2025-11-13 14:11:53,201 runserver 7 139810235741888 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-06 200 [0.50, 172.18.0.12:56732]
+INFO 2025-11-13 14:11:57,347 runserver 7 139810235741888 HTTP GET /api/v1/appointments/get_all_appointments/?date=2025-11-07 200 [0.65, 172.18.0.12:56740]
+INFO 2025-11-13 14:12:02,003 runserver 7 139810235741888 HTTP GET /api/v1/appointments/get_appointment_details/?id=24 200 [1.40, 172.18.0.12:56454]
+INFO 2025-11-13 14:14:54,714 runserver 7 139810235741888 HTTP GET /api/v1/availability/get_timeslots/?date=2025-11-13&service_duration=130&country=Ireland&city=Leixlip 200 [0.48, 172.18.0.12:47696]
+INFO 2025-11-13 14:15:36,158 runserver 7 139810235741888 HTTP GET /detailer-admin 301 [0.02, 172.18.0.12:33630]
+INFO 2025-11-13 14:15:36,868 runserver 7 139810235741888 HTTP GET /detailer-admin/ 302 [0.63, 172.18.0.12:33636]
+INFO 2025-11-13 14:15:36,986 runserver 7 139810235741888 HTTP GET /detailer-admin/login/?next=/detailer-admin/ 200 [0.05, 172.18.0.12:33638]
+INFO 2025-11-13 14:15:46,627 runserver 7 139810235741888 HTTP POST /detailer-admin/login/?next=/detailer-admin/ 302 [0.98, 172.18.0.12:37912]
+INFO 2025-11-13 14:15:47,290 runserver 7 139810235741888 HTTP GET /detailer-admin/ 200 [0.56, 172.18.0.12:37916]
+INFO 2025-11-13 14:15:54,386 runserver 7 139810235741888 HTTP GET /detailer-admin/main/user/ 200 [0.68, 172.18.0.12:55312]
+INFO 2025-11-13 14:15:54,977 runserver 7 139810235741888 HTTP GET /detailer-admin/jsi18n/ 200 [0.48, 172.18.0.12:55314]
+INFO 2025-11-13 14:16:03,434 runserver 7 139810235741888 HTTP GET /detailer-admin/main/user/2/change/ 200 [6.34, 172.18.0.12:55324]
+INFO 2025-11-13 14:16:04,063 runserver 7 139810235741888 HTTP GET /detailer-admin/jsi18n/ 200 [0.50, 172.18.0.12:44858]
+INFO 2025-11-13 14:17:02,095 runserver 7 139810235741888 HTTP GET /detailer-admin/main/detailer/ 200 [0.83, 172.18.0.12:46496]
+INFO 2025-11-13 14:17:02,822 runserver 7 139810235741888 HTTP GET /detailer-admin/jsi18n/ 200 [0.60, 172.18.0.12:46502]
+INFO 2025-11-13 14:17:05,792 runserver 7 139810235741888 HTTP GET /detailer-admin/main/detailer/1/change/ 200 [0.98, 172.18.0.12:46506]
+INFO 2025-11-13 14:17:06,595 runserver 7 139810235741888 HTTP GET /detailer-admin/jsi18n/ 200 [0.61, 172.18.0.12:46520]
+INFO 2025-11-13 14:17:21,251 runserver 7 139810235741888 HTTP POST /detailer-admin/main/detailer/1/change/ 302 [0.87, 172.18.0.12:56586]
+INFO 2025-11-13 14:17:22,087 runserver 7 139810235741888 HTTP GET /detailer-admin/main/detailer/ 200 [0.74, 172.18.0.12:42174]
+INFO 2025-11-13 14:17:22,704 runserver 7 139810235741888 HTTP GET /detailer-admin/jsi18n/ 200 [0.51, 172.18.0.12:42184]
+INFO 2025-11-13 14:18:02,767 runserver 7 139810235741888 HTTP GET /api/v1/availability/get_timeslots/?date=2025-11-13&service_duration=130&country=Ireland&city=Leixlip 200 [0.71, 172.18.0.12:33024]
+INFO 2025-11-13 14:22:48,826 runserver 7 139810235741888 HTTP GET /api/v1/availability/get_timeslots/?date=2025-11-13&service_duration=130&country=Ireland&city=Leixlip 200 [0.64, 172.18.0.12:36152]
+INFO 2025-11-13 19:10:08,456 autoreload 7 139810341854080 /app/prisma/celery.py changed, reloading.
+INFO 2025-11-13 19:10:13,071 autoreload 61 124573841390464 Watching for file changes with StatReloader
+INFO 2025-11-13 19:10:14,381 server 61 124573735450304 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-13 19:10:14,382 server 61 124573735450304 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-13 19:10:14,384 server 61 124573735450304 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-13 19:10:15,624 autoreload 61 124573841390464 /app/main/tasks.py changed, reloading.
+INFO 2025-11-13 19:10:17,872 autoreload 63 139543515044736 Watching for file changes with StatReloader
+INFO 2025-11-13 19:10:19,085 server 63 139543409850048 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-13 19:10:19,085 server 63 139543409850048 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-13 19:10:19,087 server 63 139543409850048 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-13 19:10:23,457 autoreload 63 139543515044736 /app/main/tasks.py changed, reloading.
+INFO 2025-11-13 19:10:25,447 autoreload 65 125473161792384 Watching for file changes with StatReloader
+INFO 2025-11-13 19:10:26,660 server 65 125473056093888 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-13 19:10:26,662 server 65 125473056093888 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-13 19:10:26,664 server 65 125473056093888 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-13 19:10:29,039 autoreload 65 125473161792384 /app/main/tasks.py changed, reloading.
+INFO 2025-11-13 19:10:31,155 autoreload 67 124304787766144 Watching for file changes with StatReloader
+INFO 2025-11-13 19:10:32,987 server 67 124304682383040 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-13 19:10:32,989 server 67 124304682383040 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-13 19:10:32,991 server 67 124304682383040 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-13 19:11:56,883 autoreload 67 124304787766144 /app/prisma/celery.py changed, reloading.
+INFO 2025-11-13 19:11:58,962 autoreload 69 135047574743936 Watching for file changes with StatReloader
+INFO 2025-11-13 19:12:00,182 server 69 135047469332160 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-13 19:12:00,183 server 69 135047469332160 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-13 19:12:00,185 server 69 135047469332160 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-13 19:24:34,859 runserver 69 135047469332160 HTTP GET /api/v1/availability/get_timeslots/?date=2025-11-13&service_duration=100&country=Ireland&city=Leixlip 200 [0.66, 172.18.0.10:33548]
+INFO 2025-11-13 19:24:40,982 runserver 69 135047469332160 HTTP GET /api/v1/availability/get_timeslots/?date=2025-11-14&service_duration=100&country=Ireland&city=Leixlip 200 [0.64, 172.18.0.10:58588]
+INFO 2025-11-13 20:49:32,437 autoreload 7 139755647585152 Watching for file changes with StatReloader
+INFO 2025-11-13 20:49:33,927 server 7 139755542017728 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-13 20:49:33,929 server 7 139755542017728 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-13 20:49:33,931 server 7 139755542017728 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-13 21:56:03,585 autoreload 7 139755647585152 /app/prisma/settings.py changed, reloading.
+INFO 2025-11-13 21:56:14,395 autoreload 9 137821697530752 Watching for file changes with StatReloader
+INFO 2025-11-13 21:56:15,893 server 9 137821591434944 HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+INFO 2025-11-13 21:56:15,896 server 9 137821591434944 Configuring endpoint tcp:port=8000:interface=0.0.0.0
+INFO 2025-11-13 21:56:15,899 server 9 137821591434944 Listening on TCP address 0.0.0.0:8000
+INFO 2025-11-13 22:00:36,549 runserver 9 137821591434944 HTTP GET /api/v1/availability/get_timeslots/?date=2025-11-13&service_duration=60&country=Ireland&city=Leixlip 200 [1.15, 172.18.0.12:52774]
+INFO 2025-11-13 22:00:40,856 runserver 9 137821591434944 HTTP GET /api/v1/availability/get_timeslots/?date=2025-11-14&service_duration=60&country=Ireland&city=Leixlip 200 [0.70, 172.18.0.12:59588]
+INFO 2025-11-13 22:02:56,227 runserver 9 137821591434944 HTTP GET /api/v1/availability/get_timeslots/?date=2025-11-14&service_duration=60&country=Ireland&city=Leixlip 200 [0.69, 172.18.0.12:40496]
+INFO 2025-11-13 22:12:54,347 runserver 9 137821591434944 HTTP GET /api/v1/availability/get_timeslots/?date=2025-11-14&service_duration=130&country=Ireland&city=Leixlip 200 [0.75, 172.18.0.12:33892]

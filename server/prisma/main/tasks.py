@@ -371,9 +371,13 @@ def send_password_reset_email(user_email, user_name, reset_token):
 @shared_task
 def check_daily_schedule():
     """Send daily schedule summary to detailers"""
+    from django.db import close_old_connections
     from main.models import Job
     from django.utils import timezone
     from datetime import timedelta
+    
+    # Close stale database connections before querying
+    close_old_connections()
     
     today = timezone.now().date()
     
@@ -410,9 +414,13 @@ def check_daily_schedule():
 @shared_task
 def check_upcoming_jobs():
     """Check for jobs starting soon and send reminders"""
+    from django.db import close_old_connections
     from main.models import Job
     from django.utils import timezone
     from datetime import timedelta
+    
+    # Close stale database connections before querying
+    close_old_connections()
     
     now = timezone.now()
     
@@ -443,9 +451,13 @@ def check_upcoming_jobs():
 @shared_task
 def check_pending_jobs():
     """ Send notification for jobs that are pending and haven't been accepted yet """
+    from django.db import close_old_connections
     from main.models import Job, Notification
     from django.utils import timezone
     from datetime import timedelta
+    
+    # Close stale database connections before querying
+    close_old_connections()
     
     try:
         now = timezone.now()
