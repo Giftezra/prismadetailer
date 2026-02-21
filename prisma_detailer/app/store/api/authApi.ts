@@ -25,10 +25,10 @@ const authApi = createApi({
      * The credential passed in the body is the {UserProfileProps} which is the users main
      * data
      * ARGS: {credentials: SignUpScreenProps}
-     * RESPONSE: {token: string, refresh: string, user: UserProfileProps}
+     * RESPONSE: {message: string, user: UserProfileProps}
      */
     register: builder.mutation<
-      { access: string; refresh: string; user: UserProfileProps },
+      { message: string; user: UserProfileProps },
       SignUpScreenProps
     >({
       query: (credentials) => ({

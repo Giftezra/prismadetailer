@@ -33,10 +33,12 @@ services:
       - CELERY_RESULT_BACKEND=redis://prisma_redis:6379/1
       - CELERY_WORKER_CONCURRENCY=3
     depends_on:
-      - detailer_server
+      detailer_server:
+        condition: service_started
     networks:
       - prisma_shared_net
 
+  # Consumes review_received from Redis (same stream client publishes to). Requires same Redis as client (e.g. shared network; REDIS_HOST=prisma_redis or client_prisma_redis if client stack runs in project "client").
   appointment_subscriber:
     build:
       context: ./server
@@ -50,24 +52,9 @@ services:
       - DJANGO_SETTINGS_MODULE=prisma.settings
       - REDIS_HOST=prisma_redis
     depends_on:
-      - detailer_server
-    networks:
-      - prisma_shared_net
-
-  chat_subscriber:
-    build:
-      context: ./server
-      dockerfile: Dockerfile
-    command: python manage.py chat_subscriber
-    volumes:
-      - ./server/prisma:/app
-    env_file:
-      - .env
-    environment:
-      - DJANGO_SETTINGS_MODULE=prisma.settings
-      - REDIS_HOST=prisma_redis
-    depends_on:
-      - detailer_server
+      detailer_server:
+        condition: service_started
+    restart: always
     networks:
       - prisma_shared_net
 
@@ -86,12 +73,10 @@ services:
       - REDIS_HOST=prisma_redis
       - CELERY_RESULT_BACKEND=redis://prisma_redis:6379/1
     depends_on:
-      - detailer_server
+      detailer_server:
+        condition: service_started
     networks:
       - prisma_shared_net
-
-volumes:
-  postgres_detailer_data:
 
 networks:
   prisma_shared_net:

@@ -94,13 +94,18 @@ const appointmentsApi = createApi({
 
     /**
      * Upload before images for a job
-     * @param formData - FormData containing job_id and image files
+     * @param formData - FormData containing job_id, segment (interior/exterior), and image files
      * @returns {message: string, images: Array} The upload response with image details
      */
     uploadBeforeImages: builder.mutation<
       {
         message: string;
-        images: Array<{ id: number; image_url: string; uploaded_at: string }>;
+        images: Array<{
+          id: number;
+          image_url: string;
+          uploaded_at: string;
+          segment: string;
+        }>;
       },
       FormData
     >({
@@ -116,13 +121,18 @@ const appointmentsApi = createApi({
 
     /**
      * Upload after images for a job
-     * @param formData - FormData containing job_id and image files
+     * @param formData - FormData containing job_id, segment (interior/exterior), and image files
      * @returns {message: string, images: Array} The upload response with image details
      */
     uploadAfterImages: builder.mutation<
       {
         message: string;
-        images: Array<{ id: number; image_url: string; uploaded_at: string }>;
+        images: Array<{
+          id: number;
+          image_url: string;
+          uploaded_at: string;
+          segment: string;
+        }>;
       },
       FormData
     >({
@@ -133,6 +143,25 @@ const appointmentsApi = createApi({
         headers: {
           "Content-Type": "multipart/form-data",
         },
+      }),
+    }),
+
+    /**
+     * Submit fleet maintenance data for a job
+     * @param data - Object containing job_id and fleet maintenance fields
+     * @returns {message: string, fleet_maintenance: FleetMaintenanceProps} The submission response
+     */
+    submitFleetMaintenance: builder.mutation<
+      {
+        message: string;
+        fleet_maintenance: any;
+      },
+      { job_id: string; [key: string]: any }
+    >({
+      query: (data) => ({
+        url: `/api/v1/appointments/submit_fleet_maintenance/`,
+        method: "POST",
+        data,
       }),
     }),
   }),
@@ -147,5 +176,6 @@ export const {
   useStartAppointmentMutation,
   useUploadBeforeImagesMutation,
   useUploadAfterImagesMutation,
+  useSubmitFleetMaintenanceMutation,
 } = appointmentsApi;
 export default appointmentsApi;

@@ -11,12 +11,11 @@ def get_full_media_url(relative_url):
     # Get the base URL from settings
     base_url = getattr(settings, 'BASE_URL', None)
     if not base_url:
-        # Use the ngrok URL directly as fallback
-        base_url = os.getenv('BASE_URL')
+        return relative_url
     
     # Remove leading slash if present to avoid double slashes
     if relative_url.startswith('/'):
         relative_url = relative_url[1:]
     
     # Combine base URL with relative URL
-    return f"{base_url}/main/{relative_url}" 
+    return f"{base_url}/detailer/{relative_url}" 

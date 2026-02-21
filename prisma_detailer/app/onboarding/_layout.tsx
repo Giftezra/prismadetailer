@@ -34,6 +34,10 @@ const OnboardingLayout = () => {
             name="ResetPasswordScreen"
             options={{ headerShown: false }}
           />
+          <Stack.Screen
+            name="PendingApprovalScreen"
+            options={{ headerShown: false }}
+          />
         </Stack>
       </KeyboardAvoidingView>
     </SafeAreaView>

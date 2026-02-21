@@ -40,7 +40,7 @@ const StyledButton: React.FC<StyledButtonProps> = ({
     const baseStyles = {
       alignItems: "center" as const,
       justifyContent: "center" as const,
-      opacity: disabled ? 0.6 : 1,
+      opacity: disabled ? 0.6 : 1, 
     };
 
     switch (variant) {
@@ -82,9 +82,10 @@ const StyledButton: React.FC<StyledButtonProps> = ({
             backgroundColor: buttonColor,
             paddingHorizontal: 24,
             paddingVertical: 16,
-            borderRadius: 20,
+            borderRadius: 30,
             minHeight: 35,
             gap: 12,
+
           },
           textVariant: "titleMedium" as const,
         };
@@ -148,7 +149,7 @@ const StyledButton: React.FC<StyledButtonProps> = ({
       activeOpacity={0.8}
     >
       {icon && icon}
-      <StyledText variant={textVariant} style={{ color: textColor }}>
+      <StyledText variant={textVariant} style={{ color: textColor as string }}>
         {children}
       </StyledText>
     </TouchableOpacity>

@@ -5,8 +5,8 @@ from django.template.loader import render_to_string
 from main.util.graph_mail import send_mail as graph_send_mail
 from asgiref.sync import async_to_sync
 from exponent_server_sdk import PushClient, PushMessage
-import redis
 import json
+from main.utils.redis_streams import stream_add, STREAM_JOB_EVENTS
 
 
 
@@ -39,14 +39,10 @@ def send_booking_confirmation_email(detailer_email, booking_reference, appointme
         return f"Failed to send booking confirmation email: {str(e)}"
 
 
-""" Publish the job acceptance to redis so that the client app will receive the notification and then create the job in the database"""
+"""Publish the job acceptance to Redis stream so the client app receives the notification and creates the job in the database."""
 @shared_task
 def publish_job_acceptance(booking_reference, detailer_email, detailer_name, detailer_phone, detailer_rating=0.0):
     try:
-        r = redis.Redis(host='prisma_redis', port=6379, db=0)
-        channel = 'job_acceptance'
-        
-        # Structure the message as expected by subscribe_redis.py
         message_data = {
             'booking_reference': booking_reference,
             'detailer': {
@@ -55,10 +51,9 @@ def publish_job_acceptance(booking_reference, detailer_email, detailer_name, det
                 'rating': detailer_rating
             }
         }
-        
-        message = json.dumps(message_data)
-        result = r.publish(channel, message)
-        return f"Job acceptance published to redis: {result}"
+        payload = json.dumps(message_data)
+        msg_id = stream_add(STREAM_JOB_EVENTS, {'event': 'job_acceptance', 'payload': payload})
+        return f"Job acceptance published to stream: {msg_id}"
     except Exception as e:
         return f"Failed to publish job acceptance to redis: {str(e)}"
 
@@ -73,12 +68,13 @@ def publish_job_started(booking_reference):
         try:
             job = Job.objects.get(booking_reference=booking_reference)
             
-            # Collect ONLY before images
+            # Collect ONLY before images with segment
             before_images = []
             for img in job.images.filter(image_type='before'):
                 before_images.append({
                     'image_url': get_full_media_url(img.image.url),
-                    'uploaded_at': img.uploaded_at.isoformat()
+                    'uploaded_at': img.uploaded_at.isoformat(),
+                    'segment': img.segment
                 })
             
             # Structure the message with booking reference and before images
@@ -93,12 +89,9 @@ def publish_job_started(booking_reference):
                 'booking_reference': booking_reference,
                 'before_images': []
             }
-        
-        r = redis.Redis(host='prisma_redis', port=6379, db=0)
-        channel = 'job_started'
-        message = json.dumps(message_data)
-        result = r.publish(channel, message)
-        return f"Job started published to redis with before images: {result}"
+        payload = json.dumps(message_data)
+        msg_id = stream_add(STREAM_JOB_EVENTS, {'event': 'job_started', 'payload': payload})
+        return f"Job started published to stream: {msg_id}"
     except Exception as e:
         return f"Failed to publish job started to redis: {str(e)}"
 
@@ -113,32 +106,38 @@ def publish_job_completed(booking_reference):
         try:
             job = Job.objects.get(booking_reference=booking_reference)
             
-            # Collect ONLY after images
+            # Collect ONLY after images with segment
             after_images = []
             for img in job.images.filter(image_type='after'):
                 after_images.append({
                     'image_url': get_full_media_url(img.image.url),
-                    'uploaded_at': img.uploaded_at.isoformat()
+                    'uploaded_at': img.uploaded_at.isoformat(),
+                    'segment': img.segment
                 })
             
-            # Structure the message with booking reference and after images
+            # Get fleet maintenance data if exists
+            fleet_maintenance_data = None
+            if hasattr(job, 'fleet_maintenance') and job.fleet_maintenance:
+                from main.serializer import JobFleetMaintenanceSerializer
+                fleet_maintenance_data = JobFleetMaintenanceSerializer(job.fleet_maintenance).data
+            
+            # Structure the message with booking reference, after images, and fleet maintenance
             message_data = {
                 'booking_reference': booking_reference,
-                'after_images': after_images
+                'after_images': after_images,
+                'fleet_maintenance': fleet_maintenance_data
             }
             
         except Job.DoesNotExist:
             # If job not found, send just the booking reference (backwards compatible)
             message_data = {
                 'booking_reference': booking_reference,
-                'after_images': []
+                'after_images': [],
+                'fleet_maintenance': None
             }
-        
-        r = redis.Redis(host='prisma_redis', port=6379, db=0)
-        channel = 'job_completed'
-        message = json.dumps(message_data)
-        result = r.publish(channel, message)
-        return f"Job completed published to redis with after images: {result}"
+        payload = json.dumps(message_data)
+        msg_id = stream_add(STREAM_JOB_EVENTS, {'event': 'job_completed', 'payload': payload})
+        return f"Job completed published to stream: {msg_id}"
     except Exception as e:
         return f"Failed to publish job completed to redis: {str(e)}"
 
@@ -260,91 +259,6 @@ def send_push_notification(user_id, title, message, type):
 
 
 @shared_task
-def create_job_chat_room(job_id):
-    """Create a chat room for a specific job - IDENTICAL algorithm to client app"""
-    try:
-        from .models import Job, JobChatRoom
-        from django.utils import timezone
-        
-        # Get the job
-        job = Job.objects.get(id=job_id)
-        
-        # Check if job is still accepted and not completed/cancelled
-        if job.status not in ['accepted', 'in_progress']:
-            return f"Job {job.booking_reference} is no longer active"
-        
-        # Check if chat room already exists
-        if JobChatRoom.objects.filter(job=job).exists():
-            return f"Chat room already exists for job {job.booking_reference}"
-        
-        # Create the chat room
-        chat_room = JobChatRoom.objects.create(
-            job=job,
-            client_name=job.client_name,
-            detailer=job.detailer,
-            is_active=True
-        )
-        
-        # Send notification to detailer
-        if job.detailer.user.allow_push_notifications and job.detailer.user.notification_token:
-            send_push_notification.delay(
-                job.detailer.user.id,
-                "Chat Available 💬",
-                f"Chat is now available for your upcoming {job.service_type.name} service with {job.client_name}",
-                "chat_available"
-            )
-        
-        return f"Chat room created successfully for job {job.booking_reference}"
-        
-    except Job.DoesNotExist:
-        return f"Job with ID {job_id} not found"
-    except Exception as e:
-        return f"Failed to create chat room: {str(e)}"
-
-
-@shared_task
-def cleanup_job_chat(chat_room_id):
-    """Clean up chat messages after job completion - IDENTICAL to client app"""
-    try:
-        from .models import JobChatRoom, JobChatMessage
-        from django.utils import timezone
-        from datetime import timedelta
-        
-        # Wait 24 hours before cleanup to allow for reviews
-        cleanup_time = timezone.now() + timedelta(hours=24)
-        
-        # Schedule the actual cleanup
-        cleanup_job_chat_messages.apply_async(
-            args=[chat_room_id],
-            eta=cleanup_time
-        )
-        
-        return f"Chat cleanup scheduled for room {chat_room_id}"
-    except Exception as e:
-        return f"Failed to schedule chat cleanup: {e}"
-
-
-@shared_task
-def cleanup_job_chat_messages(chat_room_id):
-    """Actually delete chat messages - IDENTICAL to client app"""
-    try:
-        from .models import JobChatRoom, JobChatMessage
-        
-        chat_room = JobChatRoom.objects.get(id=chat_room_id)
-        
-        # Delete all messages
-        message_count = JobChatMessage.objects.filter(room=chat_room).count()
-        JobChatMessage.objects.filter(room=chat_room).delete()
-        
-        # Delete the chat room
-        chat_room.delete()
-        
-        return f"Cleaned up {message_count} messages from room {chat_room_id}"
-    except Exception as e:
-        return f"Failed to cleanup chat room {chat_room_id}: {e}"
-
-
-@shared_task
 def send_password_reset_email(user_email, user_name, reset_token):
     subject = "Reset Your Prisma Password"
     
@@ -381,16 +295,17 @@ def check_daily_schedule():
     
     today = timezone.now().date()
     
-    # Get all detailers with jobs today
+    # Get all detailers with jobs today (by primary_detailer)
     detailers_with_jobs = Job.objects.filter(
         appointment_date__date=today,
-        status__in=['accepted', 'in_progress']
-    ).values('detailer').distinct()
+        status__in=['accepted', 'in_progress'],
+        primary_detailer__isnull=False
+    ).values('primary_detailer').distinct()
     
     for detailer_data in detailers_with_jobs:
-        detailer_id = detailer_data['detailer']
+        detailer_id = detailer_data['primary_detailer']
         today_jobs = Job.objects.filter(
-            detailer_id=detailer_id,
+            primary_detailer_id=detailer_id,
             appointment_date__date=today,
             status__in=['accepted', 'in_progress']
         ).order_by('appointment_time')
@@ -403,7 +318,7 @@ def check_daily_schedule():
             message = f"You have {job_count} job{'s' if job_count > 1 else ''} scheduled today. First appointment: {first_job.appointment_time.strftime('%H:%M')} - {first_job.service_type.name}"
             
             send_push_notification.delay(
-                first_job.detailer.user.id,
+                first_job.primary_detailer.user.id,
                 first_job.id,
                 title,
                 message,
@@ -439,13 +354,14 @@ def check_upcoming_jobs():
     )
     
     for job in upcoming_jobs:
-        send_push_notification.delay(
-            job.detailer.user.id,
-            job.id,
-            "Job Starting Soon! 🚗",
-            f"Your {job.service_type.name} appointment with {job.client_name} starts in 30 minutes at {job.address}",
-            "reminder"
-        )
+        if job.primary_detailer:
+            send_push_notification.delay(
+                job.primary_detailer.user.id,
+                job.id,
+                "Job Starting Soon! 🚗",
+                f"Your {job.service_type.name} appointment with {job.client_name} starts in 30 minutes at {job.address}",
+                "reminder"
+            )
 
 
 @shared_task
@@ -470,12 +386,13 @@ def check_pending_jobs():
         )
 
         for job in pending_jobs:
-            send_push_notification.delay(
-                job.detailer.user.id,
-                "Pending Tasks",
-                f"You have pending tasks to either accept or reject. Please check your dashboard to manage your tasks.",
-                "pending_jobs"
-            )
+            if job.primary_detailer:
+                send_push_notification.delay(
+                    job.primary_detailer.user.id,
+                    "Pending Tasks",
+                    f"You have pending tasks to either accept or reject. Please check your dashboard to manage your tasks.",
+                    "pending_jobs"
+                )
 
     except Exception as e:
         return f"Failed to check pending jobs: {str(e)}"
@@ -496,14 +413,13 @@ def send_job_closing_notification(job_id):
             return f"Job {job.booking_reference} is no longer in progress"
         
         # Send the closing notification
-        result = send_push_notification.delay(
-            job.detailer.user.id,
-            "Job Closing Soon! 🚗",
-            f"Your appointment with {job.client_name} ends in 15 minutes please remember to complete the job",
-            "reminder"
-        )
-        
-        pass
+        if job.primary_detailer:
+            result = send_push_notification.delay(
+                job.primary_detailer.user.id,
+                "Job Closing Soon! 🚗",
+                f"Your appointment with {job.client_name} ends in 15 minutes please remember to complete the job",
+                "reminder"
+            )
         return f"Closing notification sent for job {job.booking_reference}"
         
     except Job.DoesNotExist:

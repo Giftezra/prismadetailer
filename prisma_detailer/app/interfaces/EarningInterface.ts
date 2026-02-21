@@ -13,12 +13,13 @@ export interface BankAccountProps {
   updated_at?: string;
 }
 
-// Individual Earning Item - Detailer only sees their commission and tips
+// Individual Earning Item - Detailer sees their hourly earnings
 export interface EarningItemProps {
   id?: string;
-  commission_amount: number; // The detailer's commission
-  tip_amount?: number; // Tips received
-  total_earned: number; // commission + tips
+  hourly_earnings: number;
+  total_active_hours?: number;
+  total_inactive_hours?: number;
+  total_earned: number;
   job_id: string;
   job_reference?: string;
   client_name?: string;
@@ -47,8 +48,6 @@ export interface EarningsAnalyticsProps {
   average_weekly_earnings: number;
   average_monthly_earnings: number;
   total_jobs_completed: number;
-  total_tips_received: number;
-  average_tip_percentage: number;
   best_earning_day: string;
   best_earning_month: string;
   earnings_trend: "increasing" | "decreasing" | "stable";
@@ -57,10 +56,9 @@ export interface EarningsAnalyticsProps {
 
 // Earnings by Time Period
 export interface EarningsByPeriodProps {
-  period: string; // 'week', 'month', 'year'
-  total_commission: number;
-  total_tips: number;
-  total_earned: number; // commission + tips
+  period: string;
+  total_hourly_earnings: number;
+  total_earned: number;
   total_jobs: number;
   average_per_job: number;
   start_date: string;
@@ -163,7 +161,6 @@ export interface PayoutItemProps {
 
 export interface EarningsSummaryCardProps {
   total_earned: number;
-  total_tips: number;
   total_jobs: number;
   average_per_job: number;
   percentage_change: number;

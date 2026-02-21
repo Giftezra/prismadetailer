@@ -146,6 +146,9 @@ export const useOnboarding = () => {
   ];
 
   const validateStep = (step: number): boolean => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/73479b8f-cd94-42e8-a518-8d8ec29914be',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useOnboarding.ts:148',message:'validateStep entry',data:{step,hasSignUpData:!!signUpData,signUpDataKeys:signUpData?Object.keys(signUpData):null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     const newErrors: Partial<SignUpScreenProps> = {};
 
     if (!signUpData) return false;
@@ -201,10 +204,17 @@ export const useOnboarding = () => {
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const isValid = Object.keys(newErrors).length === 0;
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/73479b8f-cd94-42e8-a518-8d8ec29914be',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useOnboarding.ts:204',message:'validateStep exit',data:{step,isValid,errors:Object.keys(newErrors),newErrors},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    return isValid;
   };
 
   const handleNext = () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/73479b8f-cd94-42e8-a518-8d8ec29914be',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useOnboarding.ts:207',message:'handleNext entry',data:{currentStep,termsAccepted},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     if (currentStep === 2) {
       // For step 2, we need to use the custom validation that includes confirm password
       // This will be handled by the SecurityComponent calling handleNextStep2
@@ -218,8 +228,14 @@ export const useOnboarding = () => {
       } else {
         // On the final step, check if terms are accepted before submitting
         if (termsAccepted) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/73479b8f-cd94-42e8-a518-8d8ec29914be',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useOnboarding.ts:220',message:'handleNext calling handleSubmit',data:{currentStep,termsAccepted},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+          // #endregion
           handleSubmit();
         } else {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/73479b8f-cd94-42e8-a518-8d8ec29914be',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useOnboarding.ts:223',message:'handleNext showing terms modal',data:{currentStep,termsAccepted},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+          // #endregion
           setShowTermsModal(true);
         }
       }
@@ -258,43 +274,35 @@ export const useOnboarding = () => {
    * Save these in the redux store and the local storage.
    */
   const handleSubmit = useCallback(async () => {
-    if (validateStep(currentStep) && signUpData) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/73479b8f-cd94-42e8-a518-8d8ec29914be',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useOnboarding.ts:260',message:'handleSubmit entry',data:{currentStep,hasSignUpData:!!signUpData,signUpDataKeys:signUpData?Object.keys(signUpData):null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    const validationResult = validateStep(currentStep);
+    const hasSignUpData = !!signUpData;
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/73479b8f-cd94-42e8-a518-8d8ec29914be',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useOnboarding.ts:263',message:'handleSubmit validation check',data:{validationResult,hasSignUpData,currentStep,willProceed:validationResult&&hasSignUpData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    if (validationResult && hasSignUpData) {
       // Submit signup data
       dispatch(setIsLoading(true));
       try {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/73479b8f-cd94-42e8-a518-8d8ec29914be',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useOnboarding.ts:268',message:'handleSubmit before register call',data:{signUpDataKeys:Object.keys(signUpData||{})},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
         const response = await register(signUpData).unwrap();
-        // Process registration response
-        if (response.user && response.access && response.refresh) {
-          /*  Call the alert to show the user that the application has been submitted
-           * Save the user data to the async storage after login.
-           * This is used when the user tries to relogin,
-           * @param user The returned user data which is of interface {User | Seller}
-           * @param access The access token returned from the server
-           * @param refresh The refresh token returned from the server
-           */
-          setAlertConfig({
-            title: "Application Submitted!",
-            message:
-              "Thank you for applying to Prisma Valet. We'll review your application and contact you soon.",
-            type: "success",
-            isVisible: true,
-            onConfirm: async () => {
-              await saveDataToStorage(
-                response.user,
-                response.access,
-                response.refresh
-              );
-              dispatch(setUser(response.user));
-              dispatch(setAccessToken(response.access));
-              dispatch(setRefreshToken(response.refresh));
-              dispatch(setIsAuthenticated(true));
-              setIsVisible(false);
-              router.push("/main/(tabs)/dashboard/DashboardScreen");
-            },
-          });
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/73479b8f-cd94-42e8-a518-8d8ec29914be',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useOnboarding.ts:270',message:'handleSubmit register success',data:{hasResponse:!!response},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
+        // Process registration response - account created successfully, navigate to pending approval screen
+        if (response && response.user) {
+          // Clear signup data and navigate to pending approval screen
+          dispatch(clearSignUpData());
+          router.push("/onboarding/PendingApprovalScreen");
         }
-        dispatch(clearSignUpData());
       } catch (error: any) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/73479b8f-cd94-42e8-a518-8d8ec29914be',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useOnboarding.ts:299',message:'handleSubmit catch block',data:{errorType:typeof error,errorMessage:error?.message,errorData:error?.data,errorResponse:error?.response?.data,errorStatus:error?.response?.status,fullError:JSON.stringify(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
         let errorMessage = "Registration failed. Please try again.";
         let errorTitle = "Registration Failed";
 
@@ -347,6 +355,10 @@ export const useOnboarding = () => {
       } finally {
         dispatch(setIsLoading(false));
       }
+    } else {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/73479b8f-cd94-42e8-a518-8d8ec29914be',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useOnboarding.ts:352',message:'handleSubmit early return',data:{validationResult,hasSignUpData,currentStep},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
     }
   }, [currentStep, signUpData, dispatch, setAlertConfig, register]);
 
@@ -405,22 +417,6 @@ export const useOnboarding = () => {
 
   const handleShowTerms = () => {
     setShowTermsModal(true);
-  };
-
-  const getFormData = () => {
-    return (
-      signUpData || {
-        first_name: "",
-        last_name: "",
-        email: "",
-        phone: "",
-        password: "",
-        address: "",
-        city: "",
-        postcode: "",
-        country: "",
-      }
-    );
   };
 
   return {

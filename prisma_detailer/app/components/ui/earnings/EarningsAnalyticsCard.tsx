@@ -11,8 +11,6 @@ const EarningsAnalyticsCard: React.FC<EarningsAnalyticsProps> = ({
   average_weekly_earnings,
   average_monthly_earnings,
   total_jobs_completed,
-  total_tips_received,
-  average_tip_percentage,
   best_earning_day,
   best_earning_month,
   earnings_trend,
@@ -137,28 +135,6 @@ const EarningsAnalyticsCard: React.FC<EarningsAnalyticsProps> = ({
             style={{ color: textColor, opacity: 0.7 }}
           >
             Avg Monthly
-          </StyledText>
-        </View>
-        <View style={styles.analyticsItem}>
-          <StyledText variant="titleMedium" style={{ color: textColor }}>
-            {formatCurrency(total_tips_received)}
-          </StyledText>
-          <StyledText
-            variant="bodySmall"
-            style={{ color: textColor, opacity: 0.7 }}
-          >
-            Total Tips
-          </StyledText>
-        </View>
-        <View style={styles.analyticsItem}>
-          <StyledText variant="titleMedium" style={{ color: textColor }}>
-            {average_tip_percentage.toFixed(1)}%
-          </StyledText>
-          <StyledText
-            variant="bodySmall"
-            style={{ color: textColor, opacity: 0.7 }}
-          >
-            Avg Tip %
           </StyledText>
         </View>
       </View>

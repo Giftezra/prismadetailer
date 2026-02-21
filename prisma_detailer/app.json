@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Prisma Detailer",
+    "name": "Prisma Crew",
     "slug": "prisma_detailer",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -82,14 +82,14 @@
       "typedRoutes": true
     },
     "extra": {
-      "detailer_app_url": "https://381a4014244d.ngrok-free.app/detailer",
-      "customer_app_url": "https://381a4014244d.ngrok-free.app/client",
-      "websockets_url": "wss://381a4014244d.ngrok-free.app/ws/detailer/",
-      "googoleApiKeys": "AIzaSyAW00mf-OWgmU_lQ2yLiy3RLWkAVpIdE0U",
+      "detailer_app_url":"https://0c60-2a02-8084-c80-ea80-c1fc-2938-23f4-4da1.ngrok-free.app/detailer",  
+      "customer_app_url":"https://0c60-2a02-8084-c80-ea80-c1fc-2938-23f4-4da1.ngrok-free.app/client", 
+      "websockets_url":"wss://0c60-2a02-8084-c80-ea80-c1fc-2938-23f4-4da1.ngrok-free.app/ws/detailer/",   
+      "googoleApiKeys":"AIzaSyAW00mf-OWgmU_lQ2yLiy3RLWkAVpIdE0U",
       "router": {},
       "eas": {
         "projectId": "19cf1878-0602-4768-b678-6886a2b94358"
       }
     }
-  }
+  }   
 }

@@ -7,7 +7,7 @@ import {
   Dimensions,
   StatusBar,
 } from "react-native";
-import { router } from "expo-router";
+import { Link, router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import StyledButton from "./components/helpers/StyledButton";
@@ -57,7 +57,7 @@ export default function LandingPage() {
       icon: "wallet-outline",
       title: "Payouts",
       description:
-        "You keep 100% of all your tips. We do not take any commissions from your commendations from clients.",
+        "You keep 100% of all your tips. You are paid hourly based on your work activity.",
     },
   ];
 
@@ -80,16 +80,16 @@ export default function LandingPage() {
               />
 
               <StyledText variant="headlineSmall" style={styles.heroTitle}>
-                Join Prisma Valet
+                Join Prisma Crew
               </StyledText>
 
               <StyledText variant="bodyLarge" style={styles.heroSubtitle}>
-                Become a Professional Car Valet with Us
+                Become a Professional Car Detailer with Us
               </StyledText>
 
               <StyledText variant="bodyLarge" style={styles.heroDescription}>
                 We provide everything you need: clients, tools, training, and a
-                proven system. You focus on what you do best - valet cars.
+                proven system. You focus on what you do best - detail cars.
               </StyledText>
 
               <View style={styles.heroButtons}>
@@ -119,7 +119,7 @@ export default function LandingPage() {
             variant="headlineSmall"
             style={[styles.sectionTitle, { color: textColor }]}
           >
-            Why Work With Prisma Valet?
+            Why Work With Prisma Crew?
           </StyledText>
 
           <StyledText
@@ -285,7 +285,8 @@ export default function LandingPage() {
             variant="bodyMedium"
             style={[styles.footerText, { color: textColor }]}
           >
-            © 2024 Prisma Detailer. All rights reserved.
+            © 2025 vhotis technologies
+            <Link href="https://technologies.vhotis.com">vhotistechnologies.com</Link>
           </StyledText>
         </View>
       </ScrollView>

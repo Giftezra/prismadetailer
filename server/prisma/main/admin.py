@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django import forms
-from .models import ServiceType, Job, Earning, BankAccount, Review, TrainingRecord, Detailer, User, TimeSlot, Availability, Addon, Notification, TermsAndConditions
+from .models import ServiceType, Job, Earning, BankAccount, Review, TrainingRecord, Detailer, User, TimeSlot, Availability, Addon, Notification, TermsAndConditions, JobFleetMaintenance, JobImage, JobActivityLog
 
 admin.site.site_header = "Prisma Valet Detailer Admin"
 admin.site.site_title = "Prisma Valet Detailer  Admin"
@@ -91,7 +91,7 @@ class ServiceTypeAdmin(admin.ModelAdmin):
 @admin.register(Job)
 class JobAdmin(admin.ModelAdmin):
     form = JobForm
-    list_display = ('service_type', 'booking_reference', 'client_name', 'vehicle_registration', 'address', 'city', 'post_code','appointment_date','detailer', 'loyalty_tier')
+    list_display = ('service_type', 'booking_reference', 'client_name', 'vehicle_registration', 'address', 'city', 'post_code', 'appointment_date', 'primary_detailer', 'loyalty_tier')
     search_fields = ('booking_reference', 'client_name', 'vehicle_registration',)
     list_filter = ('booking_reference', 'client_name', 'loyalty_tier', 'status')
     
@@ -104,7 +104,7 @@ class JobAdmin(admin.ModelAdmin):
 
 @admin.register(Earning)
 class EarningAdmin(admin.ModelAdmin):
-    list_display = ('detailer', 'gross_amount', 'commission', 'net_amount', 'tip_amount', 'payout_date', 'payment_status')
+    list_display = ('detailer', 'gross_amount', 'hourly_earnings', 'total_active_hours', 'total_inactive_hours', 'net_amount', 'payout_date', 'payment_status')
     search_fields = ('detailer__user__first_name', 'detailer__user__last_name', 'job__booking_reference', 'job__client_name', 'job__vehicle_registration')
     list_filter = ('payment_status', 'payout_date')
 
@@ -126,9 +126,22 @@ class TrainingRecordAdmin(admin.ModelAdmin):
     search_fields = ('detailer__user__first_name', 'detailer__user__last_name', 'title')
     list_filter = ('status', 'date_completed')
 
+
+@admin.register(JobImage)
+class JobImageAdmin(admin.ModelAdmin):
+    list_display = ('job', 'image_type', 'segment', 'image', 'uploaded_at')
+    search_fields = ('job__client_name', 'job__vehicle_registration', 'image_type', 'segment')
+    list_filter = ('uploaded_at', 'image_type', 'segment')
+
+@admin.register(JobFleetMaintenance)
+class JobFleetMaintenanceAdmin(admin.ModelAdmin):
+    list_display = ('job', 'inspected_by', 'inspected_at')
+    search_fields = ('job__client_name', 'job__vehicle_registration', 'inspected_by__first_name', 'inspected_by__last_name')
+    list_filter = ('inspected_at', 'inspected_by')
+
 @admin.register(Detailer)
 class DetailerAdmin(admin.ModelAdmin):
-    list_display = ('user', 'rating', 'city', 'is_active', 'is_verified', 'commission_rate')
+    list_display = ('user', 'rating', 'city', 'is_active', 'is_verified')
     search_fields = ('user__first_name', 'user__last_name', 'user__email', 'city')
     list_filter = ('is_active', 'is_verified', 'city')
 

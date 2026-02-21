@@ -8,7 +8,6 @@ import LinearGradientComponent from "../../helpers/LinearGradientComponent";
 
 const EarningsSummaryCard: React.FC<EarningsSummaryCardProps> = ({
   total_earned,
-  total_tips,
   total_jobs,
   average_per_job,
   percentage_change,
@@ -83,17 +82,6 @@ const EarningsSummaryCard: React.FC<EarningsSummaryCardProps> = ({
 
       {/* Detailed Stats Grid */}
       <View style={styles.statsGrid}>
-        <View style={styles.statItem}>
-          <StyledText variant="titleLarge" style={{ color: textColor }}>
-            {formatCurrency(total_tips)}
-          </StyledText>
-          <StyledText
-            variant="bodySmall"
-            style={{ color: textColor, opacity: 0.7 }}
-          >
-            Tips
-          </StyledText>
-        </View>
         <View style={styles.statItem}>
           <StyledText variant="titleLarge" style={{ color: textColor }}>
             {total_jobs}

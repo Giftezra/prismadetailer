@@ -12,6 +12,7 @@ from main.tasks import send_welcome_email
 
 # This simply handles the login process and returns the user data
 class CustomTokenObtainPairView(TokenObtainPairView):
+    permission_classes = [AllowAny]
     serializer_class = CustomTokenObtainPairSerializer
 
 
@@ -69,27 +70,21 @@ class AuthenticationView(APIView):
                 country=credentials.get('country'),
             )
 
-            # Create the token for the user and the refresh token
-            refresh = RefreshToken.for_user(user)
-            access_token = str(refresh.access_token)
-            refresh_token = str(refresh)
-
-            # Save the user and the profile, then return the token and the user data
+            # Save the user and the profile, then return success message and user data (no tokens)
             user.save()
             profile.save()
             return Response({
-                'user' :{
-                    'first_name' : user.first_name,
-                    'last_name' : user.last_name,
-                    'email' : user.email,
-                    'phone' : user.phone,
-                    'address' : profile.address,
-                    'city' : profile.city,
-                    'postcode' : profile.post_code,
-                    'country' : profile.country,
+                'message': 'Account created successfully. Your account is pending admin approval.',
+                'user': {
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'email': user.email,
+                    'phone': user.phone,
+                    'address': profile.address,
+                    'city': profile.city,
+                    'postcode': profile.post_code,
+                    'country': profile.country,
                 },
-                'access' : access_token,
-                'refresh' : refresh_token,
             }, status=status.HTTP_201_CREATED)
         
         except ValidationError as e:

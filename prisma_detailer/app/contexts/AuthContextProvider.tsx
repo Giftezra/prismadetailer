@@ -159,15 +159,64 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
         });
       }
     } catch (error: any) {
+      // Debug: log the error structure
+      console.log("Login error object:", JSON.stringify(error, null, 2));
+      
       let errorMessage =
         "Please check your email and confirm your password again.\nIf you have forgotten your password, please reset it.";
-      if (error?.data?.error) {
-        errorMessage = error.data.error;
-      } else if (error?.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error?.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
+      
+      // Parse error message from different response structures
+      if (error?.data) {
+        // Handle array format (common for ValidationError)
+        if (Array.isArray(error.data)) {
+          errorMessage = error.data[0] || errorMessage;
+        }
+        // Handle non_field_errors (common for serializer ValidationError)
+        else if (error.data.non_field_errors && Array.isArray(error.data.non_field_errors)) {
+          errorMessage = error.data.non_field_errors[0] || errorMessage;
+        }
+        // Handle object with detail field
+        else if (error.data.detail) {
+          errorMessage = Array.isArray(error.data.detail) 
+            ? error.data.detail[0] 
+            : error.data.detail;
+        }
+        // Handle object with error field
+        else if (error.data.error) {
+          errorMessage = error.data.error;
+        }
+        // Handle if data itself is a string
+        else if (typeof error.data === 'string') {
+          errorMessage = error.data;
+        }
       }
+      // Fallback to nested response structure (legacy)
+      else if (error?.response?.data) {
+        if (Array.isArray(error.response.data)) {
+          errorMessage = error.response.data[0] || errorMessage;
+        } else if (error.response.data.non_field_errors && Array.isArray(error.response.data.non_field_errors)) {
+          errorMessage = error.response.data.non_field_errors[0] || errorMessage;
+        } else if (error.response.data.detail) {
+          errorMessage = Array.isArray(error.response.data.detail)
+            ? error.response.data.detail[0]
+            : error.response.data.detail;
+        } else if (error.response.data.error) {
+          errorMessage = error.response.data.error;
+        }
+      }
+
+      // Check if error is related to pending approval
+      const errorMessageLower = typeof errorMessage === 'string' ? errorMessage.toLowerCase() : '';
+      if (
+        errorMessageLower.includes("pending approval") ||
+        errorMessageLower.includes("not verified") ||
+        errorMessageLower.includes("admin approval")
+      ) {
+        // Navigate to pending approval screen instead of showing error
+        router.push("/onboarding/PendingApprovalScreen");
+        return;
+      }
+
       setAlertConfig({
         title: "Login Failed",
         message: errorMessage,

@@ -48,30 +48,20 @@ const RecentEarningItem = ({
 
       <View style={styles.earningFooter}>
         <View style={styles.earningMeta}>
-          {earning.commission_amount && (
+          {earning.hourly_earnings && earning.hourly_earnings > 0 && (
             <StyledText
               variant="bodySmall"
               style={{ color: textColor, opacity: 0.7 }}
             >
-              {formatCurrency(earning.commission_amount)} commission
+              {formatCurrency(earning.hourly_earnings)} hourly
             </StyledText>
           )}
-          {earning.commission_amount &&
-            earning.tip_amount &&
-            earning.tip_amount > 0 && (
-             <StyledText
-              variant="bodySmall"
-              style={{ color: textColor, opacity: 0.7 }}
-            >
-              +
-            </StyledText>
-            )}
-          {earning.tip_amount && earning.tip_amount > 0 && (
+          {earning.total_active_hours && earning.total_active_hours > 0 && (
             <StyledText
               variant="bodySmall"
               style={{ color: textColor, opacity: 0.7 }}
             >
-              {formatCurrency(earning.tip_amount)} tip
+              ({earning.total_active_hours.toFixed(1)}h active, {earning.total_inactive_hours?.toFixed(1) || '0.0'}h inactive)
             </StyledText>
           )}
           {earning.completed_date && (

@@ -18,7 +18,6 @@ const DashboardScreen = () => {
   const textColor = useThemeColor({}, "text");
 
   const [viewAllJobs, setViewAllJobs] = useState(false);
-  const [viewChat, setViewChat] = useState(false);
   const {
     handleQuickActions,
     viewNextAppointment,
@@ -66,7 +65,6 @@ const DashboardScreen = () => {
             onViewNextAppointment={viewNextAppointment}
             onStartCurrentJob={handleJobPress}
             onCompleteCurrentJob={handleJobPress}
-            onViewChat={() => setViewChat(!viewChat)}
             onCallClient={callClient}
           />
         )}

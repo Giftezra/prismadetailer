@@ -219,16 +219,22 @@ export const captureMultipleCameraImages = async (
  * Converts image data to the format expected by React Native's FormData.
  *
  * @param {Array<{ uri: string; type: string; filename: string }>} images - Array of image data
+ * @param {string} jobId - The job ID
+ * @param {string} segment - The segment type ('interior' or 'exterior')
  * @returns {FormData} FormData object ready for upload
  */
 export const prepareImagesForUpload = (
   images: Array<{ uri: string; type: string; filename: string }>,
-  jobId: string
+  jobId: string,
+  segment: "interior" | "exterior" = "exterior"
 ): FormData => {
   const formData = new FormData();
 
   // Add job_id
   formData.append("job_id", jobId);
+
+  // Add segment
+  formData.append("segment", segment);
 
   // Add each image with indexed key
   images.forEach((image, index) => {

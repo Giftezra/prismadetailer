@@ -81,7 +81,6 @@ class Detailer(models.Model):
     city = models.CharField(max_length=55, blank=True, null=True)
     post_code = models.CharField(max_length=10, blank=True, null=True)
     country = models.CharField(max_length=55, blank=True, null=True)
-    commission_rate = models.DecimalField(max_digits=5, decimal_places=4, default=0.20)  # Changed from 0.15 to 0.20
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
@@ -100,100 +99,47 @@ class Detailer(models.Model):
     def unpaid_earnings(self):
         return self.earnings.filter(payment_status="pending").aggregate(total=Sum("net_amount"))["total"] or 0
 
-    def check_and_update_commission_rate(self):
-        """
-        Check if detailer qualifies for reduced commission rate (15%) based on:
-        - 300+ completed jobs
-        - 100 CONSECUTIVE 5.0 ratings
-        """
-        from decimal import Decimal
-        
-        # Count completed jobs
-        completed_jobs_count = self.jobs.filter(status='completed').count()
-        
-        # If less than 300 completed jobs, keep current rate
-        if completed_jobs_count < 300:
-            return False
-        
-        # Get ALL completed jobs with ratings, ordered by most recent first
-        all_rated_jobs = self.jobs.filter(
-            status='completed',
-            rating__gt=0
-        ).order_by('-created_at')
-        
-        # Check for 100 consecutive 5.0 ratings from the most recent job
-        consecutive_five_stars = 0
-        for job in all_rated_jobs:
-            if job.rating == 5.0:
-                consecutive_five_stars += 1
-                if consecutive_five_stars >= 100:
-                    break
-            else:
-                # If we hit a non-5.0 rating, reset the counter
-                consecutive_five_stars = 0
-        
-        # If we have 100 consecutive 5.0 ratings and commission is still 20%, reduce to 15%
-        if consecutive_five_stars >= 100 and self.commission_rate == Decimal('0.20'):
-            self.commission_rate = Decimal('0.15')
-            self.save()
-
-            # Send notification to detailer
-            if self.user.allow_push_notifications and self.user.notification_token:
-                send_push_notification.delay(
-                    self.user.id,
-                    "Commission Rate Reduced",
-                    "You are now eligible for a 15% commission rate.",
-                    "commission_rate_reduced"
-                )
-            return True
-        
-        return False
+    def update_rating_from_reviews(self):
+        """Update detailer's rating from the average of all their reviews."""
+        from django.db.models import Avg
+        result = Review.objects.filter(detailer=self).aggregate(avg_rating=Avg('rating'))
+        avg_rating = result['avg_rating']
+        if avg_rating is not None:
+            new_rating = min(round(float(avg_rating), 2), 5.0)
+        else:
+            new_rating = 0.0
+        Detailer.objects.filter(pk=self.pk).update(rating=new_rating)
 
     def check_for_deactivation(self):
         """
-        Check if detailer should be deactivated based on poor performance:
-        - 3 or more ratings of 2.0 or below in the last 20 rated jobs
-        - OR 2 or more ratings of 1.0 in the last 15 rated jobs
+        Check if detailer should be deactivated based on poor performance (using Review model):
+        - 3 or more ratings of 2.0 or below in the last 20 reviews
+        - OR 2 or more ratings of 1.0 in the last 15 reviews
         """
-        # Get last 20 completed jobs with ratings
-        last_20_rated_jobs = self.jobs.filter(
-            status='completed',
-            rating__gt=0
-        ).order_by('-created_at')[:20]
-        
-        # Get last 15 completed jobs with ratings
-        last_15_rated_jobs = self.jobs.filter(
-            status='completed',
-            rating__gt=0
-        ).order_by('-created_at')[:15]
-        
-        # Check if we have enough rated jobs to evaluate
-        if last_20_rated_jobs.count() < 10:  # Need at least 10 rated jobs to evaluate
-            return False
-        
-        # Count poor ratings (2.0 or below) in last 20 jobs
-        poor_ratings_count = last_20_rated_jobs.filter(rating__lte=2.0).count()
-        
-        # Count very poor ratings (1.0) in last 15 jobs
-        very_poor_ratings_count = last_15_rated_jobs.filter(rating=1.0).count()
-        
-        # Deactivation criteria
+        last_20_reviews = list(Review.objects.filter(detailer=self).order_by('-created_at')[:20])
+        last_15_reviews = last_20_reviews[:15]
+
+        if len(last_20_reviews) < 10:
+            return False, ""
+
+        poor_ratings_count = sum(1 for r in last_20_reviews if float(r.rating) <= 2.0)
+        very_poor_ratings_count = sum(1 for r in last_15_reviews if float(r.rating) == 1.0)
+
         should_deactivate = False
         deactivation_reason = ""
-        
+
         if poor_ratings_count >= 3:
             should_deactivate = True
-            deactivation_reason = f"Poor performance: {poor_ratings_count} ratings of 2.0 or below in last 20 rated jobs.Please speak to support if you think this is a mistake."
+            deactivation_reason = f"Poor performance: {poor_ratings_count} ratings of 2.0 or below in last 20 rated jobs. Please speak to support if you think this is a mistake."
         elif very_poor_ratings_count >= 2:
             should_deactivate = True
-            deactivation_reason = f"Very poor performance: {very_poor_ratings_count} ratings of 1.0 in last 15 rated jobs.Please speak to support if you think this is a mistake."
-        
+            deactivation_reason = f"Very poor performance: {very_poor_ratings_count} ratings of 1.0 in last 15 rated jobs. Please speak to support if you think this is a mistake."
+
         if should_deactivate and self.is_active:
             self.is_active = False
-            self.is_available = False  # Also make them unavailable for new bookings
+            self.is_available = False
             self.save()
 
-            # Send deactivation notification to detailer
             if self.user.allow_push_notifications and self.user.notification_token:
                 send_push_notification.delay(
                     self.user.id,
@@ -202,7 +148,7 @@ class Detailer(models.Model):
                     "deactivated"
                 )
             return True, deactivation_reason
-        
+
         return False, ""
 
 
@@ -288,84 +234,67 @@ class Job(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     loyalty_tier = models.CharField(max_length=20, choices=LOYALTY_TIER_CHOICES, default='bronze')
     loyalty_benefits = models.JSONField(default=list, blank=True, null=True)
-    detailer = models.ForeignKey(Detailer, on_delete=models.CASCADE, related_name="jobs", blank=True, null=True)
+    detailers = models.ManyToManyField(Detailer, related_name="jobs", blank=True)
+    primary_detailer = models.ForeignKey(Detailer, on_delete=models.SET_NULL, null=True, blank=True, related_name="primary_jobs")
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         indexes = [
-            models.Index(fields=['detailer', 'status', 'appointment_date', 'appointment_time', 'booking_reference']),
+            models.Index(fields=['primary_detailer', 'status', 'appointment_date', 'appointment_time', 'booking_reference']),
         ]
 
     # Create an earning record for every completed job
     def create_earning(self):
         if self.status == "completed":
-            # Check if earning already exists to avoid duplicates
-            if not Earning.objects.filter(job=self).exists():
-                Earning.objects.create(
-                    detailer=self.detailer,
-                    job=self,
-                    gross_amount=self.total_amount,
-                    payout_date=timezone.now().date()  # Set payout date to today
-                )
+            # Create earning for each detailer assigned to the job
+            for detailer in self.detailers.all():
+                # Check if earning already exists to avoid duplicates
+                if not Earning.objects.filter(job=self, detailer=detailer).exists():
+                    earning = Earning.objects.create(
+                        detailer=detailer,
+                        job=self,
+                        gross_amount=self.total_amount,
+                        payout_date=timezone.now().date()  # Set payout date to today
+                    )
+                    # Calculate earnings from activity logs
+                    earning.calculate_from_activity_logs()
+                    earning.save()
 
     def __str__(self):
-        return f'Job {self.id} - {self.detailer.user.get_full_name()}'
-
-    def get_total_earnings(self):
-        return self.service_type.price * (1 - self.detailer.commission_rate)#
+        detailer_name = self.primary_detailer.user.get_full_name() if self.primary_detailer else "No Detailer"
+        return f'Job {self.id} - {detailer_name}'
     
     def save(self, *args, **kwargs):
-        # Check if rating is being updated
-        rating_updated = False
-        if self.pk:  # Only for existing records
-            try:
-                old_job = Job.objects.get(pk=self.pk)
-                rating_updated = old_job.rating != self.rating
-            except Job.DoesNotExist:
-                pass
-        else:
-            # New record with rating
-            rating_updated = self.rating and self.rating > 0
-        
-        # Save the job first
         super().save(*args, **kwargs)
-        
-        # Update detailer rating if rating was changed and detailer exists
-        if rating_updated and self.detailer:
-            self.update_detailer_rating()
-        
+
         # Create earning if job is completed
         if self.status == "completed":
             self.create_earning()
-            # Check if detailer qualifies for commission rate reduction
-            if self.detailer:
-                self.detailer.check_and_update_commission_rate()
-        
-        # Check for deactivation when rating is updated
-        if rating_updated and self.detailer:
-            self.detailer.check_for_deactivation()
 
     
     def update_detailer_rating(self):
         """Update the detailer's rating based on average of all job ratings"""
         try:
-            # Calculate average rating from all jobs with ratings > 0
+            if not self.primary_detailer:
+                return
+                
+            # Calculate average rating from all jobs where this detailer is primary and has ratings > 0
             avg_rating = Job.objects.filter(
-                detailer=self.detailer,
+                primary_detailer=self.primary_detailer,
                 rating__gt=0
             ).aggregate(avg_rating=Avg('rating'))['avg_rating']
             
             if avg_rating is not None:
                 # Round to 2 decimal places and ensure it doesn't exceed 5.0
-                self.detailer.rating = min(round(float(avg_rating), 2), 5.0)
+                self.primary_detailer.rating = min(round(float(avg_rating), 2), 5.0)
             else:
                 # No ratings yet, set to 0
-                self.detailer.rating = 0.0
+                self.primary_detailer.rating = 0.0
             
             # Save the detailer without triggering signals to avoid recursion
-            Detailer.objects.filter(pk=self.detailer.pk).update(rating=self.detailer.rating)
+            Detailer.objects.filter(pk=self.primary_detailer.pk).update(rating=self.primary_detailer.rating)
             
         except Exception as e:
             # Log the error but don't raise it to avoid breaking the save process
@@ -375,28 +304,87 @@ class Job(models.Model):
 
 
 # -------------------------------
+# Job Activity Log
+# -------------------------------
+class JobActivityLog(models.Model):
+    """
+    Tracks time periods for a detailer on a job with different activity states
+    """
+    ACTIVITY_STATES = [
+        ('traveling', 'Traveling/Driving'),  # $9/hour
+        ('waiting', 'Waiting'),              # $9/hour
+        ('active', 'Active Cleaning'),       # $15/hour
+    ]
+    
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='activity_logs')
+    detailer = models.ForeignKey(Detailer, on_delete=models.CASCADE)
+    activity_state = models.CharField(max_length=20, choices=ACTIVITY_STATES)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField(null=True, blank=True)
+    hours_worked = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    rate_applied = models.DecimalField(max_digits=5, decimal_places=2)  # $9 or $15
+    amount_earned = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['start_time']
+        indexes = [
+            models.Index(fields=['job', 'detailer', 'is_active']),
+        ]
+    
+    def calculate_hours_and_amount(self):
+        """Calculate hours worked and amount earned"""
+        from django.utils import timezone
+        from decimal import Decimal
+        
+        if not self.end_time:
+            end = timezone.now()
+        else:
+            end = self.end_time
+        
+        delta = end - self.start_time
+        hours = delta.total_seconds() / 3600
+        self.hours_worked = Decimal(str(round(hours, 2)))
+        self.amount_earned = self.hours_worked * self.rate_applied
+        return self.hours_worked, self.amount_earned
+    
+    def __str__(self):
+        return f'Activity log for {self.detailer.user.get_full_name()} - {self.activity_state} - Job {self.job.id}'
+
+
+# -------------------------------
 # Job Images
 # -------------------------------
 def job_image_upload_path(instance, filename):
     """
-    Generate upload path including image type (before/after)
-    Creates folder structure: jobs/images/{before|after}/YYYY/MM/DD/filename
+    Generate upload path including image type (before/after) and segment (interior/exterior)
+    Creates folder structure: jobs/images/{before|after}/{interior|exterior}/YYYY/MM/DD/filename
     """
-    return f'jobs/images/{instance.image_type}/{timezone.now().strftime("%Y/%m/%d")}/{filename}'
+    segment = getattr(instance, 'segment', 'unspecified')
+    return f'jobs/images/{instance.image_type}/{segment}/{timezone.now().strftime("%Y/%m/%d")}/{filename}'
 
 
 class JobImage(models.Model):
     """
     Store multiple before/after images for a job.
     Uploaded by detailer during job execution (camera only for freshness).
+    Images are categorized by segment: interior or exterior.
     """
     IMAGE_TYPE_CHOICES = [
         ('before', 'Before'),
         ('after', 'After'),
     ]
     
+    SEGMENT_CHOICES = [
+        ('interior', 'Interior'),
+        ('exterior', 'Exterior'),
+    ]
+    
     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='images')
     image_type = models.CharField(max_length=10, choices=IMAGE_TYPE_CHOICES)
+    segment = models.CharField(max_length=10, choices=SEGMENT_CHOICES, default='exterior')
     image = models.ImageField(upload_to=job_image_upload_path)
     uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)
@@ -404,12 +392,74 @@ class JobImage(models.Model):
     class Meta:
         ordering = ['uploaded_at']
         indexes = [
-            models.Index(fields=['job', 'image_type']),
+            models.Index(fields=['job', 'image_type', 'segment']),
             models.Index(fields=['uploaded_at']),
         ]
     
     def __str__(self):
-        return f"{self.image_type} image for Job {self.job.id}"
+        return f"{self.image_type} {self.segment} image for Job {self.job.id}"
+
+
+class JobFleetMaintenance(models.Model):
+    """
+    Store fleet maintenance inspection data for a job.
+    Captured by detailer during job completion to help fleet managers maintain vehicle readiness.
+    """
+    WIPER_STATUS_CHOICES = [
+        ('good', 'Good'),
+        ('needs_work', 'Needs Work'),
+        ('bad', 'Bad'),
+    ]
+    
+    FLUID_LEVEL_CHOICES = [
+        ('good', 'Good'),
+        ('low', 'Low'),
+        ('needs_change', 'Needs Change'),
+        ('needs_refill', 'Needs Refill'),
+    ]
+    
+    BATTERY_CONDITION_CHOICES = [
+        ('good', 'Good'),
+        ('weak', 'Weak'),
+        ('replace', 'Replace'),
+    ]
+    
+    LIGHT_STATUS_CHOICES = [
+        ('working', 'Working'),
+        ('dim', 'Dim'),
+        ('not_working', 'Not Working'),
+    ]
+    
+    INDICATOR_STATUS_CHOICES = [
+        ('working', 'Working'),
+        ('not_working', 'Not Working'),
+    ]
+    
+    job = models.OneToOneField(Job, on_delete=models.CASCADE, related_name='fleet_maintenance')
+    tire_tread_depth = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="Tire tread depth in mm")
+    tire_condition = models.TextField(blank=True, null=True, help_text="Notes about tire condition")
+    wiper_status = models.CharField(max_length=20, choices=WIPER_STATUS_CHOICES, null=True, blank=True)
+    oil_level = models.CharField(max_length=20, choices=FLUID_LEVEL_CHOICES, null=True, blank=True)
+    coolant_level = models.CharField(max_length=20, choices=FLUID_LEVEL_CHOICES, null=True, blank=True)
+    brake_fluid_level = models.CharField(max_length=20, choices=FLUID_LEVEL_CHOICES, null=True, blank=True)
+    battery_condition = models.CharField(max_length=20, choices=BATTERY_CONDITION_CHOICES, null=True, blank=True)
+    headlights_status = models.CharField(max_length=20, choices=LIGHT_STATUS_CHOICES, null=True, blank=True)
+    taillights_status = models.CharField(max_length=20, choices=LIGHT_STATUS_CHOICES, null=True, blank=True)
+    indicators_status = models.CharField(max_length=20, choices=INDICATOR_STATUS_CHOICES, null=True, blank=True)
+    vehicle_condition_notes = models.TextField(blank=True, null=True, help_text="General observations about vehicle condition")
+    damage_report = models.TextField(blank=True, null=True, help_text="Notes about any visible damage")
+    inspected_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='fleet_inspections')
+    inspected_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-inspected_at']
+        indexes = [
+            models.Index(fields=['job']),
+            models.Index(fields=['inspected_at']),
+        ]
+    
+    def __str__(self):
+        return f"Fleet maintenance for Job {self.job.id}"
 
 
 class Earning(models.Model):
@@ -421,9 +471,12 @@ class Earning(models.Model):
     detailer = models.ForeignKey(Detailer, on_delete=models.CASCADE, related_name="earnings")
     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="earnings")
     gross_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    commission = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_active_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # hours @ $15/hr
+    total_inactive_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # hours @ $9/hr
+    hourly_rate_active = models.DecimalField(max_digits=5, decimal_places=2, default=15.00)
+    hourly_rate_inactive = models.DecimalField(max_digits=5, decimal_places=2, default=9.00)
+    hourly_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # calculated from hours
     net_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    tip_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, blank=True, null=True)
     payout_date = models.DateField(blank=True, null=True)
     payment_status = models.CharField(max_length=10, choices=PAYMENT_STATUS, default="pending")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -432,13 +485,34 @@ class Earning(models.Model):
         return f"Earning for {self.detailer.user.get_full_name()} - Job {self.job.id}"
 
     def save(self, *args, **kwargs):
-        if not self.commission:
-            from decimal import Decimal
-            # Convert commission_rate to Decimal to ensure proper calculation
-            commission_rate = Decimal(str(self.detailer.commission_rate))
-            self.commission = self.gross_amount * commission_rate
-        self.net_amount = self.gross_amount - self.commission
+        # Calculate net_amount from hourly_earnings if not already set
+        if not self.net_amount and self.hourly_earnings:
+            self.net_amount = self.hourly_earnings
         super().save(*args, **kwargs)
+    
+    def calculate_from_activity_logs(self):
+        """Calculate earnings from activity logs for this job and detailer"""
+        from decimal import Decimal
+        from django.db.models import Sum
+        
+        # Get all activity logs for this job and detailer
+        activity_logs = self.job.activity_logs.filter(detailer=self.detailer)
+        
+        total_active_hours = Decimal('0')
+        total_inactive_hours = Decimal('0')
+        
+        for log in activity_logs:
+            hours, amount = log.calculate_hours_and_amount()
+            if log.activity_state == 'active':
+                total_active_hours += hours
+            else:  # traveling, waiting
+                total_inactive_hours += hours
+        
+        self.total_active_hours = total_active_hours
+        self.total_inactive_hours = total_inactive_hours
+        self.hourly_earnings = (total_active_hours * self.hourly_rate_active) + (total_inactive_hours * self.hourly_rate_inactive)
+        self.net_amount = self.hourly_earnings
+        return self.hourly_earnings
 
     def mark_as_paid(self, payout_date=None):
         self.payment_status = "paid"
@@ -597,66 +671,6 @@ class Notification(models.Model):
     
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-
-
-class JobChatRoom(models.Model):
-    """Chat room associated with a specific job - IDENTICAL structure to client app"""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    job = models.OneToOneField(Job, on_delete=models.CASCADE, related_name='chat_room')
-    client_name = models.CharField(max_length=120)  # From job data
-    detailer = models.ForeignKey(Detailer, on_delete=models.CASCADE, related_name='detailer_chat_rooms')
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    closed_at = models.DateTimeField(null=True, blank=True)
-    scheduled_creation_time = models.DateTimeField(null=True, blank=True)  # When it was scheduled to be created
-    
-    class Meta:
-        unique_together = ['job', 'detailer']
-    
-    def __str__(self):
-        return f"Chat for {self.job.booking_reference}"
-    
-    @property
-    def is_available_for_chat(self):
-        """Check if chat is available (within 1 hour of appointment) - IDENTICAL to client app"""
-        if not self.is_active:
-            return False
-            
-        appointment_datetime = timezone.datetime.combine(
-            self.job.appointment_date.date(), 
-            self.job.appointment_time
-        )
-        appointment_datetime = timezone.make_aware(appointment_datetime)
-        
-        now = timezone.now()
-        one_hour_before = appointment_datetime - timedelta(hours=1)
-        one_hour_after = appointment_datetime + timedelta(hours=1)
-        
-        return one_hour_before <= now <= one_hour_after
-
-
-class JobChatMessage(models.Model):
-    """Individual messages in a job chat room - IDENTICAL structure to client app"""
-    MESSAGE_TYPES = [
-        ('text', 'Text'),
-        ('system', 'System'),
-        ('status_update', 'Status Update'),
-    ]
-    
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    room = models.ForeignKey(JobChatRoom, on_delete=models.CASCADE, related_name='messages')
-    sender_id = models.CharField(max_length=255)  # Store client or detailer ID
-    sender_type = models.CharField(max_length=20, choices=[('client', 'Client'), ('detailer', 'Detailer')])
-    message_type = models.CharField(max_length=20, choices=MESSAGE_TYPES, default='text')
-    content = models.TextField()
-    is_read = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        ordering = ['created_at']
-    
-    def __str__(self):
-        return f"{self.sender_type}: {self.content[:50]}..."
 
 
 class TermsAndConditions(models.Model):

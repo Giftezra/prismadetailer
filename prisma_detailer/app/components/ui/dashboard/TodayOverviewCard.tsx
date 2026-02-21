@@ -13,7 +13,6 @@ interface TodayOverviewCardProps {
   onViewNextAppointment?: () => void;
   onStartCurrentJob?: (jobId: string) => void;
   onCompleteCurrentJob?: (jobId: string) => void;
-  onViewChat?: () => void;
   onCallClient?: (phoneNumber: string) => void;
 }
 
@@ -22,7 +21,6 @@ const TodayOverviewCard: React.FC<TodayOverviewCardProps> = ({
   onViewNextAppointment,
   onStartCurrentJob,
   onCompleteCurrentJob,
-  onViewChat,
   onCallClient,
 }) => {
   const backgroundColor = useThemeColor({}, "cards");
@@ -453,16 +451,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: 12,
-  },
-  chatbutton: {
-    padding: 10,
-    borderRadius: 25,
-    borderWidth: 1,
-    alignItems: "center",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 3.5,
   },
   statusBadge: {
     backgroundColor: "#4CAF50",

@@ -2,7 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from main.models import Detailer, ServiceType, Job, Availability, Addon    
+from main.models import Detailer, ServiceType, Job, Availability, Addon
+from main.utils.detailer_matcher import find_detailers_for_location
 from main.serializer import DetailerSerializer, ServiceTypeSerializer
 from datetime import datetime, time, timedelta
 from django.utils import timezone
@@ -74,31 +75,58 @@ class BookingView(APIView):
             data['city'] = data['city'].strip() if data['city'] else None
             data['country'] = data['country'].strip() if data['country'] else None
 
-            # Find the first available detailer in the specified location
+            # Optional lat/lng for geographic fallback
+            latitude = None
+            longitude = None
+            if data.get('latitude') is not None and data.get('longitude') is not None:
+                try:
+                    latitude = float(data['latitude'])
+                    longitude = float(data['longitude'])
+                except (TypeError, ValueError):
+                    pass
+
+            # Check if express service is requested
+            is_express_service = data.get('is_express_service', False)
+            if isinstance(is_express_service, str):
+                is_express_service = is_express_service.lower() == 'true'
+
+            # Find available detailers using three-step fallback: exact -> normalized -> 30km radius
             try:
-                detailers = Detailer.objects.filter(
-                    country=data['country'], 
-                    city=data['city'], 
-                    is_active=True, 
-                    is_verified=True, 
-                    is_available=True
+                available_detailers, _ = find_detailers_for_location(
+                    country=data['country'],
+                    city=data['city'],
+                    latitude=latitude,
+                    longitude=longitude,
+                    is_available=True,
                 )
-                pass
             except Exception as e:
-                pass
                 return Response({
                     "error": f"Error finding detailers: {str(e)}"
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
-            if not detailers.exists():
-                pass
+
+            if not available_detailers.exists():
                 return Response({
                     "success": False,
-                    "error": f"No available detailers found in {data['city']}, {data['country']}"
+                    "error": f"No available detailers found in {data['city']}, {data['country']}. We are currently working to bring PRISMA closer to you. Please check back another time."
                 }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Get the first detailer (you can implement more sophisticated selection logic here)
-            detailer = detailers.first()
+            # For express service, try to find 2 detailers, fallback to 1
+            detailers_to_assign = []
+            if is_express_service:
+                # Try to find 2 available detailers
+                detailers_to_assign = list(available_detailers[:2])
+                # If only 1 available, still proceed (fallback)
+                if len(detailers_to_assign) == 0:
+                    return Response({
+                        "success": False,
+                        "error": f"No available detailers found in {data['city']}, {data['country']}"
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                # Regular booking - single detailer
+                detailers_to_assign = [available_detailers.first()]
+            
+            # Primary detailer is the first one
+            primary_detailer = detailers_to_assign[0]
             
             # Check if the detailer is available for the specified time
             appointment_date = datetime.strptime(data['booking_date'], '%Y-%m-%d').date()
@@ -133,25 +161,30 @@ class BookingView(APIView):
                 tzinfo=ZoneInfo('Europe/London')
             )
             
-            # Check for conflicting jobs
-            conflicting_jobs = Job.objects.filter(
-                detailer=detailer,
-                appointment_date__date=appointment_date,
-                status__in=['pending', 'accepted', 'in_progress']
-            )
-            
+            # Check for conflicting jobs for all detailers to be assigned
             has_conflict = False
-            for job in conflicting_jobs:
-                job_start = job.appointment_time
-                job_end_minutes = job_start.hour * 60 + job_start.minute + service_type.duration
-                job_end = time(job_end_minutes // 60, job_end_minutes % 60)
-                travel_buffer = 30  # minutes
-                job_end_with_buffer_minutes = job_end.hour * 60 + job_end.minute + travel_buffer
-                job_end_with_buffer = time(job_end_with_buffer_minutes // 60, job_end_with_buffer_minutes % 60)
+            for detailer in detailers_to_assign:
+                # Check conflicts using primary_detailer (since we changed the model)
+                conflicting_jobs = Job.objects.filter(
+                    primary_detailer=detailer,
+                    appointment_date__date=appointment_date,
+                    status__in=['pending', 'accepted', 'in_progress']
+                )
                 
-                # Check if new appointment overlaps with existing job
-                if (appointment_time < job_end_with_buffer and appointment_end_time > job_start):
-                    has_conflict = True
+                for job in conflicting_jobs:
+                    job_start = job.appointment_time
+                    job_end_minutes = job_start.hour * 60 + job_start.minute + service_type.duration
+                    job_end = time(job_end_minutes // 60, job_end_minutes % 60)
+                    travel_buffer = 30  # minutes
+                    job_end_with_buffer_minutes = job_end.hour * 60 + job_end.minute + travel_buffer
+                    job_end_with_buffer = time(job_end_with_buffer_minutes // 60, job_end_with_buffer_minutes % 60)
+                    
+                    # Check if new appointment overlaps with existing job
+                    if (appointment_time < job_end_with_buffer and appointment_end_time > job_start):
+                        has_conflict = True
+                        break
+                
+                if has_conflict:
                     break
             
             if has_conflict:
@@ -181,7 +214,7 @@ class BookingView(APIView):
                 pass
                 job = Job.objects.create(
                     booking_reference=data['booking_reference'],
-                    detailer=detailer,
+                    primary_detailer=primary_detailer,
                     service_type=service_type,
                     client_name=data['client_name'],
                     client_phone=data['client_phone'],
@@ -205,6 +238,8 @@ class BookingView(APIView):
                     loyalty_tier=data.get('loyalty_tier', 'bronze'),
                     loyalty_benefits=data.get('loyalty_benefits', [])
                 )
+                # Assign all detailers to the job (ManyToMany)
+                job.detailers.set(detailers_to_assign)
                 pass
             except Exception as e:
                 pass
@@ -216,9 +251,8 @@ class BookingView(APIView):
             if addons.exists():
                 job.addons.set(addons)
 
-            # Calculate the total amount by deduction the commission first from the total amount
-            total_amount = job.total_amount - (job.total_amount * float(detailer.commission_rate))
-            formatted_total_amount = f"{total_amount:.2f}"
+            # Format total amount for email display
+            formatted_total_amount = f"{job.total_amount:.2f}"
             
             # Format appointment date and time for email display (convert to local timezone)
             local_datetime = timezone.localtime(job.appointment_date)
@@ -226,9 +260,9 @@ class BookingView(APIView):
             formatted_appointment_time = local_datetime.strftime('%I %p').replace(' 0', ' ').lower()
             
             # check if the detailer has email notifications enabled
-            if detailer.user.allow_email_notifications:
+            if primary_detailer.user.allow_email_notifications:
                 send_booking_confirmation_email.delay(
-                    detailer.user.email,
+                    primary_detailer.user.email,
                     job.booking_reference, 
                     formatted_appointment_date, 
                     formatted_appointment_time, 
@@ -238,24 +272,26 @@ class BookingView(APIView):
                     formatted_total_amount
                 )
 
-            # Check if the detailer has push notifications enabled
-            create_notification.delay(
-                detailer.user.id,
-                'New Appointment',
-                'pending',
-                'success',
-                'You have a new appointment!'
-            )
-
-            # Send the user a push notification if they have allowed push notifications and 
-            # have a notification token
-            if detailer.user.allow_push_notifications and detailer.user.notification_token:
-                send_push_notification.delay(
+            # Send notifications to all assigned detailers
+            for detailer in detailers_to_assign:
+                # Check if the detailer has push notifications enabled
+                create_notification.delay(
                     detailer.user.id,
                     'New Appointment',
-                    'You have a new appointment| ' + self.format_appointment_date_time(job.appointment_date, job.appointment_time) + ' at ' + job.post_code,
-                    'booking_created'
+                    'pending',
+                    'success',
+                    'You have a new appointment!'
                 )
+
+                # Send the user a push notification if they have allowed push notifications and 
+                # have a notification token
+                if detailer.user.allow_push_notifications and detailer.user.notification_token:
+                    send_push_notification.delay(
+                        detailer.user.id,
+                        'New Appointment',
+                        'You have a new appointment| ' + self.format_appointment_date_time(job.appointment_date, job.appointment_time) + ' at ' + job.post_code,
+                        'booking_created'
+                    )
 
             # Return success response with appointment ID
             response_data = {

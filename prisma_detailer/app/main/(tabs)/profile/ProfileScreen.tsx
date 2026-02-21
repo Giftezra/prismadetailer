@@ -192,12 +192,6 @@ const ProfileScreen = () => {
               warningColor
             )}
             {renderStatCard(
-              "Commission Rate",
-              `${profileStatistics?.commission_rate || 0}%`,
-              "trending-up",
-              primaryColor
-            )}
-            {renderStatCard(
               "Total Earnings",
               `${formatCurrency(profileStatistics?.total_earnings || 0)}`,
               "cash",

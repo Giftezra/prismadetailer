@@ -1,7 +1,6 @@
 from pathlib import Path
 from datetime import timedelta
 import os
-import dj_database_url
 from celery.schedules import crontab
 from google.oauth2 import service_account
 
@@ -13,15 +12,15 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
 BASE_URL= os.getenv('BASE_URL')
 
-ALLOWED_ORIGINS = [BASE_URL, 'https://prismavalet.com', 'https://www.prismavalet.com', "https://381a4014244d.ngrok-free.app"] 
-CSRF_TRUSTED_ORIGINS = [BASE_URL, 'https://prismavalet.com', 'https://www.prismavalet.com', "https://381a4014244d.ngrok-free.app"]
-CORS_ALLOWED_ORIGINS = [BASE_URL, 'https://prismavalet.com', 'https://www.prismavalet.com', "https://381a4014244d.ngrok-free.app"]  
+ALLOWED_ORIGINS = ['https://0c60-2a02-8084-c80-ea80-c1fc-2938-23f4-4da1.ngrok-free.app']  
+CSRF_TRUSTED_ORIGINS = ['https://0c60-2a02-8084-c80-ea80-c1fc-2938-23f4-4da1.ngrok-free.app']   
+CORS_ALLOWED_ORIGINS = ["https://0c60-2a02-8084-c80-ea80-c1fc-2938-23f4-4da1.ngrok-free.app"]  
 CORS_ALLOW_CREDENTIALS = True
 DEBUG=os.getenv('DEBUG') == 'True'
 ALLOWED_HOSTS=['*']
 
-USE_X_FORWARDED_HOST = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# USE_X_FORWARDED_HOST = True
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
     'daphne',  # <-- Move this to the first position
@@ -72,31 +71,26 @@ TEMPLATES = [
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.parse(
-        os.getenv('DATABASE_URL'),
-        conn_max_age=600, 
-        ssl_require=True
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
 
 
-GS_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'prisma-6fc48-642e49c334e8.json')
-GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
-    GS_CREDENTIALS_PATH,
-    scopes=['https://www.googleapis.com/auth/cloud-platform'],
-)
-GS_BUCKET_NAME = 'prisma-valet-bucket'
-GS_LOCATION = 'detailer-app'
+# Google Cloud Storage credentials (commented out - using local media storage)
+# GS_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'prisma-6fc48-642e49c334e8.json')
+# GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
+#     GS_CREDENTIALS_PATH,
+#     scopes=['https://www.googleapis.com/auth/cloud-platform'],
+# )
+# GS_BUCKET_NAME = 'prisma-valet-bucket'
+# GS_LOCATION = 'detailer-app'
 
+# Storage Configuration - Using local media storage
 STORAGES = {
     'default': {
-        'BACKEND': 'storages.backends.gcloud.GoogleCloudStorage',
-        'OPTIONS': {
-            'bucket_name': GS_BUCKET_NAME,
-            'location': GS_LOCATION,
-            'credentials': GS_CREDENTIALS,
-            'default_acl': None,
-        },
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
     },
     'staticfiles': {
         'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',

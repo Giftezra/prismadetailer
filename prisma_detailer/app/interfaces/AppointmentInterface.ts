@@ -59,8 +59,31 @@ export interface JobDetailsProps {
   specialInstruction?: string;
   valetType?: string;
   addons?: string[];
-  before_images?: Array<{ id: number; image_url: string; uploaded_at: string }>;
-  after_images?: Array<{ id: number; image_url: string; uploaded_at: string }>;
+  before_images_interior?: Array<{
+    id: number;
+    image_url: string;
+    uploaded_at: string;
+    segment: string;
+  }>;
+  before_images_exterior?: Array<{
+    id: number;
+    image_url: string;
+    uploaded_at: string;
+    segment: string;
+  }>;
+  after_images_interior?: Array<{
+    id: number;
+    image_url: string;
+    uploaded_at: string;
+    segment: string;
+  }>;
+  after_images_exterior?: Array<{
+    id: number;
+    image_url: string;
+    uploaded_at: string;
+    segment: string;
+  }>;
+  fleet_maintenance?: FleetMaintenanceProps;
   loyalty_tier?: string;
   loyalty_benefits?: string[];
 }
@@ -89,4 +112,24 @@ export interface AvailabilityProps {
   start_time: string;
   end_time: string;
   is_blocked: boolean;
+}
+
+// Fleet Maintenance Interface
+export interface FleetMaintenanceProps {
+  id?: number;
+  job?: number;
+  tire_tread_depth?: number;
+  tire_condition?: string;
+  wiper_status?: "good" | "needs_work" | "bad";
+  oil_level?: "good" | "low" | "needs_change" | "needs_refill";
+  coolant_level?: "good" | "low" | "needs_change" | "needs_refill";
+  brake_fluid_level?: "good" | "low" | "needs_change" | "needs_refill";
+  battery_condition?: "good" | "weak" | "replace";
+  headlights_status?: "working" | "dim" | "not_working";
+  taillights_status?: "working" | "dim" | "not_working";
+  indicators_status?: "working" | "not_working";
+  vehicle_condition_notes?: string;
+  damage_report?: string;
+  inspected_by?: number;
+  inspected_at?: string;
 }

@@ -26,7 +26,6 @@ export interface UserProfileProps {
 
 /* Defines the interface for the detailers statistics */
 export interface DetailerStatisticsInterface {
-  commission_rate: number;
   avg_rating: number;
   total_bookings: number;
   reviews: ReviewProps[];

@@ -74,7 +74,7 @@ const RecentEarningCard: React.FC<RecentEarningCardProps> = ({
               variant="bodyMedium"
               style={{ color: textColor, textAlign: "center", marginBottom: 8 }}
             >
-              You have not earned any commissions with us yet.
+              You have not earned any hourly pay with us yet.
             </StyledText>
             <StyledText
               variant="bodySmall"

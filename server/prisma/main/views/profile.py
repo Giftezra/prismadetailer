@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Sum, Avg
+from django.db.models import Sum, Avg, Q
 from main.models import Job, Review, Earning, Detailer
 
 
@@ -33,14 +33,14 @@ class ProfileView(APIView):
     
     def _get_profile_statistics(self, request):
         try:
-            # Get the stats which includes the commission rate, average rating, total bookings, total earnings and reviews
-            total_bookings = Job.objects.filter(detailer__user=request.user).count()
+            # Get the stats which includes average rating, total bookings, total earnings and reviews
+            total_bookings = Job.objects.filter(
+                Q(primary_detailer__user=request.user) | Q(detailers__user=request.user)
+            ).distinct().count()
 
             total_earnings = Earning.objects.filter(detailer__user=request.user).aggregate(total=Sum('net_amount'))['total'] or 0
 
             average_rating = Review.objects.filter(detailer__user=request.user).aggregate(avg_rating=Avg('rating'))['avg_rating'] or 0
-
-            commission_rate = Detailer.objects.get(user=request.user).commission_rate * 100
 
             reviews = Review.objects.filter(detailer__user=request.user)
 
@@ -56,7 +56,6 @@ class ProfileView(APIView):
                 })
 
             data = {
-                'commission_rate': commission_rate,
                 'avg_rating': average_rating,
                 'total_bookings': total_bookings,
                 'total_earnings': total_earnings,

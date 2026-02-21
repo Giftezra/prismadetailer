@@ -67,31 +67,20 @@ class EarningView(APIView):
             current_total_earned = current_week_earnings.aggregate(
                 total=Sum('net_amount')
             )['total'] or Decimal('0')
-            
-            current_total_tips = current_week_earnings.aggregate(
-                total=Sum('tip_amount')
-            )['total'] or Decimal('0')
-            
+
             current_total_jobs = current_week_earnings.count()
-            current_total_with_tips = current_total_earned + current_total_tips
-            current_avg_per_job = current_total_with_tips / current_total_jobs if current_total_jobs > 0 else Decimal('0')
-            
+            current_avg_per_job = current_total_earned / current_total_jobs if current_total_jobs > 0 else Decimal('0')
+
             # Calculate previous week stats
             previous_total_earned = previous_week_earnings.aggregate(
                 total=Sum('net_amount')
             )['total'] or Decimal('0')
-            
-            previous_total_tips = previous_week_earnings.aggregate(
-                total=Sum('tip_amount')
-            )['total'] or Decimal('0')
-            
-            previous_total_with_tips = previous_total_earned + previous_total_tips
-            
+
             # Calculate percentage change
-            if previous_total_with_tips > 0:
-                percentage_change = float(((current_total_with_tips - previous_total_with_tips) / previous_total_with_tips) * 100)
+            if previous_total_earned > 0:
+                percentage_change = float(((current_total_earned - previous_total_earned) / previous_total_earned) * 100)
             else:
-                percentage_change = 100.0 if current_total_with_tips > 0 else 0.0
+                percentage_change = 100.0 if current_total_earned > 0 else 0.0
             
             is_positive_change = percentage_change >= 0
             
@@ -113,7 +102,6 @@ class EarningView(APIView):
             # Build response data with default values to prevent undefined
             summary_data = {
                 'total_earned': float(current_total_earned) if current_total_earned else 0.0,
-                'total_tips': float(current_total_tips) if current_total_tips else 0.0,
                 'total_jobs': current_total_jobs if current_total_jobs else 0,
                 'average_per_job': float(current_avg_per_job) if current_avg_per_job else 0.0,
                 'percentage_change': round(percentage_change, 2) if percentage_change is not None else 0.0,
@@ -143,24 +131,10 @@ class EarningView(APIView):
             total_lifetime_earnings = all_earnings.aggregate(
                 total=Sum('net_amount')
             )['total'] or Decimal('0')
-            
-            # Calculate total tips received
-            total_tips_received = all_earnings.aggregate(
-                total=Sum('tip_amount')
-            )['total'] or Decimal('0')
-            
+
             # Calculate total jobs completed
             total_jobs_completed = all_earnings.count()
-            
-            # Calculate average tip percentage
-            total_gross = all_earnings.aggregate(
-                total=Sum('gross_amount')
-            )['total'] or Decimal('0')
-            
-            average_tip_percentage = 0
-            if total_gross > 0:
-                average_tip_percentage = float((total_tips_received / total_gross) * 100)
-            
+
             # Calculate average weekly earnings (last 12 weeks)
             twelve_weeks_ago = timezone.now().date() - timedelta(weeks=12)
             recent_earnings = all_earnings.filter(created_at__date__gte=twelve_weeks_ago)
@@ -170,19 +144,13 @@ class EarningView(APIView):
                 week_start = twelve_weeks_ago + timedelta(weeks=i)
                 week_end = week_start + timedelta(days=6)
                 
-                week_earnings = recent_earnings.filter(
+                week_total = recent_earnings.filter(
                     created_at__date__range=[week_start, week_end]
                 ).aggregate(
                     total=Sum('net_amount')
                 )['total'] or Decimal('0')
-                
-                week_tips = recent_earnings.filter(
-                    created_at__date__range=[week_start, week_end]
-                ).aggregate(
-                    total=Sum('tip_amount')
-                )['total'] or Decimal('0')
-                
-                weekly_earnings.append(float(week_earnings + week_tips))
+
+                weekly_earnings.append(float(week_total))
             
             average_weekly_earnings = sum(weekly_earnings) / len(weekly_earnings) if weekly_earnings else 0
             
@@ -192,19 +160,13 @@ class EarningView(APIView):
                 month_start = timezone.now().date().replace(day=1) - timedelta(days=30*i)
                 month_end = month_start + timedelta(days=30)
                 
-                month_earnings = all_earnings.filter(
+                month_total = all_earnings.filter(
                     created_at__date__range=[month_start, month_end]
                 ).aggregate(
                     total=Sum('net_amount')
                 )['total'] or Decimal('0')
-                
-                month_tips = all_earnings.filter(
-                    created_at__date__range=[month_start, month_end]
-                ).aggregate(
-                    total=Sum('tip_amount')
-                )['total'] or Decimal('0')
-                
-                monthly_earnings.append(float(month_earnings + month_tips))
+
+                monthly_earnings.append(float(month_total))
             
             average_monthly_earnings = sum(monthly_earnings) / len(monthly_earnings) if monthly_earnings else 0
             
@@ -214,8 +176,8 @@ class EarningView(APIView):
             
             for earning in all_earnings:
                 day_name = days[earning.created_at.weekday()]
-                total_earning = earning.net_amount + (earning.tip_amount or Decimal('0'))
-                
+                total_earning = earning.net_amount
+
                 if day_name not in day_earnings:
                     day_earnings[day_name] = Decimal('0')
                 day_earnings[day_name] += total_earning
@@ -229,8 +191,8 @@ class EarningView(APIView):
             
             for earning in all_earnings:
                 month_name = months[earning.created_at.month - 1]
-                total_earning = earning.net_amount + (earning.tip_amount or Decimal('0'))
-                
+                total_earning = earning.net_amount
+
                 if month_name not in month_earnings:
                     month_earnings[month_name] = Decimal('0')
                 month_earnings[month_name] += total_earning
@@ -246,27 +208,15 @@ class EarningView(APIView):
             ).aggregate(
                 total=Sum('net_amount')
             )['total'] or Decimal('0')
-            
-            recent_4_weeks_tips = all_earnings.filter(
-                created_at__date__gte=four_weeks_ago
-            ).aggregate(
-                total=Sum('tip_amount')
-            )['total'] or Decimal('0')
-            
+
             previous_4_weeks = all_earnings.filter(
                 created_at__date__range=[eight_weeks_ago, four_weeks_ago]
             ).aggregate(
                 total=Sum('net_amount')
             )['total'] or Decimal('0')
-            
-            previous_4_weeks_tips = all_earnings.filter(
-                created_at__date__range=[eight_weeks_ago, four_weeks_ago]
-            ).aggregate(
-                total=Sum('tip_amount')
-            )['total'] or Decimal('0')
-            
-            recent_total = recent_4_weeks + recent_4_weeks_tips
-            previous_total = previous_4_weeks + previous_4_weeks_tips
+
+            recent_total = recent_4_weeks
+            previous_total = previous_4_weeks
             
             if previous_total > 0:
                 trend_percentage = float(((recent_total - previous_total) / previous_total) * 100)
@@ -281,8 +231,6 @@ class EarningView(APIView):
                 'average_weekly_earnings': round(average_weekly_earnings, 2),
                 'average_monthly_earnings': round(average_monthly_earnings, 2),
                 'total_jobs_completed': total_jobs_completed,
-                'total_tips_received': float(total_tips_received),
-                'average_tip_percentage': round(average_tip_percentage, 2),
                 'best_earning_day': best_earning_day,
                 'best_earning_month': best_earning_month,
                 'earnings_trend': earnings_trend,
@@ -318,9 +266,10 @@ class EarningView(APIView):
                 
                 earning_item = {
                     'id': str(earning.id),
-                    'commission_amount': float(earning.net_amount),
-                    'tip_amount': float(earning.tip_amount) if earning.tip_amount else 0,
-                    'total_earned': float(earning.net_amount + (earning.tip_amount or Decimal('0'))),
+                    'hourly_earnings': float(earning.hourly_earnings) if earning.hourly_earnings else float(earning.net_amount),
+                    'total_active_hours': float(earning.total_active_hours) if earning.total_active_hours else 0,
+                    'total_inactive_hours': float(earning.total_inactive_hours) if earning.total_inactive_hours else 0,
+                    'total_earned': float(earning.net_amount),
                     'job_id': f"job-{earning.job.id}",
                     'job_reference': earning.job.booking_reference,
                     'client_name': earning.job.client_name,

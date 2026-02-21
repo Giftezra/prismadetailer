@@ -13,36 +13,27 @@ import { useThemeColor } from "@/hooks/useThemeColor";
 import StyledText from "@/app/components/helpers/StyledText";
 import { Ionicons } from "@expo/vector-icons";
 import StyledButton from "@/app/components/helpers/StyledButton";
-import LinearGradientComponent from "@/app/components/helpers/LinearGradientComponent";
 import { JobDetailsProps } from "@/app/interfaces/AppointmentInterface";
 import { useAppointment } from "@/app/app-hooks/useAppointment";
-import { formatCurrency } from "@/app/utils/converters";
+import { useGetAppointmentDetailsQuery } from "@/app/store/api/appointmentsApi";
 import {
   captureMultipleCameraImages,
   prepareImagesForUpload,
 } from "@/app/utils/images";
+import { FleetMaintenanceProps } from "@/app/interfaces/AppointmentInterface";
+import StyledTextInput from "@/app/components/helpers/StyledTextInput";
 
 /**
  * AppointmentDetailsScreen Component
  *
- * This component displays detailed information about a specific appointment.
- * It shows comprehensive job details including client information, service details,
- * pricing, timing, and status. The data is passed via route parameters from the
- * time slot selection.
+ * Displays detailed information about a specific appointment: client, vehicle,
+ * location, service, schedule, and status. Pay is strictly per hour; no
+ * job-level payment amounts are shown.
  *
  * Features:
- * - Client information display
- * - Service details with description
- * - Pricing and duration information
- * - Appointment timing details
- * - Status indicator with color coding
- * - Back navigation
- * - Simulated data for demonstration
- *
- * Navigation:
- * - Receives job data via route parameters
- * - Provides back navigation to daily view
- * - Ready for action buttons (accept, start, complete, etc.)
+ * - Client and vehicle information
+ * - Service details and schedule (time, duration)
+ * - Status indicator and action buttons (accept, start, complete, etc.)
  */
 
 const AppointmentDetailsScreen = () => {
@@ -54,21 +45,69 @@ const AppointmentDetailsScreen = () => {
     handleStartAppointment,
     handleUploadBeforeImages,
     handleUploadAfterImages,
+    handleSubmitFleetMaintenance,
     isLoadingUploadBeforeImages,
     isLoadingUploadAfterImages,
+    isLoadingSubmitFleetMaintenance,
   } = useAppointment();
+  const router = useRouter();
   const params = useLocalSearchParams();
-  const appointmentDetails = params.appointmentDetails
-    ? JSON.parse(params.appointmentDetails as string)
+  
+  // Extract appointment ID from params
+  const appointmentId = params.appointmentDetails
+    ? JSON.parse(params.appointmentDetails as string)?.id
     : null;
 
-  // Local state for captured images (before upload)
-  const [capturedBeforeImages, setCapturedBeforeImages] = useState<
-    Array<{ uri: string; type: string; filename: string }>
-  >([]);
-  const [capturedAfterImages, setCapturedAfterImages] = useState<
-    Array<{ uri: string; type: string; filename: string }>
-  >([]);
+  // Fetch fresh appointment details using the ID
+  const {
+    data: fetchedAppointmentDetails,
+    isLoading: isLoadingFetchedDetails,
+    refetch: refetchAppointmentDetails,
+  } = useGetAppointmentDetailsQuery(
+    { id: appointmentId },
+    {
+      skip: !appointmentId,
+      refetchOnMountOrArgChange: true,
+    }
+  );
+
+  // Use fetched data if available, otherwise fall back to params data
+  const appointmentDetails = fetchedAppointmentDetails || 
+    (params.appointmentDetails
+      ? JSON.parse(params.appointmentDetails as string)
+      : null);
+
+  // Local state for captured images (before upload) - separated by segment
+  const [capturedBeforeImagesInterior, setCapturedBeforeImagesInterior] =
+    useState<Array<{ uri: string; type: string; filename: string }>>([]);
+  const [capturedBeforeImagesExterior, setCapturedBeforeImagesExterior] =
+    useState<Array<{ uri: string; type: string; filename: string }>>([]);
+  const [capturedAfterImagesInterior, setCapturedAfterImagesInterior] =
+    useState<Array<{ uri: string; type: string; filename: string }>>([]);
+  const [capturedAfterImagesExterior, setCapturedAfterImagesExterior] =
+    useState<Array<{ uri: string; type: string; filename: string }>>([]);
+
+  // Fleet maintenance form state
+  const [fleetMaintenance, setFleetMaintenance] = useState<
+    Partial<FleetMaintenanceProps>
+  >({
+    tire_tread_depth: undefined,
+    tire_condition: "",
+    wiper_status: undefined,
+    oil_level: undefined,
+    coolant_level: undefined,
+    brake_fluid_level: undefined,
+    battery_condition: undefined,
+    headlights_status: undefined,
+    taillights_status: undefined,
+    indicators_status: undefined,
+    vehicle_condition_notes: "",
+    damage_report: "",
+  });
+  const [fleetMaintenanceSubmitted, setFleetMaintenanceSubmitted] =
+    useState(false);
+  // String state for tire tread depth so decimals like "1." or ".5" can be typed
+  const [tireTreadDepthStr, setTireTreadDepthStr] = useState("");
 
   const backgroundColor = useThemeColor({}, "background");
   const cardColor = useThemeColor({}, "cards");
@@ -77,13 +116,17 @@ const AppointmentDetailsScreen = () => {
   const borderColor = useThemeColor({}, "borders");
 
   /**
-   * Capture before images and store them locally (no upload yet)
+   * Capture before images for a specific segment and store them locally (no upload yet)
    */
-  const handleBeforeImageCapture = async () => {
+  const handleBeforeImageCapture = async (segment: "interior" | "exterior") => {
     try {
       const images = await captureMultipleCameraImages(5);
       if (images && images.length > 0) {
-        setCapturedBeforeImages((prev) => [...prev, ...images]);
+        if (segment === "interior") {
+          setCapturedBeforeImagesInterior((prev) => [...prev, ...images]);
+        } else {
+          setCapturedBeforeImagesExterior((prev) => [...prev, ...images]);
+        }
       }
     } catch (error) {
       console.error("Error capturing before images:", error);
@@ -91,13 +134,17 @@ const AppointmentDetailsScreen = () => {
   };
 
   /**
-   * Capture after images and store them locally (no upload yet)
+   * Capture after images for a specific segment and store them locally (no upload yet)
    */
-  const handleAfterImageCapture = async () => {
+  const handleAfterImageCapture = async (segment: "interior" | "exterior") => {
     try {
       const images = await captureMultipleCameraImages(5);
       if (images && images.length > 0) {
-        setCapturedAfterImages((prev) => [...prev, ...images]);
+        if (segment === "interior") {
+          setCapturedAfterImagesInterior((prev) => [...prev, ...images]);
+        } else {
+          setCapturedAfterImagesExterior((prev) => [...prev, ...images]);
+        }
       }
     } catch (error) {
       console.error("Error capturing after images:", error);
@@ -105,31 +152,64 @@ const AppointmentDetailsScreen = () => {
   };
 
   /**
-   * Remove a before image from the preview
+   * Remove a before image from the preview for a specific segment
    */
-  const removeBeforeImage = (index: number) => {
-    setCapturedBeforeImages((prev) => prev.filter((_, i) => i !== index));
+  const removeBeforeImage = (
+    index: number,
+    segment: "interior" | "exterior"
+  ) => {
+    if (segment === "interior") {
+      setCapturedBeforeImagesInterior((prev) =>
+        prev.filter((_, i) => i !== index)
+      );
+    } else {
+      setCapturedBeforeImagesExterior((prev) =>
+        prev.filter((_, i) => i !== index)
+      );
+    }
   };
 
   /**
-   * Remove an after image from the preview
+   * Remove an after image from the preview for a specific segment
    */
-  const removeAfterImage = (index: number) => {
-    setCapturedAfterImages((prev) => prev.filter((_, i) => i !== index));
+  const removeAfterImage = (
+    index: number,
+    segment: "interior" | "exterior"
+  ) => {
+    if (segment === "interior") {
+      setCapturedAfterImagesInterior((prev) =>
+        prev.filter((_, i) => i !== index)
+      );
+    } else {
+      setCapturedAfterImagesExterior((prev) =>
+        prev.filter((_, i) => i !== index)
+      );
+    }
   };
 
   /**
-   * Handle Start Job - Upload before images first, then start appointment
+   * Handle Start Job - Upload before images for both segments first, then start appointment
    */
   const handleStartJob = async () => {
     if (!appointmentDetails?.id) return;
 
     try {
-      // Upload before images if any were captured
-      if (capturedBeforeImages.length > 0) {
+      // Upload before interior images if any were captured
+      if (capturedBeforeImagesInterior.length > 0) {
         const formData = prepareImagesForUpload(
-          capturedBeforeImages,
-          appointmentDetails.id
+          capturedBeforeImagesInterior,
+          appointmentDetails.id,
+          "interior"
+        );
+        await handleUploadBeforeImages(formData);
+      }
+
+      // Upload before exterior images if any were captured
+      if (capturedBeforeImagesExterior.length > 0) {
+        const formData = prepareImagesForUpload(
+          capturedBeforeImagesExterior,
+          appointmentDetails.id,
+          "exterior"
         );
         await handleUploadBeforeImages(formData);
       }
@@ -137,25 +217,40 @@ const AppointmentDetailsScreen = () => {
       // Start the appointment
       await handleStartAppointment(appointmentDetails.id);
 
+      // Refetch appointment details to get updated status
+      await refetchAppointmentDetails();
+
       // Clear captured images after successful upload
-      setCapturedBeforeImages([]);
+      setCapturedBeforeImagesInterior([]);
+      setCapturedBeforeImagesExterior([]);
     } catch (error) {
       console.error("Error starting job:", error);
     }
   };
 
   /**
-   * Handle Complete Job - Upload after images first, then complete appointment
+   * Handle Complete Job - Upload after images for both segments first, then complete appointment
    */
   const handleCompleteJob = async () => {
     if (!appointmentDetails?.id) return;
 
     try {
-      // Upload after images if any were captured
-      if (capturedAfterImages.length > 0) {
+      // Upload after interior images if any were captured
+      if (capturedAfterImagesInterior.length > 0) {
         const formData = prepareImagesForUpload(
-          capturedAfterImages,
-          appointmentDetails.id
+          capturedAfterImagesInterior,
+          appointmentDetails.id,
+          "interior"
+        );
+        await handleUploadAfterImages(formData);
+      }
+
+      // Upload after exterior images if any were captured
+      if (capturedAfterImagesExterior.length > 0) {
+        const formData = prepareImagesForUpload(
+          capturedAfterImagesExterior,
+          appointmentDetails.id,
+          "exterior"
         );
         await handleUploadAfterImages(formData);
       }
@@ -163,10 +258,41 @@ const AppointmentDetailsScreen = () => {
       // Complete the appointment
       await handleCompleteAppointment(appointmentDetails.id);
 
+      // Refetch appointment details to get updated status
+      await refetchAppointmentDetails();
+
       // Clear captured images after successful upload
-      setCapturedAfterImages([]);
+      setCapturedAfterImagesInterior([]);
+      setCapturedAfterImagesExterior([]);
     } catch (error) {
       console.error("Error completing job:", error);
+    }
+  };
+
+  /**
+   * Handle fleet maintenance form submission
+   */
+  const handleFleetMaintenanceSubmit = async () => {
+    if (!appointmentDetails?.id) return;
+
+    try {
+      const treadNum = parseFloat(tireTreadDepthStr);
+      const payload = {
+        ...fleetMaintenance,
+        tire_tread_depth:
+          tireTreadDepthStr.trim() === ""
+            ? undefined
+            : isNaN(treadNum)
+              ? undefined
+              : treadNum,
+      };
+      await handleSubmitFleetMaintenance(appointmentDetails.id, payload);
+      setFleetMaintenanceSubmitted(true);
+      
+      // Refetch appointment details to get updated fleet maintenance data
+      await refetchAppointmentDetails();
+    } catch (error) {
+      console.error("Error submitting fleet maintenance:", error);
     }
   };
 
@@ -220,6 +346,67 @@ const AppointmentDetailsScreen = () => {
         return "time-outline";
     }
   };
+
+  const getStatusColors = (status: string) => {
+    switch (status) {
+      case "pending":
+        return { backgroundColor: "#FEF3C7", color: "#92400E" };
+      case "accepted":
+        return { backgroundColor: "#DBEAFE", color: "#1E40AF" };
+      case "in_progress":
+        return { backgroundColor: "#D1FAE5", color: "#065F46" };
+      case "completed":
+        return { backgroundColor: "#D1FAE5", color: "#065F46" };
+      case "cancelled":
+        return { backgroundColor: "#FEE2E2", color: "#991B1B" };
+      default:
+        return { backgroundColor: "#FEF3C7", color: "#92400E" };
+    }
+  };
+
+  // Helper function to render status dropdown/picker
+  const renderStatusPicker = (
+    label: string,
+    value: string | undefined,
+    options: Array<{ label: string; value: string }>,
+    onSelect: (value: string) => void
+  ) => {
+    return (
+      <View style={styles.pickerContainer}>
+        <StyledText variant="bodyMedium" style={{ marginBottom: 8 }}>
+          {label}
+        </StyledText>
+        <View style={styles.pickerOptions}>
+          {options.map((option) => (
+            <TouchableOpacity
+              key={option.value}
+              style={[
+                styles.pickerOption,
+                value === option.value && [
+                  styles.pickerOptionSelected,
+                  { backgroundColor: tintColor, borderColor: tintColor },
+                ],
+                { borderColor },
+              ]}
+              onPress={() => onSelect(option.value)}
+            >
+              <StyledText
+                variant="bodySmall"
+                style={{
+                  color: value === option.value ? "#fff" : textColor,
+                }}
+              >
+                {option.label}
+              </StyledText>
+              {value === option.value && (
+                <Ionicons name="checkmark" size={16} color="#fff" />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    );
+  };
   /**
    * Render action buttons based on current status
    *
@@ -236,7 +423,11 @@ const AppointmentDetailsScreen = () => {
             <StyledButton
               key="accept"
               variant="tonal"
-              onPress={() => handleAcceptAppointment(appointmentDetails.id)}
+              onPress={async () => {
+                await handleAcceptAppointment(appointmentDetails.id);
+                // Refetch after accepting
+                await refetchAppointmentDetails();
+              }}
               style={[styles.sleekActionButton, styles.sleekAcceptButton]}
             >
               <StyledText variant="labelMedium" style={styles.sleekButtonText}>
@@ -246,7 +437,11 @@ const AppointmentDetailsScreen = () => {
             <StyledButton
               key="decline"
               variant="tonal"
-              onPress={() => handleCancelAppointment(appointmentDetails.id)}
+              onPress={async () => {
+                await handleCancelAppointment(appointmentDetails.id);
+                // Refetch after cancelling
+                await refetchAppointmentDetails();
+              }}
               style={[styles.sleekActionButton, styles.sleekCancelButton]}
             >
               <StyledText variant="labelMedium" style={styles.sleekButtonText}>
@@ -256,36 +451,60 @@ const AppointmentDetailsScreen = () => {
           </View>
         );
       case "accepted":
+        // Get uploaded and captured image counts
+        const beforeInteriorUploaded =
+          appointmentDetails?.before_images_interior?.length || 0;
+        const beforeExteriorUploaded =
+          appointmentDetails?.before_images_exterior?.length || 0;
+        const beforeInteriorTotal =
+          beforeInteriorUploaded + capturedBeforeImagesInterior.length;
+        const beforeExteriorTotal =
+          beforeExteriorUploaded + capturedBeforeImagesExterior.length;
+        const canStartJob =
+          beforeInteriorTotal >= 4 && beforeExteriorTotal >= 4;
+
         return (
           <View style={styles.buttonContainer}>
             <StyledButton
               key="start"
               variant="tonal"
               onPress={handleStartJob}
-              disabled={
-                isLoadingUploadBeforeImages || capturedBeforeImages.length !== 4
-              }
+              disabled={isLoadingUploadBeforeImages || !canStartJob}
             >
               {isLoadingUploadBeforeImages ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (
-                <StyledText variant="labelLarge">
-                  Start Job
-                </StyledText>
+                <StyledText variant="labelLarge">Start Job</StyledText>
               )}
             </StyledButton>
             <StyledButton
               key="cancel"
               variant="tonal"
-              onPress={() => handleCancelAppointment(appointmentDetails.id)}
+              onPress={async () => {
+                await handleCancelAppointment(appointmentDetails.id);
+                // Refetch after cancelling
+                await refetchAppointmentDetails();
+              }}
             >
-              <StyledText variant="labelLarge">
-                Cancel Job
-              </StyledText>
+              <StyledText variant="labelLarge">Cancel Job</StyledText>
             </StyledButton>
           </View>
         );
       case "in_progress":
+        // Get uploaded and captured image counts
+        const afterInteriorUploaded =
+          appointmentDetails?.after_images_interior?.length || 0;
+        const afterExteriorUploaded =
+          appointmentDetails?.after_images_exterior?.length || 0;
+        const afterInteriorTotal =
+          afterInteriorUploaded + capturedAfterImagesInterior.length;
+        const afterExteriorTotal =
+          afterExteriorUploaded + capturedAfterImagesExterior.length;
+        const canCompleteJob =
+          afterInteriorTotal >= 4 &&
+          afterExteriorTotal >= 4 &&
+          fleetMaintenanceSubmitted;
+
         return (
           <View style={styles.buttonContainer}>
             <StyledButton
@@ -293,15 +512,15 @@ const AppointmentDetailsScreen = () => {
               variant="tonal"
               onPress={handleCompleteJob}
               disabled={
-                isLoadingUploadAfterImages || capturedAfterImages.length !== 4
+                isLoadingUploadAfterImages ||
+                isLoadingSubmitFleetMaintenance ||
+                !canCompleteJob
               }
             >
-              {isLoadingUploadAfterImages ? (
+              {isLoadingUploadAfterImages || isLoadingSubmitFleetMaintenance ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (
-                <StyledText variant="labelLarge">
-                  Complete Job
-                </StyledText>
+                <StyledText variant="labelLarge">Complete Job</StyledText>
               )}
             </StyledButton>
           </View>
@@ -327,13 +546,17 @@ const AppointmentDetailsScreen = () => {
     }
   };
 
-  if (isLoadingAppointmentDetails) {
+  if (isLoadingAppointmentDetails || (isLoadingFetchedDetails && appointmentId)) {
     return (
       <View style={[styles.container, { backgroundColor }]}>
         <ActivityIndicator size="large" color={tintColor} />
       </View>
     );
   }
+
+  const status = appointmentDetails?.status || "";
+  const statusColors = getStatusColors(status);
+  const statusIcon = getStatusIcon(status);
 
   return (
     <View style={[styles.container, { backgroundColor }]}>
@@ -344,168 +567,158 @@ const AppointmentDetailsScreen = () => {
           { backgroundColor: cardColor, borderBottomColor: borderColor },
         ]}
       >
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.headerBack}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Ionicons name="arrow-back" size={24} color={textColor} />
+        </TouchableOpacity>
         <View style={styles.headerContent}>
           <StyledText variant="titleMedium" style={{ color: textColor }}>
-            Job Details
+            Job details
           </StyledText>
-          <StyledText variant="bodySmall" style={{ color: textColor }}>
+          <StyledText
+            variant="bodySmall"
+            style={[styles.headerRef, { color: textColor }]}
+          >
             #{appointmentDetails?.booking_reference}
           </StyledText>
         </View>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Status Card */}
-        <LinearGradientComponent
-          color1={cardColor}
-          color2={textColor}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 3, y: 1 }}
-          style={[styles.card, { borderColor }]}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Status pill */}
+        <View
+          style={[
+            styles.statusPill,
+            {
+              backgroundColor: statusColors.backgroundColor,
+              borderColor: statusColors.color,
+            },
+          ]}
         >
-          <View style={styles.statusContainer}>
-            <Ionicons
-              name={getStatusIcon(appointmentDetails?.status || "")}
-              size={20}
-              color={getStatusStyle(appointmentDetails?.status || "").color}
-            />
-            <View style={styles.statusTextContainer}>
-              <StyledText variant="bodySmall">Status</StyledText>
-              <StyledText
-                variant="bodySmall"
-                style={[
-                  getStatusStyle(appointmentDetails?.status || ""),
-                  {
-                    width: 100,
-                    borderRadius: 10,
-                    marginTop: 5,
-                    padding: 5,
-                    color: getStatusStyle(appointmentDetails?.status || "")
-                      .color,
-                    textAlign: "center",
-                  },
-                ]}
-              >
-                {appointmentDetails?.status.replace("_", " ").toUpperCase()}
-              </StyledText>
-            </View>
-          </View>
-        </LinearGradientComponent>
+          <Ionicons name={statusIcon} size={22} color={statusColors.color} />
+          <StyledText
+            variant="labelLarge"
+            style={[styles.statusPillText, { color: statusColors.color }]}
+          >
+            {status.replace("_", " ").toUpperCase()}
+          </StyledText>
+        </View>
 
-        {/* Client Information */}
-        <LinearGradientComponent
-          color1={cardColor}
-          color2={textColor}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 3, y: 1 }}
-          style={[styles.card, { borderColor }]}
-        >
-          <StyledText variant="labelMedium">Client Information</StyledText>
+        {/* Client */}
+        <View style={[styles.sectionCard, { backgroundColor: cardColor, borderColor }]}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="person-outline" size={20} color={tintColor} />
+            <StyledText variant="labelLarge" style={{ color: textColor }}>
+              Client
+            </StyledText>
+          </View>
           <View style={styles.infoContainer}>
             <View style={styles.infoRow}>
-              <Ionicons name="person" size={15} color={tintColor} />
-              <StyledText variant="bodyMedium">
+              <Ionicons name="person" size={18} color={tintColor} />
+              <StyledText variant="bodyMedium" style={{ color: textColor }}>
                 {appointmentDetails?.client_name}
               </StyledText>
             </View>
             <View style={styles.infoRow}>
-              <Ionicons name="call" size={15} color={tintColor} />
-              <StyledText variant="bodyMedium">
+              <Ionicons name="call" size={18} color={tintColor} />
+              <StyledText variant="bodyMedium" style={{ color: textColor }}>
                 {appointmentDetails?.client_phone}
               </StyledText>
             </View>
           </View>
-        </LinearGradientComponent>
+        </View>
 
-        {/* Vehicle Information */}
-        <LinearGradientComponent
-          color1={cardColor}
-          color2={textColor}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 3, y: 1 }}
-          style={[styles.card, { borderColor }]}
-        >
-          <StyledText variant="labelMedium">Vehicle Information</StyledText>
+        {/* Vehicle */}
+        <View style={[styles.sectionCard, { backgroundColor: cardColor, borderColor }]}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="car-outline" size={20} color={tintColor} />
+            <StyledText variant="labelLarge" style={{ color: textColor }}>
+              Vehicle
+            </StyledText>
+          </View>
           <View style={styles.infoContainer}>
             <View style={styles.infoRow}>
-              <Ionicons name="car" size={15} color={tintColor} />
-              <StyledText variant="bodyMedium">
+              <Ionicons name="car" size={18} color={tintColor} />
+              <StyledText variant="bodyMedium" style={{ color: textColor }}>
                 {appointmentDetails?.vehicle_year}{" "}
                 {appointmentDetails?.vehicle_make}{" "}
                 {appointmentDetails?.vehicle_model}
               </StyledText>
             </View>
             <View style={styles.infoRow}>
-              <Ionicons name="color-palette" size={15} color={tintColor} />
-              <StyledText variant="bodyMedium">
+              <Ionicons name="color-palette" size={18} color={tintColor} />
+              <StyledText variant="bodyMedium" style={{ color: textColor }}>
                 {appointmentDetails?.vehicle_color}
               </StyledText>
             </View>
             <View style={styles.infoRow}>
-              <Ionicons name="card" size={15} color={tintColor} />
-              <StyledText variant="bodyMedium">
+              <Ionicons name="card" size={18} color={tintColor} />
+              <StyledText variant="bodyMedium" style={{ color: textColor }}>
                 {appointmentDetails?.vehiclie_license}
               </StyledText>
             </View>
             <View style={styles.infoRow}>
-              <Ionicons name="water" size={15} color={tintColor} />
-              <StyledText variant="bodyMedium">
+              <Ionicons name="water" size={18} color={tintColor} />
+              <StyledText variant="bodyMedium" style={{ color: textColor }}>
                 {appointmentDetails?.valet_type}
               </StyledText>
             </View>
           </View>
-        </LinearGradientComponent>
+        </View>
 
-        {/* Location Information */}
-        <LinearGradientComponent
-          color1={cardColor}
-          color2={textColor}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 3, y: 1 }}
-          style={[styles.card, { borderColor }]}
-        >
-          <StyledText variant="labelMedium">Location</StyledText>
+        {/* Location */}
+        <View style={[styles.sectionCard, { backgroundColor: cardColor, borderColor }]}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="location-outline" size={20} color={tintColor} />
+            <StyledText variant="labelLarge" style={{ color: textColor }}>
+              Location
+            </StyledText>
+          </View>
           <View style={styles.infoContainer}>
             <View style={styles.infoRow}>
-              <Ionicons name="location" size={15} color={tintColor} />
-              <StyledText variant="bodyMedium">
+              <Ionicons name="location" size={18} color={tintColor} />
+              <StyledText variant="bodyMedium" style={{ color: textColor }}>
                 {appointmentDetails?.address}
               </StyledText>
             </View>
             <View style={styles.infoRow}>
-              <Ionicons name="location" size={15} color={tintColor} />
-              <StyledText variant="bodyMedium">
+              <Ionicons name="location" size={18} color={tintColor} />
+              <StyledText variant="bodyMedium" style={{ color: textColor }}>
                 {appointmentDetails?.city}, {appointmentDetails?.post_code}
               </StyledText>
             </View>
           </View>
-        </LinearGradientComponent>
+        </View>
 
-        {/* Service Details */}
-        <LinearGradientComponent
-          color1={cardColor}
-          color2={textColor}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 3, y: 1 }}
-          style={[styles.card, { borderColor }]}
-        >
-          <StyledText variant="labelMedium">Service Details</StyledText>
+        {/* Service */}
+        <View style={[styles.sectionCard, { backgroundColor: cardColor, borderColor }]}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="construct-outline" size={20} color={tintColor} />
+            <StyledText variant="labelLarge" style={{ color: textColor }}>
+              Service
+            </StyledText>
+          </View>
           <View style={styles.infoContainer}>
             <View style={styles.infoRow}>
-              <Ionicons name="car" size={15} color={tintColor} />
-              <StyledText variant="bodyMedium">
+              <StyledText variant="bodyMedium" style={{ color: textColor, fontWeight: "600" }}>
                 {appointmentDetails?.service_type.name}
               </StyledText>
             </View>
             <View style={styles.infoRow}>
-              <Ionicons name="list" size={15} color={tintColor} />
               <View style={styles.descriptionContainer}>
                 {appointmentDetails?.service_type.description.map(
                   (desc: string, index: number) => (
                     <StyledText
                       key={index}
                       variant="bodyMedium"
-                      style={styles.descriptionItem}
+                      style={[styles.descriptionItem, { color: textColor }]}
                     >
                       • {desc}
                     </StyledText>
@@ -514,72 +727,62 @@ const AppointmentDetailsScreen = () => {
               </View>
             </View>
           </View>
-        </LinearGradientComponent>
+        </View>
 
-        {/* Timing & Pricing */}
-        <LinearGradientComponent
-          color1={cardColor}
-          color2={textColor}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 3, y: 1 }}
-          style={[styles.card, { borderColor }]}
-        >
-          <StyledText variant="labelMedium">Timing & Pricing</StyledText>
+        {/* Schedule */}
+        <View style={[styles.sectionCard, { backgroundColor: cardColor, borderColor }]}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="time-outline" size={20} color={tintColor} />
+            <StyledText variant="labelLarge" style={{ color: textColor }}>
+              Schedule
+            </StyledText>
+          </View>
           <View style={styles.infoContainer}>
             <View style={styles.infoRow}>
-              <Ionicons name="time" size={15} color={tintColor} />
-              <StyledText variant="bodyMedium">
-                {appointmentDetails?.appointment_time} (
-                {appointmentDetails?.duration} minutes)
-              </StyledText>
-            </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="cash" size={15} color={tintColor} />
-              <StyledText variant="bodyMedium">
-                {formatCurrency(appointmentDetails?.service_type.price || 0)}
+              <Ionicons name="time" size={18} color={tintColor} />
+              <StyledText variant="bodyMedium" style={{ color: textColor }}>
+                {appointmentDetails?.appointment_time} ·{" "}
+                {appointmentDetails?.duration} min
               </StyledText>
             </View>
           </View>
-        </LinearGradientComponent>
+        </View>
 
         {/* Addons */}
         {appointmentDetails?.addons && appointmentDetails.addons.length > 0 && (
-          <LinearGradientComponent
-            color1={cardColor}
-            color2={textColor}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 3, y: 1 }}
-            style={[styles.card, { borderColor }]}
-          >
-            <StyledText variant="labelMedium">Addons</StyledText>
+          <View style={[styles.sectionCard, { backgroundColor: cardColor, borderColor }]}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="add-circle-outline" size={20} color={tintColor} />
+              <StyledText variant="labelLarge" style={{ color: textColor }}>
+                Add-ons
+              </StyledText>
+            </View>
             <View style={styles.infoContainer}>
               {appointmentDetails.addons.map((addon: string, index: number) => (
                 <View key={index} style={styles.infoRow}>
-                  <Ionicons name="add-circle" size={15} color={tintColor} />
-                  <StyledText variant="bodyMedium">{addon}</StyledText>
+                  <Ionicons name="add-circle" size={18} color={tintColor} />
+                  <StyledText variant="bodyMedium" style={{ color: textColor }}>{addon}</StyledText>
                 </View>
               ))}
             </View>
-          </LinearGradientComponent>
+          </View>
         )}
 
-        {/* Loyalty Information */}
+        {/* Loyalty */}
         {(appointmentDetails?.loyalty_tier ||
           appointmentDetails?.loyalty_benefits) && (
-          <LinearGradientComponent
-            color1={cardColor}
-            color2={textColor}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 3, y: 1 }}
-            style={[styles.card, { borderColor }]}
-          >
-            <StyledText variant="labelMedium">Loyalty Information</StyledText>
+          <View style={[styles.sectionCard, { backgroundColor: cardColor, borderColor }]}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="star-outline" size={20} color={tintColor} />
+              <StyledText variant="labelLarge" style={{ color: textColor }}>
+                Loyalty
+              </StyledText>
+            </View>
             <View style={styles.infoContainer}>
               {appointmentDetails?.loyalty_tier && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="star" size={15} color={tintColor} />
-                  <StyledText variant="bodyMedium">
-                    Tier:{" "}
+                  <Ionicons name="star" size={18} color={tintColor} />
+                  <StyledText variant="bodyMedium" style={{ color: textColor }}>
                     {appointmentDetails.loyalty_tier.charAt(0).toUpperCase() +
                       appointmentDetails.loyalty_tier.slice(1)}
                   </StyledText>
@@ -588,14 +791,14 @@ const AppointmentDetailsScreen = () => {
               {appointmentDetails?.loyalty_benefits &&
                 appointmentDetails.loyalty_benefits.length > 0 && (
                   <View style={styles.infoRow}>
-                    <Ionicons name="gift" size={15} color={tintColor} />
+                    <Ionicons name="gift" size={18} color={tintColor} />
                     <View style={styles.descriptionContainer}>
                       {appointmentDetails.loyalty_benefits.map(
                         (benefit: string, index: number) => (
                           <StyledText
                             key={index}
                             variant="bodyMedium"
-                            style={styles.descriptionItem}
+                            style={[styles.descriptionItem, { color: textColor }]}
                           >
                             • {benefit}
                           </StyledText>
@@ -605,56 +808,64 @@ const AppointmentDetailsScreen = () => {
                   </View>
                 )}
             </View>
-          </LinearGradientComponent>
+          </View>
         )}
 
         {/* Notes */}
-        <LinearGradientComponent
-          color1={cardColor}
-          color2={textColor}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 3, y: 1 }}
-          style={[styles.card, { borderColor }]}
-        >
-          <StyledText variant="labelMedium">Notes</StyledText>
+        <View style={[styles.sectionCard, { backgroundColor: cardColor, borderColor }]}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="document-text-outline" size={20} color={tintColor} />
+            <StyledText variant="labelLarge" style={{ color: textColor }}>
+              Notes
+            </StyledText>
+          </View>
           <View style={styles.infoContainer}>
             <View style={styles.infoRow}>
-              <Ionicons name="document-text" size={15} color={tintColor} />
-              <StyledText variant="bodyMedium">
+              <StyledText variant="bodyMedium" style={{ color: textColor }}>
                 {appointmentDetails?.special_instruction ||
                   "No special instructions"}
               </StyledText>
             </View>
           </View>
-        </LinearGradientComponent>
+        </View>
 
         {/* Before Images - Only show when status is "accepted" */}
         {appointmentDetails?.status === "accepted" && (
-          <LinearGradientComponent
-            color1={cardColor}
-            color2={textColor}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 3, y: 1 }}
-            style={[styles.card, { borderColor }]}
-          >
-            <StyledText variant="labelMedium">Before Images</StyledText>
+          <View style={[styles.sectionCard, { backgroundColor: cardColor, borderColor }]}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="images-outline" size={20} color={tintColor} />
+              <StyledText variant="labelLarge" style={{ color: textColor }}>
+                Before images
+              </StyledText>
+            </View>
 
+            {/* Before Images - Interior */}
             <View style={styles.imageSection}>
               <View style={styles.imageSectionHeader}>
                 <Ionicons name="images" size={20} color={tintColor} />
                 <StyledText variant="bodySmall">
-                  Uploaded: {appointmentDetails?.before_images?.length || 0} |
-                  Captured: {capturedBeforeImages.length}
+                  Interior - Uploaded:{" "}
+                  {appointmentDetails?.before_images_interior?.length || 0} |
+                  Captured: {capturedBeforeImagesInterior.length} (
+                  {(appointmentDetails?.before_images_interior?.length || 0) +
+                    capturedBeforeImagesInterior.length >=
+                  4
+                    ? "✓"
+                    : `${
+                        (appointmentDetails?.before_images_interior?.length ||
+                          0) + capturedBeforeImagesInterior.length
+                      }/4`}
+                  )
                 </StyledText>
               </View>
 
               <View style={styles.imageGrid}>
-                {/* Show already uploaded images */}
-                {appointmentDetails?.before_images &&
-                  appointmentDetails.before_images.map(
+                {/* Show already uploaded interior images */}
+                {appointmentDetails?.before_images_interior &&
+                  appointmentDetails.before_images_interior.map(
                     (img: any, index: number) => (
                       <View
-                        key={`uploaded-${index}`}
+                        key={`uploaded-interior-${index}`}
                         style={styles.imageContainer}
                       >
                         <Image
@@ -665,16 +876,19 @@ const AppointmentDetailsScreen = () => {
                     )
                   )}
 
-                {/* Show captured images (not yet uploaded) with remove button */}
-                {capturedBeforeImages.map((img, index) => (
-                  <View key={`captured-${index}`} style={styles.imageContainer}>
+                {/* Show captured interior images (not yet uploaded) with remove button */}
+                {capturedBeforeImagesInterior.map((img, index) => (
+                  <View
+                    key={`captured-interior-${index}`}
+                    style={styles.imageContainer}
+                  >
                     <Image
                       source={{ uri: img.uri }}
                       style={styles.uploadedImage}
                     />
                     <TouchableOpacity
                       style={styles.removeButton}
-                      onPress={() => removeBeforeImage(index)}
+                      onPress={() => removeBeforeImage(index, "interior")}
                     >
                       <Ionicons name="close-circle" size={24} color="#dc3545" />
                     </TouchableOpacity>
@@ -684,158 +898,810 @@ const AppointmentDetailsScreen = () => {
                 {/* Capture button */}
                 <TouchableOpacity
                   style={[styles.uploadButton, { borderColor }]}
-                  onPress={handleBeforeImageCapture}
+                  onPress={() => handleBeforeImageCapture("interior")}
                 >
                   <Ionicons name="camera" size={24} color={tintColor} />
                   <StyledText variant="bodySmall">
-                    {capturedBeforeImages.length === 0
-                      ? "Capture Before Images"
+                    {capturedBeforeImagesInterior.length === 0
+                      ? "Capture Interior"
                       : "Capture More"}
                   </StyledText>
                 </TouchableOpacity>
               </View>
             </View>
-          </LinearGradientComponent>
+
+            {/* Before Images - Exterior */}
+            <View style={styles.imageSection}>
+              <View style={styles.imageSectionHeader}>
+                <Ionicons name="images" size={20} color={tintColor} />
+                <StyledText variant="bodySmall">
+                  Exterior - Uploaded:{" "}
+                  {appointmentDetails?.before_images_exterior?.length || 0} |
+                  Captured: {capturedBeforeImagesExterior.length} (
+                  {(appointmentDetails?.before_images_exterior?.length || 0) +
+                    capturedBeforeImagesExterior.length >=
+                  4
+                    ? "✓"
+                    : `${
+                        (appointmentDetails?.before_images_exterior?.length ||
+                          0) + capturedBeforeImagesExterior.length
+                      }/4`}
+                  )
+                </StyledText>
+              </View>
+
+              <View style={styles.imageGrid}>
+                {/* Show already uploaded exterior images */}
+                {appointmentDetails?.before_images_exterior &&
+                  appointmentDetails.before_images_exterior.map(
+                    (img: any, index: number) => (
+                      <View
+                        key={`uploaded-exterior-${index}`}
+                        style={styles.imageContainer}
+                      >
+                        <Image
+                          source={{ uri: img.image_url }}
+                          style={styles.uploadedImage}
+                        />
+                      </View>
+                    )
+                  )}
+
+                {/* Show captured exterior images (not yet uploaded) with remove button */}
+                {capturedBeforeImagesExterior.map((img, index) => (
+                  <View
+                    key={`captured-exterior-${index}`}
+                    style={styles.imageContainer}
+                  >
+                    <Image
+                      source={{ uri: img.uri }}
+                      style={styles.uploadedImage}
+                    />
+                    <TouchableOpacity
+                      style={styles.removeButton}
+                      onPress={() => removeBeforeImage(index, "exterior")}
+                    >
+                      <Ionicons name="close-circle" size={24} color="#dc3545" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+
+                {/* Capture button */}
+                <TouchableOpacity
+                  style={[styles.uploadButton, { borderColor }]}
+                  onPress={() => handleBeforeImageCapture("exterior")}
+                >
+                  <Ionicons name="camera" size={24} color={tintColor} />
+                  <StyledText variant="bodySmall">
+                    {capturedBeforeImagesExterior.length === 0
+                      ? "Capture Exterior"
+                      : "Capture More"}
+                  </StyledText>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
         )}
 
         {/* After Images - Only show when status is "in_progress" */}
         {appointmentDetails?.status === "in_progress" && (
-          <LinearGradientComponent
-            color1={cardColor}
-            color2={textColor}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 3, y: 1 }}
-            style={[styles.card, { borderColor }]}
-          >
-            <StyledText variant="labelMedium">After Images</StyledText>
-
-            <View style={styles.imageSection}>
-              <View style={styles.imageSectionHeader}>
-                <Ionicons name="images" size={20} color={tintColor} />
-                <StyledText variant="bodySmall">
-                  Uploaded: {appointmentDetails?.after_images?.length || 0} |
-                  Captured: {capturedAfterImages.length}
+          <>
+            <View style={[styles.sectionCard, { backgroundColor: cardColor, borderColor }]}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="images-outline" size={20} color={tintColor} />
+                <StyledText variant="labelLarge" style={{ color: textColor }}>
+                  After images
                 </StyledText>
               </View>
 
-              <View style={styles.imageGrid}>
-                {/* Show already uploaded images */}
-                {appointmentDetails?.after_images &&
-                  appointmentDetails.after_images.map(
-                    (img: any, index: number) => (
-                      <View
-                        key={`uploaded-${index}`}
-                        style={styles.imageContainer}
-                      >
-                        <Image
-                          source={{ uri: img.image_url }}
-                          style={styles.uploadedImage}
-                        />
-                      </View>
-                    )
-                  )}
-
-                {/* Show captured images (not yet uploaded) with remove button */}
-                {capturedAfterImages.map((img, index) => (
-                  <View key={`captured-${index}`} style={styles.imageContainer}>
-                    <Image
-                      source={{ uri: img.uri }}
-                      style={styles.uploadedImage}
-                    />
-                    <TouchableOpacity
-                      style={styles.removeButton}
-                      onPress={() => removeAfterImage(index)}
-                    >
-                      <Ionicons name="close-circle" size={24} color="#dc3545" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-
-                {/* Capture button */}
-                <TouchableOpacity
-                  style={[styles.uploadButton, { borderColor }]}
-                  onPress={handleAfterImageCapture}
-                >
-                  <Ionicons name="camera" size={24} color={tintColor} />
+              {/* After Images - Interior */}
+              <View style={styles.imageSection}>
+                <View style={styles.imageSectionHeader}>
+                  <Ionicons name="images" size={20} color={tintColor} />
                   <StyledText variant="bodySmall">
-                    {capturedAfterImages.length === 0
-                      ? "Capture After Images"
-                      : "Capture More"}
+                    Interior - Uploaded:{" "}
+                    {appointmentDetails?.after_images_interior?.length || 0} |
+                    Captured: {capturedAfterImagesInterior.length} (
+                    {(appointmentDetails?.after_images_interior?.length || 0) +
+                      capturedAfterImagesInterior.length >=
+                    4
+                      ? "✓"
+                      : `${
+                          (appointmentDetails?.after_images_interior?.length ||
+                            0) + capturedAfterImagesInterior.length
+                        }/4`}
+                    )
                   </StyledText>
-                </TouchableOpacity>
+                </View>
+
+                <View style={styles.imageGrid}>
+                  {/* Show already uploaded interior images */}
+                  {appointmentDetails?.after_images_interior &&
+                    appointmentDetails.after_images_interior.map(
+                      (img: any, index: number) => (
+                        <View
+                          key={`uploaded-after-interior-${index}`}
+                          style={styles.imageContainer}
+                        >
+                          <Image
+                            source={{ uri: img.image_url }}
+                            style={styles.uploadedImage}
+                          />
+                        </View>
+                      )
+                    )}
+
+                  {/* Show captured interior images (not yet uploaded) with remove button */}
+                  {capturedAfterImagesInterior.map((img, index) => (
+                    <View
+                      key={`captured-after-interior-${index}`}
+                      style={styles.imageContainer}
+                    >
+                      <Image
+                        source={{ uri: img.uri }}
+                        style={styles.uploadedImage}
+                      />
+                      <TouchableOpacity
+                        style={styles.removeButton}
+                        onPress={() => removeAfterImage(index, "interior")}
+                      >
+                        <Ionicons
+                          name="close-circle"
+                          size={24}
+                          color="#dc3545"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+
+                  {/* Capture button */}
+                  <TouchableOpacity
+                    style={[styles.uploadButton, { borderColor }]}
+                    onPress={() => handleAfterImageCapture("interior")}
+                  >
+                    <Ionicons name="camera" size={24} color={tintColor} />
+                    <StyledText variant="bodySmall">
+                      {capturedAfterImagesInterior.length === 0
+                        ? "Capture Interior"
+                        : "Capture More"}
+                    </StyledText>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* After Images - Exterior */}
+              <View style={styles.imageSection}>
+                <View style={styles.imageSectionHeader}>
+                  <Ionicons name="images" size={20} color={tintColor} />
+                  <StyledText variant="bodySmall">
+                    Exterior - Uploaded:{" "}
+                    {appointmentDetails?.after_images_exterior?.length || 0} |
+                    Captured: {capturedAfterImagesExterior.length} (
+                    {(appointmentDetails?.after_images_exterior?.length || 0) +
+                      capturedAfterImagesExterior.length >=
+                    4
+                      ? "✓"
+                      : `${
+                          (appointmentDetails?.after_images_exterior?.length ||
+                            0) + capturedAfterImagesExterior.length
+                        }/4`}
+                    )
+                  </StyledText>
+                </View>
+
+                <View style={styles.imageGrid}>
+                  {/* Show already uploaded exterior images */}
+                  {appointmentDetails?.after_images_exterior &&
+                    appointmentDetails.after_images_exterior.map(
+                      (img: any, index: number) => (
+                        <View
+                          key={`uploaded-after-exterior-${index}`}
+                          style={styles.imageContainer}
+                        >
+                          <Image
+                            source={{ uri: img.image_url }}
+                            style={styles.uploadedImage}
+                          />
+                        </View>
+                      )
+                    )}
+
+                  {/* Show captured exterior images (not yet uploaded) with remove button */}
+                  {capturedAfterImagesExterior.map((img, index) => (
+                    <View
+                      key={`captured-after-exterior-${index}`}
+                      style={styles.imageContainer}
+                    >
+                      <Image
+                        source={{ uri: img.uri }}
+                        style={styles.uploadedImage}
+                      />
+                      <TouchableOpacity
+                        style={styles.removeButton}
+                        onPress={() => removeAfterImage(index, "exterior")}
+                      >
+                        <Ionicons
+                          name="close-circle"
+                          size={24}
+                          color="#dc3545"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+
+                  {/* Capture button */}
+                  <TouchableOpacity
+                    style={[styles.uploadButton, { borderColor }]}
+                    onPress={() => handleAfterImageCapture("exterior")}
+                  >
+                    <Ionicons name="camera" size={24} color={tintColor} />
+                    <StyledText variant="bodySmall">
+                      {capturedAfterImagesExterior.length === 0
+                        ? "Capture Exterior"
+                        : "Capture More"}
+                    </StyledText>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </LinearGradientComponent>
+
+            {/* Fleet Maintenance Form */}
+            <View style={[styles.sectionCard, { backgroundColor: cardColor, borderColor }]}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="construct-outline" size={20} color={tintColor} />
+                <StyledText variant="labelLarge" style={{ color: textColor }}>
+                  Fleet maintenance
+                </StyledText>
+              </View>
+              {fleetMaintenanceSubmitted && (
+                <View style={styles.successIndicator}>
+                  <Ionicons name="checkmark-circle" size={20} color="#28a745" />
+                  <StyledText
+                    variant="bodySmall"
+                    style={{ color: "#28a745", marginLeft: 8 }}
+                  >
+                    Maintenance data submitted
+                  </StyledText>
+                </View>
+              )}
+
+              <View style={styles.fleetMaintenanceForm}>
+                {/* Tire Tread Depth */}
+                <StyledTextInput
+                  label="Tire Tread Depth (mm)"
+                  placeholder="Enter tread depth in mm"
+                  value={tireTreadDepthStr}
+                  onChangeText={(text) => {
+                    const filtered = text.replace(/[^0-9.]/g, "");
+                    const parts = filtered.split(".");
+                    const allowed =
+                      parts.length > 2
+                        ? parts[0] + "." + parts.slice(1).join("")
+                        : filtered;
+                    setTireTreadDepthStr(allowed);
+                  }}
+                  onBlur={() => {
+                    const trimmed = tireTreadDepthStr.trim();
+                    const num = parseFloat(trimmed);
+                    setFleetMaintenance((prev) => ({
+                      ...prev,
+                      tire_tread_depth:
+                        trimmed === ""
+                          ? undefined
+                          : isNaN(num)
+                            ? undefined
+                            : num,
+                    }));
+                  }}
+                  keyboardType="decimal-pad"
+                  inputMode="decimal"
+                  style={styles.formInput}
+                />
+
+                {/* Tire Condition */}
+                <StyledTextInput
+                  label="Tire Condition"
+                  placeholder="Notes about tire condition"
+                  value={fleetMaintenance.tire_condition || ""}
+                  onChangeText={(text) =>
+                    setFleetMaintenance({
+                      ...fleetMaintenance,
+                      tire_condition: text,
+                    })
+                  }
+                  multiline
+                  numberOfLines={2}
+                  style={styles.formInput}
+                />
+
+                {/* Wiper Status */}
+                {renderStatusPicker(
+                  "Wiper Status",
+                  fleetMaintenance.wiper_status,
+                  [
+                    { label: "Good", value: "good" },
+                    { label: "Needs Work", value: "needs_work" },
+                    { label: "Bad", value: "bad" },
+                  ],
+                  (value) =>
+                    setFleetMaintenance({
+                      ...fleetMaintenance,
+                      wiper_status: value as "good" | "needs_work" | "bad",
+                    })
+                )}
+
+                {/* Oil Level */}
+                {renderStatusPicker(
+                  "Oil Level",
+                  fleetMaintenance.oil_level,
+                  [
+                    { label: "Good", value: "good" },
+                    { label: "Low", value: "low" },
+                    { label: "Needs Change", value: "needs_change" },
+                  ],
+                  (value) =>
+                    setFleetMaintenance({
+                      ...fleetMaintenance,
+                      oil_level: value as "good" | "low" | "needs_change",
+                    })
+                )}
+
+                {/* Coolant Level */}
+                {renderStatusPicker(
+                  "Coolant Level",
+                  fleetMaintenance.coolant_level,
+                  [
+                    { label: "Good", value: "good" },
+                    { label: "Low", value: "low" },
+                    { label: "Needs Refill", value: "needs_refill" },
+                  ],
+                  (value) =>
+                    setFleetMaintenance({
+                      ...fleetMaintenance,
+                      coolant_level: value as "good" | "low" | "needs_refill",
+                    })
+                )}
+
+                {/* Brake Fluid Level */}
+                {renderStatusPicker(
+                  "Brake Fluid Level",
+                  fleetMaintenance.brake_fluid_level,
+                  [
+                    { label: "Good", value: "good" },
+                    { label: "Low", value: "low" },
+                    { label: "Needs Refill", value: "needs_refill" },
+                  ],
+                  (value) =>
+                    setFleetMaintenance({
+                      ...fleetMaintenance,
+                      brake_fluid_level: value as
+                        | "good"
+                        | "low"
+                        | "needs_refill",
+                    })
+                )}
+
+                {/* Battery Condition */}
+                {renderStatusPicker(
+                  "Battery Condition",
+                  fleetMaintenance.battery_condition,
+                  [
+                    { label: "Good", value: "good" },
+                    { label: "Weak", value: "weak" },
+                    { label: "Replace", value: "replace" },
+                  ],
+                  (value) =>
+                    setFleetMaintenance({
+                      ...fleetMaintenance,
+                      battery_condition: value as "good" | "weak" | "replace",
+                    })
+                )}
+
+                {/* Headlights Status */}
+                {renderStatusPicker(
+                  "Headlights Status",
+                  fleetMaintenance.headlights_status,
+                  [
+                    { label: "Working", value: "working" },
+                    { label: "Dim", value: "dim" },
+                    { label: "Not Working", value: "not_working" },
+                  ],
+                  (value) =>
+                    setFleetMaintenance({
+                      ...fleetMaintenance,
+                      headlights_status: value as
+                        | "working"
+                        | "dim"
+                        | "not_working",
+                    })
+                )}
+
+                {/* Taillights Status */}
+                {renderStatusPicker(
+                  "Taillights Status",
+                  fleetMaintenance.taillights_status,
+                  [
+                    { label: "Working", value: "working" },
+                    { label: "Dim", value: "dim" },
+                    { label: "Not Working", value: "not_working" },
+                  ],
+                  (value) =>
+                    setFleetMaintenance({
+                      ...fleetMaintenance,
+                      taillights_status: value as
+                        | "working"
+                        | "dim"
+                        | "not_working",
+                    })
+                )}
+
+                {/* Indicators Status */}
+                {renderStatusPicker(
+                  "Indicators Status",
+                  fleetMaintenance.indicators_status,
+                  [
+                    { label: "Working", value: "working" },
+                    { label: "Not Working", value: "not_working" },
+                  ],
+                  (value) =>
+                    setFleetMaintenance({
+                      ...fleetMaintenance,
+                      indicators_status: value as "working" | "not_working",
+                    })
+                )}
+
+                {/* Vehicle Condition Notes */}
+                <StyledTextInput
+                  label="Vehicle Condition Notes (Optional)"
+                  placeholder="General observations about vehicle condition"
+                  value={fleetMaintenance.vehicle_condition_notes || ""}
+                  onChangeText={(text) =>
+                    setFleetMaintenance({
+                      ...fleetMaintenance,
+                      vehicle_condition_notes: text,
+                    })
+                  }
+                  multiline
+                  numberOfLines={3}
+                  style={styles.formInput}
+                />
+
+                {/* Damage Report */}
+                <StyledTextInput
+                  label="Damage Report (Optional)"
+                  placeholder="Notes about any visible damage"
+                  value={fleetMaintenance.damage_report || ""}
+                  onChangeText={(text) =>
+                    setFleetMaintenance({
+                      ...fleetMaintenance,
+                      damage_report: text,
+                    })
+                  }
+                  multiline
+                  numberOfLines={3}
+                  style={styles.formInput}
+                />
+
+                {/* Submit Button */}
+                {!fleetMaintenanceSubmitted && (
+                  <StyledButton
+                    variant="tonal"
+                    onPress={handleFleetMaintenanceSubmit}
+                    disabled={isLoadingSubmitFleetMaintenance}
+                    style={{ marginTop: 16 }}
+                  >
+                    {isLoadingSubmitFleetMaintenance ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
+                      <StyledText variant="labelLarge">
+                        Submit Maintenance Data
+                      </StyledText>
+                    )}
+                  </StyledButton>
+                )}
+              </View>
+            </View>
+          </>
         )}
 
         {/* Both Images - Show when completed or other statuses */}
         {(appointmentDetails?.status === "completed" ||
           appointmentDetails?.status === "cancelled" ||
           appointmentDetails?.status === "pending") && (
-          <LinearGradientComponent
-            color1={cardColor}
-            color2={textColor}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 3, y: 1 }}
-            style={[styles.card, { borderColor }]}
-          >
-            <StyledText variant="labelMedium">Before & After Images</StyledText>
-
-            {/* Before Images */}
-            <View style={styles.imageSection}>
-              <View style={styles.imageSectionHeader}>
-                <Ionicons name="images" size={20} color={tintColor} />
-                <StyledText variant="bodySmall">
-                  Before Images (
-                  {appointmentDetails?.before_images?.length || 0})
+          <>
+            <View style={[styles.sectionCard, { backgroundColor: cardColor, borderColor }]}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="images-outline" size={20} color={tintColor} />
+                <StyledText variant="labelLarge" style={{ color: textColor }}>
+                  Before & after images
                 </StyledText>
               </View>
-              <View style={styles.imageGrid}>
-                {appointmentDetails?.before_images &&
-                appointmentDetails.before_images.length > 0 ? (
-                  appointmentDetails.before_images.map(
-                    (img: any, index: number) => (
-                      <View key={index} style={styles.imageContainer}>
-                        <Image
-                          source={{ uri: img.image_url }}
-                          style={styles.uploadedImage}
-                        />
-                      </View>
+
+              {/* Before Images - Interior */}
+              <View style={styles.imageSection}>
+                <View style={styles.imageSectionHeader}>
+                  <Ionicons name="images" size={20} color={tintColor} />
+                  <StyledText variant="bodySmall">
+                    Before Images - Interior (
+                    {appointmentDetails?.before_images_interior?.length || 0})
+                  </StyledText>
+                </View>
+                <View style={styles.imageGrid}>
+                  {appointmentDetails?.before_images_interior &&
+                  appointmentDetails.before_images_interior.length > 0 ? (
+                    appointmentDetails.before_images_interior.map(
+                      (img: any, index: number) => (
+                        <View key={index} style={styles.imageContainer}>
+                          <Image
+                            source={{ uri: img.image_url }}
+                            style={styles.uploadedImage}
+                          />
+                        </View>
+                      )
                     )
-                  )
-                ) : (
-                  <StyledText variant="bodySmall">No before images</StyledText>
-                )}
+                  ) : (
+                    <StyledText variant="bodySmall">
+                      No before interior images
+                    </StyledText>
+                  )}
+                </View>
+              </View>
+
+              {/* Before Images - Exterior */}
+              <View style={styles.imageSection}>
+                <View style={styles.imageSectionHeader}>
+                  <Ionicons name="images" size={20} color={tintColor} />
+                  <StyledText variant="bodySmall">
+                    Before Images - Exterior (
+                    {appointmentDetails?.before_images_exterior?.length || 0})
+                  </StyledText>
+                </View>
+                <View style={styles.imageGrid}>
+                  {appointmentDetails?.before_images_exterior &&
+                  appointmentDetails.before_images_exterior.length > 0 ? (
+                    appointmentDetails.before_images_exterior.map(
+                      (img: any, index: number) => (
+                        <View key={index} style={styles.imageContainer}>
+                          <Image
+                            source={{ uri: img.image_url }}
+                            style={styles.uploadedImage}
+                          />
+                        </View>
+                      )
+                    )
+                  ) : (
+                    <StyledText variant="bodySmall">
+                      No before exterior images
+                    </StyledText>
+                  )}
+                </View>
+              </View>
+
+              {/* After Images - Interior */}
+              <View style={styles.imageSection}>
+                <View style={styles.imageSectionHeader}>
+                  <Ionicons name="images" size={20} color={tintColor} />
+                  <StyledText variant="bodySmall">
+                    After Images - Interior (
+                    {appointmentDetails?.after_images_interior?.length || 0})
+                  </StyledText>
+                </View>
+                <View style={styles.imageGrid}>
+                  {appointmentDetails?.after_images_interior &&
+                  appointmentDetails.after_images_interior.length > 0 ? (
+                    appointmentDetails.after_images_interior.map(
+                      (img: any, index: number) => (
+                        <View key={index} style={styles.imageContainer}>
+                          <Image
+                            source={{ uri: img.image_url }}
+                            style={styles.uploadedImage}
+                          />
+                        </View>
+                      )
+                    )
+                  ) : (
+                    <StyledText variant="bodySmall">
+                      No after interior images
+                    </StyledText>
+                  )}
+                </View>
+              </View>
+
+              {/* After Images - Exterior */}
+              <View style={styles.imageSection}>
+                <View style={styles.imageSectionHeader}>
+                  <Ionicons name="images" size={20} color={tintColor} />
+                  <StyledText variant="bodySmall">
+                    After Images - Exterior (
+                    {appointmentDetails?.after_images_exterior?.length || 0})
+                  </StyledText>
+                </View>
+                <View style={styles.imageGrid}>
+                  {appointmentDetails?.after_images_exterior &&
+                  appointmentDetails.after_images_exterior.length > 0 ? (
+                    appointmentDetails.after_images_exterior.map(
+                      (img: any, index: number) => (
+                        <View key={index} style={styles.imageContainer}>
+                          <Image
+                            source={{ uri: img.image_url }}
+                            style={styles.uploadedImage}
+                          />
+                        </View>
+                      )
+                    )
+                  ) : (
+                    <StyledText variant="bodySmall">
+                      No after exterior images
+                    </StyledText>
+                  )}
+                </View>
               </View>
             </View>
 
-            {/* After Images */}
-            <View style={styles.imageSection}>
-              <View style={styles.imageSectionHeader}>
-                <Ionicons name="images" size={20} color={tintColor} />
-                <StyledText variant="bodySmall">
-                  After Images ({appointmentDetails?.after_images?.length || 0})
-                </StyledText>
-              </View>
-              <View style={styles.imageGrid}>
-                {appointmentDetails?.after_images &&
-                appointmentDetails.after_images.length > 0 ? (
-                  appointmentDetails.after_images.map(
-                    (img: any, index: number) => (
-                      <View key={index} style={styles.imageContainer}>
-                        <Image
-                          source={{ uri: img.image_url }}
-                          style={styles.uploadedImage}
-                        />
+            {/* Fleet Maintenance Data - Show when completed */}
+            {appointmentDetails?.status === "completed" &&
+              appointmentDetails?.fleet_maintenance && (
+                <View style={[styles.sectionCard, { backgroundColor: cardColor, borderColor }]}>
+                  <View style={styles.sectionHeader}>
+                    <Ionicons name="construct-outline" size={20} color={tintColor} />
+                    <StyledText variant="labelLarge" style={{ color: textColor }}>
+                      Fleet maintenance
+                    </StyledText>
+                  </View>
+                  <View style={styles.infoContainer}>
+                    {appointmentDetails.fleet_maintenance.tire_tread_depth && (
+                      <View style={styles.infoRow}>
+                        <Ionicons name="car" size={15} color={tintColor} />
+                        <StyledText variant="bodyMedium">
+                          Tire Tread Depth:{" "}
+                          {
+                            appointmentDetails.fleet_maintenance
+                              .tire_tread_depth
+                          }{" "}
+                          mm
+                        </StyledText>
                       </View>
-                    )
-                  )
-                ) : (
-                  <StyledText variant="bodySmall">No after images</StyledText>
-                )}
-              </View>
-            </View>
-          </LinearGradientComponent>
+                    )}
+                    {appointmentDetails.fleet_maintenance.tire_condition && (
+                      <View style={styles.infoRow}>
+                        <Ionicons
+                          name="document-text"
+                          size={15}
+                          color={tintColor}
+                        />
+                        <StyledText variant="bodyMedium">
+                          Tire Condition:{" "}
+                          {appointmentDetails.fleet_maintenance.tire_condition}
+                        </StyledText>
+                      </View>
+                    )}
+                    {appointmentDetails.fleet_maintenance.wiper_status && (
+                      <View style={styles.infoRow}>
+                        <Ionicons name="water" size={15} color={tintColor} />
+                        <StyledText variant="bodyMedium">
+                          Wiper Status:{" "}
+                          {appointmentDetails.fleet_maintenance.wiper_status
+                            .replace("_", " ")
+                            .replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                        </StyledText>
+                      </View>
+                    )}
+                    {appointmentDetails.fleet_maintenance.oil_level && (
+                      <View style={styles.infoRow}>
+                        <Ionicons name="flask" size={15} color={tintColor} />
+                        <StyledText variant="bodyMedium">
+                          Oil Level:{" "}
+                          {appointmentDetails.fleet_maintenance.oil_level
+                            .replace("_", " ")
+                            .replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                        </StyledText>
+                      </View>
+                    )}
+                    {appointmentDetails.fleet_maintenance.coolant_level && (
+                      <View style={styles.infoRow}>
+                        <Ionicons
+                          name="thermometer"
+                          size={15}
+                          color={tintColor}
+                        />
+                        <StyledText variant="bodyMedium">
+                          Coolant Level:{" "}
+                          {appointmentDetails.fleet_maintenance.coolant_level
+                            .replace("_", " ")
+                            .replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                        </StyledText>
+                      </View>
+                    )}
+                    {appointmentDetails.fleet_maintenance.brake_fluid_level && (
+                      <View style={styles.infoRow}>
+                        <Ionicons name="disc" size={15} color={tintColor} />
+                        <StyledText variant="bodyMedium">
+                          Brake Fluid:{" "}
+                          {appointmentDetails.fleet_maintenance.brake_fluid_level
+                            .replace("_", " ")
+                            .replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                        </StyledText>
+                      </View>
+                    )}
+                    {appointmentDetails.fleet_maintenance.battery_condition && (
+                      <View style={styles.infoRow}>
+                        <Ionicons
+                          name="battery-charging"
+                          size={15}
+                          color={tintColor}
+                        />
+                        <StyledText variant="bodyMedium">
+                          Battery:{" "}
+                          {appointmentDetails.fleet_maintenance.battery_condition.replace(
+                            /\b\w/g,
+                            (l: string) => l.toUpperCase()
+                          )}
+                        </StyledText>
+                      </View>
+                    )}
+                    {appointmentDetails.fleet_maintenance.headlights_status && (
+                      <View style={styles.infoRow}>
+                        <Ionicons name="bulb" size={15} color={tintColor} />
+                        <StyledText variant="bodyMedium">
+                          Headlights:{" "}
+                          {appointmentDetails.fleet_maintenance.headlights_status
+                            .replace("_", " ")
+                            .replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                        </StyledText>
+                      </View>
+                    )}
+                    {appointmentDetails.fleet_maintenance.taillights_status && (
+                      <View style={styles.infoRow}>
+                        <Ionicons
+                          name="bulb-outline"
+                          size={15}
+                          color={tintColor}
+                        />
+                        <StyledText variant="bodyMedium">
+                          Taillights:{" "}
+                          {appointmentDetails.fleet_maintenance.taillights_status
+                            .replace("_", " ")
+                            .replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                        </StyledText>
+                      </View>
+                    )}
+                    {appointmentDetails.fleet_maintenance.indicators_status && (
+                      <View style={styles.infoRow}>
+                        <Ionicons name="flash" size={15} color={tintColor} />
+                        <StyledText variant="bodyMedium">
+                          Indicators:{" "}
+                          {appointmentDetails.fleet_maintenance.indicators_status
+                            .replace("_", " ")
+                            .replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                        </StyledText>
+                      </View>
+                    )}
+                    {appointmentDetails.fleet_maintenance
+                      .vehicle_condition_notes && (
+                      <View style={styles.infoRow}>
+                        <Ionicons name="document" size={15} color={tintColor} />
+                        <StyledText variant="bodyMedium">
+                          Condition Notes:{" "}
+                          {
+                            appointmentDetails.fleet_maintenance
+                              .vehicle_condition_notes
+                          }
+                        </StyledText>
+                      </View>
+                    )}
+                    {appointmentDetails.fleet_maintenance.damage_report && (
+                      <View style={styles.infoRow}>
+                        <Ionicons name="warning" size={15} color={tintColor} />
+                        <StyledText variant="bodyMedium">
+                          Damage Report:{" "}
+                          {appointmentDetails.fleet_maintenance.damage_report}
+                        </StyledText>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
+          </>
         )}
 
         {/* Action Buttons */}
@@ -856,18 +1722,64 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 5,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
+    gap: 12,
   },
-  backButton: {
-    marginRight: 10,
+  headerBack: {
+    padding: 4,
   },
   headerContent: {
     flex: 1,
   },
-  content: {
+  headerRef: {
+    opacity: 0.8,
+    marginTop: 2,
+  },
+  scrollView: {
     flex: 1,
-    padding: 5,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  statusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    marginBottom: 24,
+    gap: 8,
+  },
+  statusPillText: {
+    fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+  sectionCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 14,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.06)",
   },
   card: {
     borderRadius: 5,
@@ -921,8 +1833,8 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   actionButtonsContainer: {
-    marginTop: 8,
-    marginBottom: 32,
+    marginTop: 24,
+    marginBottom: 40,
   },
   buttonContainer: {
     gap: 12,
@@ -1030,8 +1942,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 16,
-    borderRadius: 12,
-    backgroundColor: "#f8f9fa",
+    borderRadius: 30,
   },
   imageSection: {
     marginBottom: 16,
@@ -1040,6 +1951,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
+    gap:10
   },
   imageSectionTitle: {
     fontSize: 16,
@@ -1072,8 +1984,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   imageContainer: {
-    width:'32%',
-    height:100,
+    width: "32%",
+    height: 100,
     borderRadius: 2,
     overflow: "hidden",
   },
@@ -1088,5 +2000,40 @@ const styles = StyleSheet.create({
     right: 4,
     backgroundColor: "rgba(255, 255, 255, 0.9)",
     borderRadius: 12,
+  },
+  pickerContainer: {
+    marginBottom: 16,
+  },
+  pickerOptions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  pickerOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    backgroundColor: "transparent",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  pickerOptionSelected: {
+    backgroundColor: "#007bff", // Will be overridden by inline style
+  },
+  fleetMaintenanceForm: {
+    marginTop: 12,
+  },
+  formInput: {
+    marginBottom: 12,
+  },
+  successIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 8,
+    backgroundColor: "#d4edda",
+    borderRadius: 8,
+    marginBottom: 12,
   },
 });

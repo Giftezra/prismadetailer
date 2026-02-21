@@ -14,6 +14,7 @@ import {
   useAcceptAppointmentMutation,
   useUploadBeforeImagesMutation,
   useUploadAfterImagesMutation,
+  useSubmitFleetMaintenanceMutation,
 } from "@/app/store/api/appointmentsApi";
 import { useAlertContext } from "../contexts/AlertContext";
 import { useSnackbar } from "../contexts/SnackbarContext";
@@ -522,6 +523,49 @@ export const useAppointment = () => {
     [uploadAfterImages, showSnackbarWithConfig]
   );
 
+  const [
+    submitFleetMaintenance,
+    { isLoading: isLoadingSubmitFleetMaintenance },
+  ] = useSubmitFleetMaintenanceMutation();
+
+  /**
+   * Submit fleet maintenance data for an appointment
+   * @param jobId - The job ID
+   * @param fleetMaintenanceData - Fleet maintenance data object
+   * @returns {message: string, fleet_maintenance: object} Response with fleet maintenance data
+   */
+  const handleSubmitFleetMaintenance = useCallback(
+    async (jobId: string, fleetMaintenanceData: any) => {
+      try {
+        const response = await submitFleetMaintenance({
+          job_id: jobId,
+          ...fleetMaintenanceData,
+        }).unwrap();
+        if (response && response.message) {
+          showSnackbarWithConfig({
+            message: response.message,
+            type: "success",
+            duration: 3000,
+          });
+        }
+        return response;
+      } catch (error: any) {
+        const errorMessage =
+          error?.data?.message ||
+          error?.data?.error ||
+          error?.message ||
+          "Failed to submit fleet maintenance data";
+        showSnackbarWithConfig({
+          message: errorMessage,
+          type: "error",
+          duration: 3000,
+        });
+        throw error;
+      }
+    },
+    [submitFleetMaintenance, showSnackbarWithConfig]
+  );
+
   return {
     // State
     selectedMonth,
@@ -552,8 +596,11 @@ export const useAppointment = () => {
     handleAcceptAppointment,
     handleUploadBeforeImages,
     handleUploadAfterImages,
+    handleSubmitFleetMaintenance,
     isLoadingUploadBeforeImages,
     isLoadingUploadAfterImages,
+    isLoadingSubmitFleetMaintenance,
     refetchAllAppointments,
+    refetchAppointmentDetails,
   };
 };

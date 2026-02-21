@@ -154,7 +154,7 @@ const SigninScreen = () => {
               <Ionicons
                 name={showPassword ? "eye-off" : "eye"}
                 size={20}
-                color={textColor}
+                color={'black'}
               />
             </TouchableOpacity>
           </View>

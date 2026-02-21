@@ -12,6 +12,11 @@ const axiosInstance = axios.create({
   timeout: 30000,
 });
 
+const PUBLIC_ENDPOINTS = [
+  "/api/v1/authentication/login/",
+  "/api/v1/authentication/refresh/",
+];
+
 export const axiosBaseQuery = (): BaseQueryFn => {
   return async ({ url, method, data, params, headers }, api, extraOptions) => {
     try {
@@ -20,11 +25,7 @@ export const axiosBaseQuery = (): BaseQueryFn => {
       const access =
         state.auth.access || (await SecureStore.getItemAsync("access"));
 
-      // List of endpoints that don't require authentication
-      const publicEndpoints = [
-        "/api/v1/authentication/login/",
-        "/api/v1/authentication/refresh/",
-      ];
+      const publicEndpoints = PUBLIC_ENDPOINTS;
 
       // Check if data is FormData (React Native compatible check)
       const isFormData =
@@ -72,8 +73,9 @@ export const axiosBaseQuery = (): BaseQueryFn => {
             errorData = await response.text();
           }
 
-          // Handle 401 errors with token refresh
-          if (response.status === 401) {
+          // Don't try to refresh on 401 for public endpoints (e.g. login failure)
+          const isPublicEndpoint = publicEndpoints.includes(url || "");
+          if (response.status === 401 && !isPublicEndpoint) {
             try {
               const state = api.getState() as RootState;
               const refreshToken =
@@ -211,8 +213,9 @@ export const axiosBaseQuery = (): BaseQueryFn => {
     } catch (error) {
       const axiosError = error as AxiosError;
 
-      // Handle 401 errors with token refresh
-      if (axiosError.response?.status === 401) {
+      // Don't try to refresh on 401 for public endpoints (e.g. login failure)
+      const isPublicEndpoint = PUBLIC_ENDPOINTS.includes(url || "");
+      if (axiosError.response?.status === 401 && !isPublicEndpoint) {
         try {
           const state = api.getState() as RootState;
           const refreshToken =
