@@ -50,6 +50,21 @@ const profileApi = createApi({
         data: { update },
       }),
     }),
+
+    /**
+     * Update the detailer's current location (for Redis GEO and DB).
+     * Called after login and optionally when app comes to foreground (throttled).
+     */
+    updateLocation: builder.mutation<
+      { success: boolean; message: string },
+      { latitude: number; longitude: number }
+    >({
+      query: ({ latitude, longitude }) => ({
+        url: "/api/v1/profile/update_location/",
+        method: "POST",
+        data: { latitude, longitude },
+      }),
+    }),
   }),
 });
 
@@ -58,5 +73,6 @@ export const {
   useUpdatePushNotificationTokenMutation,
   useUpdateEmailNotificationTokenMutation,
   useUpdateMarketingEmailTokenMutation,
+  useUpdateLocationMutation,
 } = profileApi;
 export default profileApi;

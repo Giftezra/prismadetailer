@@ -94,7 +94,8 @@ def handle_job_status_change(sender, instance, created, **kwargs):
             appointment_datetime = timezone.make_aware(appointment_datetime)
             
             # Add duration to get end time (duration is in minutes)
-            end_time = appointment_datetime + timedelta(minutes=instance.duration or 0)
+            duration_minutes = int(instance.duration or 0)
+            end_time = appointment_datetime + timedelta(minutes=duration_minutes)
             closing_notification_time = end_time - timedelta(minutes=15)
             now = timezone.now()
             

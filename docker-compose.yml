@@ -7,12 +7,14 @@ services:
       - "8001:8000"
     volumes:
       - ./server/prisma:/app
+      - detailer_db_data:/app/data
     env_file:
       - .env
     environment:
       - DEBUG=True
       - DJANGO_SETTINGS_MODULE=prisma.settings
       - DJANGO_ALLOWED_HOSTS=*
+      - DATABASE_PATH=/app/data/db.sqlite3
     command: python manage.py runserver 0.0.0.0:8000
     networks:
       - prisma_shared_net
@@ -24,10 +26,12 @@ services:
     command: celery -A prisma.celery worker --loglevel=info
     volumes:
       - ./server/prisma:/app
+      - detailer_db_data:/app/data
     env_file:
       - .env
     environment:
       - DJANGO_SETTINGS_MODULE=prisma.settings
+      - DATABASE_PATH=/app/data/db.sqlite3
       - CELERY_BROKER_URL=redis://prisma_redis:6379/0
       - REDIS_HOST=prisma_redis
       - CELERY_RESULT_BACKEND=redis://prisma_redis:6379/1
@@ -46,10 +50,12 @@ services:
     command: python manage.py appointment_subscriber
     volumes:
       - ./server/prisma:/app
+      - detailer_db_data:/app/data
     env_file:
       - .env
     environment:
       - DJANGO_SETTINGS_MODULE=prisma.settings
+      - DATABASE_PATH=/app/data/db.sqlite3
       - REDIS_HOST=prisma_redis
     depends_on:
       detailer_server:
@@ -65,10 +71,12 @@ services:
     command: celery -A prisma.celery beat --loglevel=info
     volumes:
       - ./server/prisma:/app
+      - detailer_db_data:/app/data
     env_file:
       - .env
     environment:
       - DJANGO_SETTINGS_MODULE=prisma.settings
+      - DATABASE_PATH=/app/data/db.sqlite3
       - CELERY_BROKER_URL=redis://prisma_redis:6379/0
       - REDIS_HOST=prisma_redis
       - CELERY_RESULT_BACKEND=redis://prisma_redis:6379/1
@@ -77,6 +85,9 @@ services:
         condition: service_started
     networks:
       - prisma_shared_net
+
+volumes:
+  detailer_db_data:
 
 networks:
   prisma_shared_net:

@@ -34,7 +34,9 @@ export const TimeSlotsSelector: React.FC<TimeSlotsSelectorProps> = ({
     return dayjs(dateString).format("dddd, MMMM D, YYYY");
   };
 
-  const selectedSlots = timeSlots.filter((slot) => slot.isSelected);
+  const selectedSlots = timeSlots.filter(
+    (slot) => slot.isSelected && !slot.isBlockedByJob
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.cards }]}>
@@ -42,14 +44,14 @@ export const TimeSlotsSelector: React.FC<TimeSlotsSelectorProps> = ({
       <View style={styles.header}>
         <Ionicons name="time-outline" size={20} color={colors.primary} />
         <StyledText variant="titleMedium">
-          Available Times for {formatDate(selectedDate)}
+          Unavailable times for {formatDate(selectedDate)}
         </StyledText>
       </View>
 
       {/* Selected count */}
       <StyledText variant="bodySmall">
         {selectedSlots.length} time slot{selectedSlots.length !== 1 ? "s" : ""}{" "}
-        selected
+        marked unavailable
       </StyledText>
 
       {/* Time slots grid */}
@@ -59,43 +61,65 @@ export const TimeSlotsSelector: React.FC<TimeSlotsSelectorProps> = ({
         nestedScrollEnabled={true}
       >
         <View style={styles.timeSlotsGrid}>
-          {timeSlots.map((slot) => (
-            <TouchableOpacity
-              key={slot.id}
-              style={[
-                styles.timeSlot,
-                {
-                  backgroundColor: slot.isSelected
-                    ? colors.primary
-                    : colors.background,
-                  borderColor: slot.isSelected
-                    ? colors.primary
-                    : colors.borders,
-                },
-              ]}
-              onPress={() => onTimeSlotToggle(slot.id)}
-            >
-              <StyledText
+          {timeSlots.map((slot) => {
+            const blocked = slot.isBlockedByJob;
+            return (
+              <TouchableOpacity
+                key={slot.id}
                 style={[
-                  styles.timeText,
+                  styles.timeSlot,
                   {
-                    color: slot.isSelected ? colors.buttonText : colors.text,
-                    fontWeight: slot.isSelected ? "600" : "500",
+                    backgroundColor: blocked
+                      ? colors.borders
+                      : slot.isSelected
+                        ? colors.primary
+                        : colors.background,
+                    borderColor: blocked
+                      ? colors.borders
+                      : slot.isSelected
+                        ? colors.primary
+                        : colors.borders,
+                    opacity: blocked ? 0.7 : 1,
                   },
                 ]}
+                onPress={() => !blocked && onTimeSlotToggle(slot.id)}
+                disabled={blocked}
               >
-                {slot.time}
-              </StyledText>
-              {slot.isSelected && (
-                <Ionicons
-                  name="checkmark-circle"
-                  size={16}
-                  color={colors.buttonText}
-                  style={styles.checkIcon}
-                />
-              )}
-            </TouchableOpacity>
-          ))}
+                <StyledText
+                  style={[
+                    styles.timeText,
+                    {
+                      color: blocked
+                        ? colors.text
+                        : slot.isSelected
+                          ? colors.buttonText
+                          : colors.text,
+                      fontWeight: slot.isSelected ? "600" : "500",
+                    },
+                  ]}
+                >
+                  {slot.time}
+                </StyledText>
+                {blocked ? (
+                  <StyledText
+                    variant="bodySmall"
+                    style={[styles.bookedLabel, { color: colors.text }]}
+                  >
+                    Booked
+                  </StyledText>
+                ) : (
+                  slot.isSelected && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={16}
+                      color={colors.buttonText}
+                      style={styles.checkIcon}
+                    />
+                  )
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
 
@@ -107,10 +131,14 @@ export const TimeSlotsSelector: React.FC<TimeSlotsSelectorProps> = ({
             { backgroundColor: colors.secondaryButton },
           ]}
           onPress={() => {
-            // Select all morning slots (6:00 - 12:00)
             timeSlots.forEach((slot) => {
               const hour = parseInt(slot.time.split(":")[0]);
-              if (hour >= 6 && hour < 12 && !slot.isSelected) {
+              if (
+                hour >= 6 &&
+                hour < 12 &&
+                !slot.isSelected &&
+                !slot.isBlockedByJob
+              ) {
                 onTimeSlotToggle(slot.id);
               }
             });
@@ -125,10 +153,14 @@ export const TimeSlotsSelector: React.FC<TimeSlotsSelectorProps> = ({
             { backgroundColor: colors.secondaryButton },
           ]}
           onPress={() => {
-            // Select all afternoon slots (12:00 - 18:00)
             timeSlots.forEach((slot) => {
               const hour = parseInt(slot.time.split(":")[0]);
-              if (hour >= 12 && hour < 18 && !slot.isSelected) {
+              if (
+                hour >= 12 &&
+                hour < 18 &&
+                !slot.isSelected &&
+                !slot.isBlockedByJob
+              ) {
                 onTimeSlotToggle(slot.id);
               }
             });
@@ -143,10 +175,14 @@ export const TimeSlotsSelector: React.FC<TimeSlotsSelectorProps> = ({
             { backgroundColor: colors.secondaryButton },
           ]}
           onPress={() => {
-            // Select all evening slots (18:00 - 20:00)
             timeSlots.forEach((slot) => {
               const hour = parseInt(slot.time.split(":")[0]);
-              if (hour >= 18 && hour <= 20 && !slot.isSelected) {
+              if (
+                hour >= 18 &&
+                hour <= 20 &&
+                !slot.isSelected &&
+                !slot.isBlockedByJob
+              ) {
                 onTimeSlotToggle(slot.id);
               }
             });
@@ -211,6 +247,10 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 2,
     right: 2,
+  },
+  bookedLabel: {
+    fontSize: 10,
+    marginTop: 2,
   },
   quickSelectionContainer: {
     flexDirection: "row",

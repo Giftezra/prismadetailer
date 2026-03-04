@@ -1,5 +1,13 @@
-import { Alert } from "react-native";
 import * as ExpoImagePicker from "expo-image-picker";
+
+export type ImageAlertHelpers = {
+  showAlert: (
+    title: string,
+    message: string,
+    type?: "success" | "error" | "warning"
+  ) => void;
+  showConfirm: (title: string, message: string) => Promise<boolean>;
+};
 
 /**
  * Converts a local image URI to a File object for upload purposes.
@@ -21,15 +29,16 @@ const uriToFile = async (uri: string, filename: string): Promise<File> => {
  * Requests camera permissions and launches the camera interface.
  * Processes the captured image through handleImageSelection and updates local state.
  *
- * @throws {Error} If camera permissions are denied or image processing fails
+ * @param alertHelpers - Optional alert helpers for showing permission/error messages
  */
-const handleCameraSelection = async () => {
+const handleCameraSelection = async (
+  alertHelpers?: ImageAlertHelpers
+) => {
   try {
-    // Request camera permissions
     const { status } = await ExpoImagePicker.requestCameraPermissionsAsync();
 
     if (status !== "granted") {
-      Alert.alert(
+      alertHelpers?.showAlert(
         "Permission needed",
         "Sorry, we need camera permissions to make this work!"
       );
@@ -48,7 +57,7 @@ const handleCameraSelection = async () => {
     }
   } catch (error) {
     console.error("Error capturing image:", error);
-    Alert.alert("Error", "Failed to capture image. Please try again.");
+    alertHelpers?.showAlert("Error", "Failed to capture image. Please try again.");
     throw error;
   }
 };
@@ -56,18 +65,18 @@ const handleCameraSelection = async () => {
 /**
  * Handles image selection from the device's photo gallery.
  * Requests media library permissions and launches the image picker interface.
- * Updates both the newVehicle state and selectedImage state with the chosen image.
  *
- * @throws {Error} If media library permissions are denied or image selection fails
+ * @param alertHelpers - Optional alert helpers for showing permission/error messages
  */
-const handleGallerySelection = async () => {
+const handleGallerySelection = async (
+  alertHelpers?: ImageAlertHelpers
+) => {
   try {
-    // Request media library permissions
     const { status } =
       await ExpoImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (status !== "granted") {
-      Alert.alert(
+      alertHelpers?.showAlert(
         "Permission needed",
         "Sorry, we need camera roll permissions to make this work!"
       );
@@ -87,7 +96,7 @@ const handleGallerySelection = async () => {
     }
   } catch (error) {
     console.error("Error selecting image:", error);
-    Alert.alert("Error", "Failed to select image. Please try again.");
+    alertHelpers?.showAlert("Error", "Failed to select image. Please try again.");
     throw error;
   }
 };
@@ -119,23 +128,23 @@ const handleImageSelection = async (imageUri: string) => {
 
 /**
  * Captures an image using ONLY the camera (no gallery access).
- * This ensures images are freshly taken, not selected from existing photos.
  * Used for before/after job images where freshness is critical.
  *
- * @returns {Promise<{ uri: string; type: string; filename: string } | null>} Image data or null if cancelled
- * @throws {Error} If camera permissions are denied or capture fails
+ * @param alertHelpers - Alert helpers for permission/error messages (required for alerts)
+ * @returns Image data or null if cancelled
  */
-export const captureCameraOnlyImage = async (): Promise<{
+export const captureCameraOnlyImage = async (
+  alertHelpers: ImageAlertHelpers
+): Promise<{
   uri: string;
   type: string;
   filename: string;
 } | null> => {
   try {
-    // Request camera permissions
     const { status } = await ExpoImagePicker.requestCameraPermissionsAsync();
 
     if (status !== "granted") {
-      Alert.alert(
+      alertHelpers.showAlert(
         "Camera Permission Required",
         "Please allow camera access to capture before/after images of your work."
       );
@@ -146,7 +155,7 @@ export const captureCameraOnlyImage = async (): Promise<{
       mediaTypes: ["images"],
       allowsEditing: false,
       aspect: [4, 3],
-      quality: 0.8, // Slightly reduced quality for faster upload
+      quality: 0.8,
     });
 
     if (result.canceled || !result.assets[0]) {
@@ -164,7 +173,7 @@ export const captureCameraOnlyImage = async (): Promise<{
     };
   } catch (error) {
     console.error("Error capturing image:", error);
-    Alert.alert("Error", "Failed to capture image. Please try again.");
+    alertHelpers.showAlert("Error", "Failed to capture image. Please try again.");
     return null;
   }
 };
@@ -173,40 +182,31 @@ export const captureCameraOnlyImage = async (): Promise<{
  * Captures multiple images using ONLY the camera (no gallery access).
  * Allows capturing up to a specified number of images in sequence.
  *
- * @param {number} maxImages - Maximum number of images to capture (default: 5)
- * @returns {Promise<Array<{ uri: string; type: string; filename: string }>>} Array of captured images
+ * @param maxImages - Maximum number of images to capture (default: 5)
+ * @param alertHelpers - Alert helpers for "Capture another?" confirm and errors
+ * @returns Array of captured images
  */
 export const captureMultipleCameraImages = async (
-  maxImages: number = 5
+  maxImages: number,
+  alertHelpers: ImageAlertHelpers
 ): Promise<Array<{ uri: string; type: string; filename: string }>> => {
   const images: Array<{ uri: string; type: string; filename: string }> = [];
 
   for (let i = 0; i < maxImages; i++) {
-    const shouldContinue = await new Promise<boolean>((resolve) => {
-      if (i === 0) {
-        // First image, no prompt
-        resolve(true);
-      } else {
-        Alert.alert(
-          "Capture Another Image?",
-          `You have captured ${i} image${
-            i > 1 ? "s" : ""
-          }. Would you like to capture another?`,
-          [
-            { text: "Done", onPress: () => resolve(false), style: "cancel" },
-            { text: "Capture More", onPress: () => resolve(true) },
-          ]
-        );
-      }
-    });
+    const shouldContinue =
+      i === 0
+        ? true
+        : await alertHelpers.showConfirm(
+            "Capture Another Image?",
+            `You have captured ${i} image${i > 1 ? "s" : ""}. Would you like to capture another?`
+          );
 
     if (!shouldContinue) break;
 
-    const image = await captureCameraOnlyImage();
+    const image = await captureCameraOnlyImage(alertHelpers);
     if (image) {
       images.push(image);
     } else {
-      // User cancelled, stop capturing
       break;
     }
   }

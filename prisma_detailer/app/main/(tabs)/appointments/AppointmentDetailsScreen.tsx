@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
+  RefreshControl,
 } from "react-native";
 import React, { useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -19,9 +20,11 @@ import { useGetAppointmentDetailsQuery } from "@/app/store/api/appointmentsApi";
 import {
   captureMultipleCameraImages,
   prepareImagesForUpload,
+  type ImageAlertHelpers,
 } from "@/app/utils/images";
 import { FleetMaintenanceProps } from "@/app/interfaces/AppointmentInterface";
 import StyledTextInput from "@/app/components/helpers/StyledTextInput";
+import { useAlertContext } from "@/app/contexts/AlertContext";
 
 /**
  * AppointmentDetailsScreen Component
@@ -39,8 +42,6 @@ import StyledTextInput from "@/app/components/helpers/StyledTextInput";
 const AppointmentDetailsScreen = () => {
   const {
     isLoadingAppointmentDetails,
-    handleAcceptAppointment,
-    handleCancelAppointment,
     handleCompleteAppointment,
     handleStartAppointment,
     handleUploadBeforeImages,
@@ -52,6 +53,30 @@ const AppointmentDetailsScreen = () => {
   } = useAppointment();
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { setAlertConfig } = useAlertContext();
+
+  const imageAlertHelpers: ImageAlertHelpers = {
+    showAlert: (title, message, type = "error") => {
+      setAlertConfig({
+        isVisible: true,
+        title,
+        message,
+        type,
+        onConfirm: () => {},
+      });
+    },
+    showConfirm: (title, message) =>
+      new Promise((resolve) => {
+        setAlertConfig({
+          isVisible: true,
+          title,
+          message,
+          type: "warning",
+          onClose: () => resolve(false),
+          onConfirm: () => resolve(true),
+        });
+      }),
+  };
   
   // Extract appointment ID from params
   const appointmentId = params.appointmentDetails
@@ -108,6 +133,7 @@ const AppointmentDetailsScreen = () => {
     useState(false);
   // String state for tire tread depth so decimals like "1." or ".5" can be typed
   const [tireTreadDepthStr, setTireTreadDepthStr] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   const backgroundColor = useThemeColor({}, "background");
   const cardColor = useThemeColor({}, "cards");
@@ -120,7 +146,7 @@ const AppointmentDetailsScreen = () => {
    */
   const handleBeforeImageCapture = async (segment: "interior" | "exterior") => {
     try {
-      const images = await captureMultipleCameraImages(5);
+      const images = await captureMultipleCameraImages(5, imageAlertHelpers);
       if (images && images.length > 0) {
         if (segment === "interior") {
           setCapturedBeforeImagesInterior((prev) => [...prev, ...images]);
@@ -138,7 +164,7 @@ const AppointmentDetailsScreen = () => {
    */
   const handleAfterImageCapture = async (segment: "interior" | "exterior") => {
     try {
-      const images = await captureMultipleCameraImages(5);
+      const images = await captureMultipleCameraImages(5, imageAlertHelpers);
       if (images && images.length > 0) {
         if (segment === "interior") {
           setCapturedAfterImagesInterior((prev) => [...prev, ...images]);
@@ -264,6 +290,9 @@ const AppointmentDetailsScreen = () => {
       // Clear captured images after successful upload
       setCapturedAfterImagesInterior([]);
       setCapturedAfterImagesExterior([]);
+
+      // Navigate back to appointments list so the screen doesn't persist and list can show fresh data
+      router.back();
     } catch (error) {
       console.error("Error completing job:", error);
     }
@@ -347,6 +376,19 @@ const AppointmentDetailsScreen = () => {
     }
   };
 
+  /**
+   * Pull-to-refresh: refetch appointment details so the screen shows latest data.
+   */
+  const handleRefresh = async () => {
+    if (!appointmentId) return;
+    setRefreshing(true);
+    try {
+      await refetchAppointmentDetails();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const getStatusColors = (status: string) => {
     switch (status) {
       case "pending":
@@ -420,34 +462,9 @@ const AppointmentDetailsScreen = () => {
       case "pending":
         return (
           <View style={styles.sleekButtonContainer}>
-            <StyledButton
-              key="accept"
-              variant="tonal"
-              onPress={async () => {
-                await handleAcceptAppointment(appointmentDetails.id);
-                // Refetch after accepting
-                await refetchAppointmentDetails();
-              }}
-              style={[styles.sleekActionButton, styles.sleekAcceptButton]}
-            >
-              <StyledText variant="labelMedium" style={styles.sleekButtonText}>
-                Accept
-              </StyledText>
-            </StyledButton>
-            <StyledButton
-              key="decline"
-              variant="tonal"
-              onPress={async () => {
-                await handleCancelAppointment(appointmentDetails.id);
-                // Refetch after cancelling
-                await refetchAppointmentDetails();
-              }}
-              style={[styles.sleekActionButton, styles.sleekCancelButton]}
-            >
-              <StyledText variant="labelMedium" style={styles.sleekButtonText}>
-                Decline
-              </StyledText>
-            </StyledButton>
+            <StyledText variant="bodyMedium" style={styles.sleekButtonText}>
+              Assigned – use Start when ready (or wait for sync).
+            </StyledText>
           </View>
         );
       case "accepted":
@@ -476,17 +493,6 @@ const AppointmentDetailsScreen = () => {
               ) : (
                 <StyledText variant="labelLarge">Start Job</StyledText>
               )}
-            </StyledButton>
-            <StyledButton
-              key="cancel"
-              variant="tonal"
-              onPress={async () => {
-                await handleCancelAppointment(appointmentDetails.id);
-                // Refetch after cancelling
-                await refetchAppointmentDetails();
-              }}
-            >
-              <StyledText variant="labelLarge">Cancel Job</StyledText>
             </StyledButton>
           </View>
         );
@@ -527,18 +533,36 @@ const AppointmentDetailsScreen = () => {
         );
       case "completed":
         return (
-          <View style={styles.completedMessage}>
-            <Ionicons name="checkmark-done-circle" size={24} color="#28a745" />
-            <StyledText variant="labelLarge">
-              Job completed successfully
-            </StyledText>
+          <View style={styles.completedMessageContainer}>
+            <View style={styles.completedMessage}>
+              <Ionicons name="checkmark-done-circle" size={24} color="#28a745" />
+              <StyledText variant="labelLarge">
+                Job completed successfully
+              </StyledText>
+            </View>
+            <StyledButton
+              variant="tonal"
+              onPress={() => router.back()}
+              style={styles.backToListButton}
+            >
+              <StyledText variant="labelLarge">Back to appointments</StyledText>
+            </StyledButton>
           </View>
         );
       case "cancelled":
         return (
-          <View style={styles.completedMessage}>
-            <Ionicons name="close-circle" size={24} color="#dc3545" />
-            <StyledText variant="labelLarge">Job was cancelled</StyledText>
+          <View style={styles.completedMessageContainer}>
+            <View style={styles.completedMessage}>
+              <Ionicons name="close-circle" size={24} color="#dc3545" />
+              <StyledText variant="labelLarge">Job was cancelled</StyledText>
+            </View>
+            <StyledButton
+              variant="tonal"
+              onPress={() => router.back()}
+              style={styles.backToListButton}
+            >
+              <StyledText variant="labelLarge">Back to appointments</StyledText>
+            </StyledButton>
           </View>
         );
       default:
@@ -585,12 +609,31 @@ const AppointmentDetailsScreen = () => {
             #{appointmentDetails?.booking_reference}
           </StyledText>
         </View>
+        <TouchableOpacity
+          onPress={handleRefresh}
+          disabled={refreshing}
+          style={styles.headerBack}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          {refreshing ? (
+            <ActivityIndicator size="small" color={tintColor} />
+          ) : (
+            <Ionicons name="refresh" size={24} color={textColor} />
+          )}
+        </TouchableOpacity>
       </View>
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={tintColor}
+          />
+        }
       >
         {/* Status pill */}
         <View
@@ -1943,6 +1986,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 16,
     borderRadius: 30,
+  },
+  completedMessageContainer: {
+    gap: 12,
+  },
+  backToListButton: {
+    marginTop: 8,
   },
   imageSection: {
     marginBottom: 16,

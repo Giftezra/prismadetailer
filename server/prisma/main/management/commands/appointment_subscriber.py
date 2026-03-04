@@ -1,6 +1,9 @@
 from django.core.management.base import BaseCommand
 import json
 import time
+from datetime import datetime
+
+from django.utils import timezone
 
 from main.tasks import (
     send_appointment_cancellation_email,
@@ -16,6 +19,7 @@ from main.utils.redis_streams import (
     ack,
     get_redis,
 )
+from main.utils.reschedule_helper import get_detailer_for_reschedule
 
 DETAILER_GROUP = "detailer_group"
 CONSUMER_NAME = "appointment_subscriber"
@@ -88,14 +92,14 @@ class Command(BaseCommand):
         self.stdout.write(f"Received {event}: {booking_reference}" + (f" (rating={rating})" if event == "review_received" else ""))
 
         try:
-            job = Job.objects.get(booking_reference=booking_reference)
+            job = Job.objects.select_related("primary_detailer", "service_type").get(booking_reference=booking_reference)
             primary = getattr(job, "primary_detailer", None)
-            if not primary:
-                self.stdout.write(self.style.WARNING(f"Job {booking_reference} has no primary_detailer, skipping"))
-                ack(STREAM_JOB_EVENTS, DETAILER_GROUP, msg_id)
-                return
 
             if event == "booking_cancelled":
+                if not primary:
+                    self.stdout.write(self.style.WARNING(f"Job {booking_reference} has no primary_detailer, skipping"))
+                    ack(STREAM_JOB_EVENTS, DETAILER_GROUP, msg_id)
+                    return
                 job.status = "cancelled"
                 job.save()
                 if primary.user.allow_email_notifications:
@@ -121,35 +125,62 @@ class Command(BaseCommand):
                 )
 
             elif event == "booking_rescheduled":
-                job.appointment_date = new_appointment_date
-                job.appointment_time = new_appointment_time
+                detailer, target_date, appointment_time, err = get_detailer_for_reschedule(
+                    job, new_appointment_date, new_appointment_time
+                )
+                if err or not detailer:
+                    self.stdout.write(
+                        self.style.WARNING(f"Reschedule {booking_reference}: {err or 'no detailer'}; job unchanged")
+                    )
+                    ack(STREAM_JOB_EVENTS, DETAILER_GROUP, msg_id)
+                    return
+                old_primary = primary
+                job.primary_detailer = detailer
+                job.appointment_date = timezone.make_aware(
+                    datetime.combine(target_date, appointment_time),
+                    timezone.get_current_timezone(),
+                )
+                job.appointment_time = appointment_time
                 job.total_amount = total_amount
-                job.status = "pending"
+                job.status = "accepted"
                 job.save()
-                if primary.user.allow_email_notifications:
+                job.detailers.set([detailer])
+                if detailer.user.allow_email_notifications:
                     send_appointment_rescheduling_email(
                         booking_reference,
-                        primary.user.email,
-                        new_appointment_date,
-                        new_appointment_time,
+                        detailer.user.email,
+                        target_date.isoformat(),
+                        appointment_time.strftime("%H:%M"),
                         total_amount,
                     )
-                if primary.user.allow_push_notifications and primary.user.notification_token:
+                if detailer.user.allow_push_notifications and detailer.user.notification_token:
                     send_push_notification(
-                        primary.user.id,
+                        detailer.user.id,
                         "Appointment Rescheduled",
                         "Your appointment has been rescheduled",
                         "booking_rescheduled",
                     )
                 self.create_notification(
-                    primary.user,
+                    detailer.user,
                     "Appointment Rescheduled",
                     "booking_rescheduled",
                     "warning",
                     "Your appointment has been rescheduled",
                 )
+                if old_primary and old_primary.pk != detailer.pk:
+                    self.create_notification(
+                        old_primary.user,
+                        "Appointment Reassigned",
+                        "booking_rescheduled",
+                        "warning",
+                        "Your appointment was rescheduled and reassigned to another detailer.",
+                    )
 
             elif event == "review_received":
+                if not primary:
+                    self.stdout.write(self.style.WARNING(f"Job {booking_reference} has no primary_detailer, skipping"))
+                    ack(STREAM_JOB_EVENTS, DETAILER_GROUP, msg_id)
+                    return
                 Review.objects.update_or_create(
                     job=job,
                     defaults={"detailer": primary, "rating": rating, "comment": None},

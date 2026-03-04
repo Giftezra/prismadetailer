@@ -10,17 +10,19 @@ from google.oauth2 import service_account
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
-BASE_URL= os.getenv('BASE_URL')
+BASE_URL = os.getenv('BASE_URL')
 
-ALLOWED_ORIGINS = ['https://0c60-2a02-8084-c80-ea80-c1fc-2938-23f4-4da1.ngrok-free.app']  
-CSRF_TRUSTED_ORIGINS = ['https://0c60-2a02-8084-c80-ea80-c1fc-2938-23f4-4da1.ngrok-free.app']   
-CORS_ALLOWED_ORIGINS = ["https://0c60-2a02-8084-c80-ea80-c1fc-2938-23f4-4da1.ngrok-free.app"]  
+# Production: detailer.prismavalet.com on droplet. Override via env for local/dev.
+_DETAILER_ORIGIN = os.getenv('DETAILER_ORIGIN', 'https://157b-2a02-8084-c80-ea80-2438-8f1b-b2df-319f.ngrok-free.app')
+ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', _DETAILER_ORIGIN).split(',') if os.getenv('ALLOWED_ORIGINS') else [_DETAILER_ORIGIN]
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', _DETAILER_ORIGIN).split(',') if os.getenv('CSRF_TRUSTED_ORIGINS') else [_DETAILER_ORIGIN]
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', _DETAILER_ORIGIN).split(',') if os.getenv('CORS_ALLOWED_ORIGINS') else [_DETAILER_ORIGIN]
 CORS_ALLOW_CREDENTIALS = True
-DEBUG=os.getenv('DEBUG') == 'True'
-ALLOWED_HOSTS=['*']
+DEBUG = os.getenv('DEBUG') == 'True'
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'detailer.prismavalet.com').split(',') if os.getenv('ALLOWED_HOSTS') else ['detailer.prismavalet.com']
 
-# USE_X_FORWARDED_HOST = True
-# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
     'daphne',  # <-- Move this to the first position
@@ -70,27 +72,37 @@ TEMPLATES = [
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+_db_path = os.getenv('DATABASE_PATH', str(BASE_DIR / 'db.sqlite3'))
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': _db_path,
     }
 }
 
 
-# Google Cloud Storage credentials (commented out - using local media storage)
-# GS_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'prisma-6fc48-642e49c334e8.json')
-# GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
-#     GS_CREDENTIALS_PATH,
-#     scopes=['https://www.googleapis.com/auth/cloud-platform'],
-# )
-# GS_BUCKET_NAME = 'prisma-valet-bucket'
-# GS_LOCATION = 'detailer-app'
+# Google Cloud Storage credentials
+GS_CREDENTIALS_PATH = os.getenv('GS_CREDENTIALS_PATH', os.path.join(BASE_DIR, 'prisma-6fc48-642e49c334e8.json'))
+GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
+    GS_CREDENTIALS_PATH,
+    scopes=['https://www.googleapis.com/auth/cloud-platform'],
+)
+GS_BUCKET_NAME = os.getenv('GS_BUCKET_NAME', 'prisma-valet-bucket')
+GS_LOCATION = os.getenv('GS_LOCATION', 'detailer-app')
 
-# Storage Configuration - Using local media storage
+
+# Storage Configuration - Google Cloud Storage for media, local for static
+# Backend reads GS_BUCKET_NAME, GS_CREDENTIALS, GS_LOCATION from settings
 STORAGES = {
     'default': {
-        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        'BACKEND': 'storages.backends.gcloud.GoogleCloudStorage',
+        'OPTIONS': {
+            'bucket_name': GS_BUCKET_NAME,
+            'location': GS_LOCATION,
+            'custom_endpoint': None,
+            'object_parameters': {},
+            'gzip': False,
+        },
     },
     'staticfiles': {
         'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
@@ -188,10 +200,6 @@ CELERY_BEAT_SCHEDULE = {
     'send-daily-schedule': {
         'task': 'main.tasks.check_daily_schedule',
         'schedule': crontab(hour=7, minute=0),  # Daily at 7 AM
-    },
-    'check-pending-jobs': {
-        'task': 'main.tasks.check_pending_jobs',
-        'schedule': crontab(minute='*/5'),
     },
 }
 

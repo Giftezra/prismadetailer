@@ -10,9 +10,11 @@ import {
   setRefreshToken,
 } from "@/app/store/slices/authSlice";
 import { useLoginMutation } from "@/app/store/api/authApi";
+import { useUpdateLocationMutation } from "@/app/store/api/profileapi";
 import { UserProfileProps } from "@/app/interfaces/ProfileInterfaces";
 import { router } from "expo-router";
 import * as SecureStore from "expo-secure-store";
+import * as Location from "expo-location";
 import { usePermissions } from "@/app/app-hooks/usePermissions";
 import {
   saveDataToStorage,
@@ -27,7 +29,7 @@ interface AuthContextType {
   handleLogin: (
     email: string,
     password: string,
-    rememberMe: boolean
+    rememberMe: boolean,
   ) => Promise<void>;
   handleLogout: () => void;
   isLoading: boolean;
@@ -43,6 +45,7 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
 
   /* Destructure the login mutation from the authApi */
   const [login, { isLoading, isError, error, status }] = useLoginMutation();
+  const [updateLocation] = useUpdateLocationMutation();
 
   /* Get permission service for first-time setup */
   const { requestAllPermissions } = usePermissions();
@@ -114,7 +117,7 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
   const handleLogin = async (
     email: string,
     password: string,
-    rememberMe: boolean
+    rememberMe: boolean,
   ) => {
     const normalizedEmail = email.trim().toLowerCase();
     const credentials = { email: normalizedEmail, password };
@@ -134,16 +137,52 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
           const saved = await saveDataToStorage(
             response.user,
             response.access,
-            response.refresh
+            response.refresh,
           );
           if (saved) {
             // Request permissions after successful login
             await requestAllPermissions();
+            // Report current location for Redis GEO (throttled: once per login)
+            try {
+              const { status: locStatus } =
+                await Location.getForegroundPermissionsAsync();
+              if (locStatus === "granted") {
+                const pos = await Location.getCurrentPositionAsync({
+                  accuracy: Location.Accuracy.Balanced,
+                });
+                if (pos?.coords?.latitude != null && pos?.coords?.longitude != null) {
+                  await updateLocation({
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude,
+                  }).unwrap();
+                }
+              }
+            } catch (_) {
+              // Do not block login if location fails
+            }
             router.replace("/main/(tabs)/dashboard/DashboardScreen");
           }
         } else {
           // Request permissions after successful login
           await requestAllPermissions();
+          // Report current location for Redis GEO (throttled: once per login)
+          try {
+            const { status: locStatus } =
+              await Location.getForegroundPermissionsAsync();
+            if (locStatus === "granted") {
+              const pos = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced,
+              });
+              if (pos?.coords?.latitude != null && pos?.coords?.longitude != null) {
+                await updateLocation({
+                  latitude: pos.coords.latitude,
+                  longitude: pos.coords.longitude,
+                }).unwrap();
+              }
+            }
+          } catch (_) {
+            // Do not block login if location fails
+          }
           router.replace("/main/(tabs)/dashboard/DashboardScreen");
         }
       } else {
@@ -161,10 +200,10 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error: any) {
       // Debug: log the error structure
       console.log("Login error object:", JSON.stringify(error, null, 2));
-      
+
       let errorMessage =
         "Please check your email and confirm your password again.\nIf you have forgotten your password, please reset it.";
-      
+
       // Parse error message from different response structures
       if (error?.data) {
         // Handle array format (common for ValidationError)
@@ -172,13 +211,16 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
           errorMessage = error.data[0] || errorMessage;
         }
         // Handle non_field_errors (common for serializer ValidationError)
-        else if (error.data.non_field_errors && Array.isArray(error.data.non_field_errors)) {
+        else if (
+          error.data.non_field_errors &&
+          Array.isArray(error.data.non_field_errors)
+        ) {
           errorMessage = error.data.non_field_errors[0] || errorMessage;
         }
         // Handle object with detail field
         else if (error.data.detail) {
-          errorMessage = Array.isArray(error.data.detail) 
-            ? error.data.detail[0] 
+          errorMessage = Array.isArray(error.data.detail)
+            ? error.data.detail[0]
             : error.data.detail;
         }
         // Handle object with error field
@@ -186,7 +228,7 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
           errorMessage = error.data.error;
         }
         // Handle if data itself is a string
-        else if (typeof error.data === 'string') {
+        else if (typeof error.data === "string") {
           errorMessage = error.data;
         }
       }
@@ -194,8 +236,12 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
       else if (error?.response?.data) {
         if (Array.isArray(error.response.data)) {
           errorMessage = error.response.data[0] || errorMessage;
-        } else if (error.response.data.non_field_errors && Array.isArray(error.response.data.non_field_errors)) {
-          errorMessage = error.response.data.non_field_errors[0] || errorMessage;
+        } else if (
+          error.response.data.non_field_errors &&
+          Array.isArray(error.response.data.non_field_errors)
+        ) {
+          errorMessage =
+            error.response.data.non_field_errors[0] || errorMessage;
         } else if (error.response.data.detail) {
           errorMessage = Array.isArray(error.response.data.detail)
             ? error.response.data.detail[0]
@@ -206,7 +252,8 @@ const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       // Check if error is related to pending approval
-      const errorMessageLower = typeof errorMessage === 'string' ? errorMessage.toLowerCase() : '';
+      const errorMessageLower =
+        typeof errorMessage === "string" ? errorMessage.toLowerCase() : "";
       if (
         errorMessageLower.includes("pending approval") ||
         errorMessageLower.includes("not verified") ||
@@ -244,7 +291,7 @@ export const useAuthContext = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error(
-      "useAuthContext must be used within an AuthContextProvider"
+      "useAuthContext must be used within an AuthContextProvider",
     );
   }
   return context;

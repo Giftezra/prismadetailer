@@ -54,32 +54,6 @@ const appointmentsApi = createApi({
     }),
 
     /**
-     * Cancel the appointment
-     * @param id - The id of the appointment
-     * @returns {message: string} The message from the server
-     */
-    cancelAppointment: builder.mutation<{ message: string }, { id: string }>({
-      query: ({ id }) => ({
-        url: `/api/v1/appointments/cancel_appointment/`,
-        method: "PATCH",
-        data: { id },
-      }),
-    }),
-
-    /**
-     * Accept the appointment
-     * @param id - The id of the appointment
-     * @returns {message: string} The message from the server
-     */
-    acceptAppointment: builder.mutation<{ message: string }, { id: string }>({
-      query: ({ id }) => ({
-        url: `/api/v1/appointments/accept_appointment/`,
-        method: "PATCH",
-        data: { id },
-      }),
-    }),
-
-    /**
      * Start the appointment
      * @param id - The id of the appointment
      * @returns {message: string} The message from the server
@@ -171,8 +145,6 @@ export const {
   useGetAllAppointmentsQuery,
   useCompleteAppointmentMutation,
   useGetAppointmentDetailsQuery,
-  useCancelAppointmentMutation,
-  useAcceptAppointmentMutation,
   useStartAppointmentMutation,
   useUploadBeforeImagesMutation,
   useUploadAfterImagesMutation,

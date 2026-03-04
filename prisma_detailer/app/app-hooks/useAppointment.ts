@@ -10,8 +10,6 @@ import {
   useGetAppointmentDetailsQuery,
   useStartAppointmentMutation,
   useCompleteAppointmentMutation,
-  useCancelAppointmentMutation,
-  useAcceptAppointmentMutation,
   useUploadBeforeImagesMutation,
   useUploadAfterImagesMutation,
   useSubmitFleetMaintenanceMutation,
@@ -62,16 +60,6 @@ export const useAppointment = () => {
 
   const [completeAppointment, { isLoading: isLoadingCompleteAppointment }] =
     useCompleteAppointmentMutation();
-
-  const [
-    cancelAppointment,
-    { isLoading: isLoadingCancelAppointment, error: errorCancelAppointment },
-  ] = useCancelAppointmentMutation();
-
-  const [
-    acceptAppointment,
-    { isLoading: isLoadingAcceptAppointment, error: errorAcceptAppointment },
-  ] = useAcceptAppointmentMutation();
 
   const [uploadBeforeImages, { isLoading: isLoadingUploadBeforeImages }] =
     useUploadBeforeImagesMutation();
@@ -392,70 +380,6 @@ export const useAppointment = () => {
   );
 
   /**
-   * Cancel the appointment
-   * @param id - The id of the appointment
-   * @returns {message: string} The message from the server
-   */
-  const handleCancelAppointment = useCallback(
-    async (id: string) => {
-      try {
-        const response = await cancelAppointment({ id }).unwrap();
-        if (response && response.message) {
-          showSnackbarWithConfig({
-            message: response.message,
-            type: "success",
-            duration: 3000,
-          });
-        }
-      } catch (error: any) {
-        const errorMessage =
-          error?.data?.message ||
-          error?.data?.error ||
-          error?.message ||
-          "Failed to cancel appointment";
-        showSnackbarWithConfig({
-          message: errorMessage,
-          type: "error",
-          duration: 3000,
-        });
-      }
-    },
-    [cancelAppointment, showSnackbarWithConfig]
-  );
-
-  /**
-   * Accept the appointment
-   * @param id - The id of the appointment
-   * @returns {message: string} The message from the server
-   */
-  const handleAcceptAppointment = useCallback(
-    async (id: string) => {
-      try {
-        const response = await acceptAppointment({ id }).unwrap();
-        if (response && response.message) {
-          showSnackbarWithConfig({
-            message: response.message,
-            type: "success",
-            duration: 3000,
-          });
-        }
-      } catch (error: any) {
-        const errorMessage =
-          error?.data?.message ||
-          error?.data?.error ||
-          error?.message ||
-          "Failed to accept appointment";
-        showSnackbarWithConfig({
-          message: errorMessage,
-          type: "error",
-          duration: 3000,
-        });
-      }
-    },
-    [acceptAppointment, showSnackbarWithConfig]
-  );
-
-  /**
    * Upload before images for an appointment
    * @param formData - FormData containing job_id and images
    * @returns {message: string, images: Array} Response with uploaded image details
@@ -592,8 +516,6 @@ export const useAppointment = () => {
     handleJobPress,
     handleStartAppointment,
     handleCompleteAppointment,
-    handleCancelAppointment,
-    handleAcceptAppointment,
     handleUploadBeforeImages,
     handleUploadAfterImages,
     handleSubmitFleetMaintenance,

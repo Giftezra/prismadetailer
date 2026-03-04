@@ -7,7 +7,7 @@ from main.models import Job, JobImage, JobFleetMaintenance, Detailer
 from main.serializer import JobImageSerializer, JobFleetMaintenanceSerializer, JobSerializer
 from datetime import datetime
 from main.util.media_helper import get_full_media_url
-from main.tasks import publish_job_acceptance, publish_job_started, publish_job_completed
+from main.tasks import publish_job_started, publish_job_completed
 # from channels.layers import get_channel_layer
 # from asgiref.sync import async_to_sync
 # from main.task import send_job_accepted_email
@@ -19,8 +19,6 @@ class AppointmentView(APIView):
     action_handler = {
         "get_all_appointments": '_get_all_appointments',
         "get_appointment_details": '_get_appointment_details',
-        "accept_appointment": '_accept_appointment',
-        "cancel_appointment": '_cancel_appointment',
         "complete_appointment": '_complete_appointment',
         "start_appointment": '_start_appointment',
         "upload_before_images": '_upload_before_images',
@@ -169,74 +167,6 @@ class AppointmentView(APIView):
             return Response(appointment_detaile, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
-
-    def _accept_appointment(self, request):
-        """ The method is used to accept the appointment given to a detailer.
-            After an appointment is accepted, the detailer and the client will be notified via websocket.#
-            
-            The method will also trigger updates on the client app stack to send an email and a notification to the client.
-            
-            ARGS:
-                - appointment id: The id of the appointment to be accepted.
-
-        """
-        try:
-            appointment = Job.objects.filter(
-                id=request.data.get('id')
-            ).filter(
-                Q(primary_detailer__user=request.user) | Q(detailers__user=request.user)
-            ).distinct().first()
-            if not appointment:
-                return Response({"error": "Appointment not found"}, status=status.HTTP_404_NOT_FOUND)
-            # Check if the appointment is already accepted, completed, or in progress
-            if appointment.status in ['completed','accepted','in_progress']:
-                return Response({"error": "Appointment already completed, accepted, or in progress"}, status=status.HTTP_400_BAD_REQUEST)
-            appointment.status = 'accepted'
-            appointment.save()
-
-            # Accepting detailer is the logged-in user (primary or from detailers M2M)
-            accepting_detailer = Detailer.objects.get(user=request.user)
-
-            # trigger the job acceptance to redis so client app updates
-            publish_job_acceptance.delay(
-                appointment.booking_reference,
-                accepting_detailer.user.email,
-                accepting_detailer.user.get_full_name(),
-                accepting_detailer.user.phone or '',
-                accepting_detailer.rating or 0.0
-            )
-
-            return Response({"message": "Appointment accepted"}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
-    def _cancel_appointment(self, request):
-        """ Cancel the appointment
-        Args:
-            request: The request object
-        Returns:
-            Response: The response object
-        """
-        try:
-            appointment = Job.objects.filter(
-                id=request.data.get('id')
-            ).filter(
-                Q(primary_detailer__user=request.user) | Q(detailers__user=request.user)
-            ).distinct().first()
-            if not appointment:
-                return Response({"error": "Appointment not found"}, status=status.HTTP_404_NOT_FOUND)
-            
-            # Check if the appointment is already completed
-            if appointment.status == 'completed':
-                return Response({"error": "Cannot cancel a completed appointment"}, status=status.HTTP_400_BAD_REQUEST)
-            
-            appointment.status = 'cancelled'
-            appointment.save()
-            return Response({"message": "Appointment cancelled successfully"}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
     def _start_appointment(self, request):
@@ -281,38 +211,60 @@ class AppointmentView(APIView):
         Returns:
             Response: The response object
         """
+        def _bad_request(msg):
+            print(f"complete_appointment 400: {msg}")
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
+            raw_id = request.data.get('id') if request.data else None
+            if raw_id is None:
+                return _bad_request("Missing appointment id")
+            try:
+                job_id = raw_id
+            except (TypeError, ValueError):
+                return _bad_request("Invalid appointment id")
+
             appointment = Job.objects.filter(
-                id=request.data.get('id')
+                id=job_id
             ).filter(
                 Q(primary_detailer__user=request.user) | Q(detailers__user=request.user)
             ).distinct().first()
             if not appointment:
                 return Response({"error": "Appointment not found"}, status=status.HTTP_404_NOT_FOUND)
-            
+
             # Check if the appointment is already completed or cancelled
             if appointment.status in ['completed', 'cancelled']:
-                return Response({"error": "Appointment is already completed or cancelled"}, status=status.HTTP_400_BAD_REQUEST)
-            
+                return _bad_request("Appointment is already completed or cancelled")
+
             # Check if the appointment is in progress before completing
             if appointment.status != 'in_progress':
-                return Response({"error": "Appointment must be in progress before completing"}, status=status.HTTP_400_BAD_REQUEST)
-            
+                return _bad_request(
+                    f"Appointment must be in progress before completing (current status: {appointment.status})"
+                )
+
             # Validate that all required images are uploaded (4 interior + 4 exterior for both before and after)
             before_interior_count = appointment.images.filter(image_type='before', segment='interior').count()
             before_exterior_count = appointment.images.filter(image_type='before', segment='exterior').count()
             after_interior_count = appointment.images.filter(image_type='after', segment='interior').count()
             after_exterior_count = appointment.images.filter(image_type='after', segment='exterior').count()
-            
+
             if before_interior_count < 4:
-                return Response({"error": f"Minimum 4 before interior images required. Current: {before_interior_count}"}, status=status.HTTP_400_BAD_REQUEST)
+                return _bad_request(
+                    f"Minimum 4 before interior images required. Current: {before_interior_count}"
+                )
             if before_exterior_count < 4:
-                return Response({"error": f"Minimum 4 before exterior images required. Current: {before_exterior_count}"}, status=status.HTTP_400_BAD_REQUEST)
+                return _bad_request(
+                    f"Minimum 4 before exterior images required. Current: {before_exterior_count}"
+                )
             if after_interior_count < 4:
-                return Response({"error": f"Minimum 4 after interior images required. Current: {after_interior_count}"}, status=status.HTTP_400_BAD_REQUEST)
+                return _bad_request(
+                    f"Minimum 4 after interior images required. Current: {after_interior_count}"
+                )
             if after_exterior_count < 4:
-                return Response({"error": f"Minimum 4 after exterior images required. Current: {after_exterior_count}"}, status=status.HTTP_400_BAD_REQUEST)
-            
+                return _bad_request(
+                    f"Minimum 4 after exterior images required. Current: {after_exterior_count}"
+                )
+
             appointment.status = 'completed'
             appointment.save()
 
@@ -321,6 +273,7 @@ class AppointmentView(APIView):
 
             return Response({"message": "Appointment completed successfully"}, status=status.HTTP_200_OK)
         except Exception as e:
+            print(f"complete_appointment unexpected error: {e}")
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
     def _submit_fleet_maintenance(self, request):

@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
-  Text,
   View,
   ScrollView,
   SafeAreaView,
   StatusBar,
+  TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAvailability } from "../../../app-hooks/useAvailability";
@@ -15,32 +16,77 @@ import { AvailabilitySummary } from "../../../components/ui/profile/Availability
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { useThemeContext } from "@/app/contexts/ThemeProvider";
 import StyledText from "@/app/components/helpers/StyledText";
+import {
+  useGetAvailabilityQuery,
+  useCreateAvailabilityMutation,
+  useLazyGetBusyTimesQuery,
+  useGetBusyTimesQuery,
+} from "@/app/store/api/availabilityApi";
+import { useAlertContext } from "@/app/contexts/AlertContext";
 
 const AvailabilityScreen = () => {
   const backgroundColor = useThemeColor({}, "background");
-  const textColor = useThemeColor({}, "text");
   const primaryColor = useThemeColor({}, "primary");
-  const iconColor = useThemeColor({}, "icons");
   const { theme } = useThemeContext();
+  const { setAlertConfig } = useAlertContext();
+
+  const { data: availabilityData } = useGetAvailabilityQuery();
+  const [createAvailability, { isLoading: isSaving }] = useCreateAvailabilityMutation();
+  const [fetchBusyTimes, { isLoading: isBusyTimesLoading }] = useLazyGetBusyTimesQuery();
+
   const {
     selectedDates,
     currentMonth,
     currentYear,
     goToPreviousMonth,
     goToNextMonth,
-    toggleDateSelection,
     toggleTimeSlot,
     getMonthDays,
     clearAllSelections,
-  } = useAvailability();
+    getAllSelectedAvailabilities,
+    selectOnlyDateWithBusySlots,
+    setBusySlotsForDate,
+  } = useAvailability(availabilityData ?? undefined);
 
   const [selectedDateForTimeSlots, setSelectedDateForTimeSlots] = useState<
     string | null
   >(null);
+  const [pendingDateForSlots, setPendingDateForSlots] = useState<string | null>(null);
 
-  const handleDatePress = (date: string) => {
-    toggleDateSelection(date);
-    setSelectedDateForTimeSlots(date);
+  const { data: busyTimesData } = useGetBusyTimesQuery(selectedDateForTimeSlots ?? null, {
+    skip: !selectedDateForTimeSlots,
+  });
+
+  /* When the time-slot panel is open, refetch busy times for that date and merge so job blocks stay up to date. */
+  useEffect(() => {
+    if (busyTimesData && selectedDateForTimeSlots && busyTimesData.date === selectedDateForTimeSlots) {
+      setBusySlotsForDate(selectedDateForTimeSlots, busyTimesData.busySlots);
+    }
+  }, [busyTimesData, selectedDateForTimeSlots, setBusySlotsForDate]);
+
+  const handleDatePress = async (date: string) => {
+    const currentSelected = selectedDates[0]?.date ?? null;
+    if (currentSelected === date) {
+      clearAllSelections();
+      setSelectedDateForTimeSlots(null);
+      return;
+    }
+    setPendingDateForSlots(date);
+    try {
+      const data = await fetchBusyTimes(date).unwrap();
+      selectOnlyDateWithBusySlots(date, data.busySlots);
+      setSelectedDateForTimeSlots(date);
+    } catch {
+      setAlertConfig({
+        isVisible: true,
+        title: "Error",
+        message: "Could not load job times for this date. Try again.",
+        type: "error",
+        onConfirm: () => {},
+      });
+    } finally {
+      setPendingDateForSlots(null);
+    }
   };
 
   const handleTimeSlotToggle = (timeSlotId: string) => {
@@ -71,10 +117,10 @@ const AvailabilityScreen = () => {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Ionicons name="calendar-outline" size={24} color={primaryColor} />
-          <StyledText variant="titleMedium">Set Availability</StyledText>
+          <StyledText variant="titleMedium">When I'm not available</StyledText>
         </View>
         <StyledText variant="bodySmall">
-          Select dates and times when you're available
+          Select dates and times when you won't be available for work
         </StyledText>
       </View>
 
@@ -94,19 +140,54 @@ const AvailabilityScreen = () => {
           onNextMonth={goToNextMonth}
         />
 
-        {/* Time Slots Selector - Only show when a date is selected */}
-        {selectedDateForTimeSlots && (
+        {/* Time Slots Selector - Only show when a date is selected; show loading while fetching busy times for a new date */}
+        {pendingDateForSlots && isBusyTimesLoading ? (
+          <View style={[styles.loadingSlotsContainer, { backgroundColor: primaryColor }]}>
+            <ActivityIndicator size="small" color="#fff" />
+            <StyledText variant="bodySmall" style={styles.loadingSlotsText}>
+              Loading job times for this date…
+            </StyledText>
+          </View>
+        ) : selectedDateForTimeSlots ? (
           <TimeSlotsSelector
             selectedDate={selectedDateForTimeSlots}
             timeSlots={getSelectedDateTimeSlots()}
             onTimeSlotToggle={handleTimeSlotToggle}
           />
-        )}
+        ) : null}
 
         {/* Availability Summary */}
         <AvailabilitySummary
           selectedDates={selectedDates}
           onClearAll={clearAllSelections}
+          onSave={async () => {
+            const payload = { selectedDates: getAllSelectedAvailabilities() };
+            try {
+              await createAvailability(payload).unwrap();
+              setAlertConfig({
+                isVisible: true,
+                title: "Saved",
+                message: "Your unavailability has been saved.",
+                type: "success",
+                onConfirm: () => {},
+              });
+            } catch (err: unknown) {
+              const message =
+                err && typeof err === "object" && "data" in err &&
+                typeof (err as { data?: unknown }).data === "object" &&
+                (err as { data?: { error?: string } }).data?.error
+                  ? (err as { data: { error: string } }).data.error
+                  : "Failed to save.";
+              setAlertConfig({
+                isVisible: true,
+                title: "Error",
+                message,
+                type: "error",
+                onConfirm: () => {},
+              });
+            }
+          }}
+          isSaving={isSaving}
         />
 
         {/* Instructions */}
@@ -132,7 +213,7 @@ const AvailabilityScreen = () => {
                 color={primaryColor}
               />
               <StyledText variant="bodySmall">
-                Tap on dates in the calendar to select them
+                Tap dates when you won't be available for work
               </StyledText>
             </View>
             <View style={styles.instructionItem}>
@@ -142,7 +223,7 @@ const AvailabilityScreen = () => {
                 color={primaryColor}
               />
               <StyledText variant="bodySmall">
-                Select time slots for each chosen date
+                Select time slots for each date you're off
               </StyledText>
             </View>
             <View style={styles.instructionItem}>
@@ -152,7 +233,7 @@ const AvailabilityScreen = () => {
                 color={primaryColor}
               />
               <StyledText variant="bodySmall">
-                Use quick selection buttons for faster setup
+                Use quick selection (Morning/Afternoon/Evening) for faster setup
               </StyledText>
             </View>
             <View style={styles.instructionItem}>
@@ -162,7 +243,7 @@ const AvailabilityScreen = () => {
                 color={primaryColor}
               />
               <StyledText variant="bodySmall">
-                Navigate between months using arrow buttons
+                Slots marked "Booked" are existing jobs and cannot be changed
               </StyledText>
             </View>
           </View>
@@ -224,6 +305,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+  },
+  loadingSlotsContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    marginHorizontal: 5,
+    marginVertical: 5,
+    borderRadius: 8,
+    opacity: 0.9,
+  },
+  loadingSlotsText: {
+    color: "#fff",
   },
   instructionText: {
     fontSize: 14,

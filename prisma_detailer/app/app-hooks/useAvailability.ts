@@ -1,10 +1,12 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import dayjs from "dayjs";
 
 export interface TimeSlot {
   id: string;
   time: string;
   isSelected: boolean;
+  /** True when this slot is blocked by a job (detailer cannot set as available) */
+  isBlockedByJob?: boolean;
 }
 
 export interface AvailabilityDate {
@@ -17,6 +19,13 @@ export interface AvailabilityState {
   selectedDates: AvailabilityDate[];
   currentMonth: dayjs.Dayjs;
   currentYear: number;
+}
+
+/** Shape returned by GET get_availability (currentMonth as string YYYY-MM) */
+export interface AvailabilityStateFromServer {
+  selectedDates: AvailabilityDate[];
+  currentMonth?: string;
+  currentYear?: number;
 }
 
 const generateTimeSlots = (): TimeSlot[] => {
@@ -50,16 +59,30 @@ const generateMonthDays = (year: number, month: number): dayjs.Dayjs[] => {
   return days;
 };
 
-export const useAvailability = () => {
-  const [state, setState] = useState<AvailabilityState>({
-    selectedDates: [],
-    currentMonth: dayjs(),
-    currentYear: dayjs().year(),
-  });
+const defaultState: AvailabilityState = {
+  selectedDates: [],
+  currentMonth: dayjs(),
+  currentYear: dayjs().year(),
+};
 
-  const [selectedTimeSlots, setSelectedTimeSlots] = useState<
-    Record<string, string[]>
-  >({});
+export const useAvailability = (initialState?: AvailabilityStateFromServer | null) => {
+  const [state, setState] = useState<AvailabilityState>(defaultState);
+  const hasHydrated = useRef(false);
+
+  useEffect(() => {
+    if (hasHydrated.current || !initialState) return;
+    if (initialState.selectedDates && initialState.selectedDates.length >= 0) {
+      hasHydrated.current = true;
+      const dates = initialState.selectedDates.slice(0, 1);
+      setState({
+        selectedDates: dates,
+        currentMonth: initialState.currentMonth
+          ? dayjs(initialState.currentMonth + "-01")
+          : dayjs(),
+        currentYear: initialState.currentYear ?? dayjs().year(),
+      });
+    }
+  }, [initialState]);
 
   /**
    * Navigate to the previous month
@@ -121,6 +144,68 @@ export const useAvailability = () => {
         };
       }
     });
+  }, []);
+
+  /**
+   * Add a date with time slots, marking given hours as blocked by job.
+   * Use after fetching busy times from the server when user selects a date not yet in list.
+   */
+  const addDateWithBusySlots = useCallback((date: string, busySlots: string[]) => {
+    const busySet = new Set(busySlots);
+    const timeSlots: TimeSlot[] = generateTimeSlots().map((slot) => ({
+      ...slot,
+      isBlockedByJob: busySet.has(slot.time),
+    }));
+    const newDate: AvailabilityDate = {
+      date,
+      timeSlots,
+      isSelected: true,
+    };
+    setState((prev) => ({
+      ...prev,
+      selectedDates: [...prev.selectedDates, newDate],
+    }));
+  }, []);
+
+  /**
+   * Select only this date (single-day mode). Replaces any existing selection.
+   * Marks given busySlots as blocked by job so they cannot be marked unavailable.
+   */
+  const selectOnlyDateWithBusySlots = useCallback((date: string, busySlots: string[]) => {
+    const busySet = new Set(busySlots);
+    const timeSlots: TimeSlot[] = generateTimeSlots().map((slot) => ({
+      ...slot,
+      isBlockedByJob: busySet.has(slot.time),
+    }));
+    const newDate: AvailabilityDate = {
+      date,
+      timeSlots,
+      isSelected: true,
+    };
+    setState((prev) => ({
+      ...prev,
+      selectedDates: [newDate],
+    }));
+  }, []);
+
+  /**
+   * Update isBlockedByJob for an existing date from refetched busy slots.
+   */
+  const setBusySlotsForDate = useCallback((date: string, busySlots: string[]) => {
+    const busySet = new Set(busySlots);
+    setState((prev) => ({
+      ...prev,
+      selectedDates: prev.selectedDates.map((selectedDate) => {
+        if (selectedDate.date !== date) return selectedDate;
+        return {
+          ...selectedDate,
+          timeSlots: selectedDate.timeSlots.map((slot) => ({
+            ...slot,
+            isBlockedByJob: busySet.has(slot.time),
+          })),
+        };
+      }),
+    }));
   }, []);
 
   /**
@@ -228,6 +313,9 @@ export const useAvailability = () => {
     toggleDateSelection,
     toggleTimeSlot,
     isDateSelected,
+    addDateWithBusySlots,
+    selectOnlyDateWithBusySlots,
+    setBusySlotsForDate,
 
     // Utility methods
     getMonthDays,

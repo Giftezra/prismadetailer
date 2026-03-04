@@ -6,8 +6,24 @@ from main.util.graph_mail import send_mail as graph_send_mail
 from asgiref.sync import async_to_sync
 from exponent_server_sdk import PushClient, PushMessage
 import json
+from uuid import UUID
+from datetime import date, datetime, time
+from decimal import Decimal
 from main.utils.redis_streams import stream_add, STREAM_JOB_EVENTS
 
+
+def _json_dumps_safe(obj):
+    """JSON encode structures that may contain UUID/datetime/Decimal (e.g. from DRF serializer .data)."""
+    class Encoder(json.JSONEncoder):
+        def default(self, o):
+            if isinstance(o, UUID):
+                return str(o)
+            if isinstance(o, (datetime, date, time)):
+                return o.isoformat()
+            if isinstance(o, Decimal):
+                return float(o)
+            return super().default(o)
+    return json.dumps(obj, cls=Encoder)
 
 
 @shared_task
@@ -39,7 +55,8 @@ def send_booking_confirmation_email(detailer_email, booking_reference, appointme
         return f"Failed to send booking confirmation email: {str(e)}"
 
 
-"""Publish the job acceptance to Redis stream so the client app receives the notification and creates the job in the database."""
+"""Publish job-assigned event to Redis so the client app can set detailer and send confirmation.
+   Called when a job is created on the detailer (no separate accept step)."""
 @shared_task
 def publish_job_acceptance(booking_reference, detailer_email, detailer_name, detailer_phone, detailer_rating=0.0):
     try:
@@ -53,9 +70,9 @@ def publish_job_acceptance(booking_reference, detailer_email, detailer_name, det
         }
         payload = json.dumps(message_data)
         msg_id = stream_add(STREAM_JOB_EVENTS, {'event': 'job_acceptance', 'payload': payload})
-        return f"Job acceptance published to stream: {msg_id}"
+        return f"Job assigned event published to stream: {msg_id}"
     except Exception as e:
-        return f"Failed to publish job acceptance to redis: {str(e)}"
+        return f"Failed to publish job assigned event to redis: {str(e)}"
 
 
 @shared_task
@@ -135,7 +152,7 @@ def publish_job_completed(booking_reference):
                 'after_images': [],
                 'fleet_maintenance': None
             }
-        payload = json.dumps(message_data)
+        payload = _json_dumps_safe(message_data)
         msg_id = stream_add(STREAM_JOB_EVENTS, {'event': 'job_completed', 'payload': payload})
         return f"Job completed published to stream: {msg_id}"
     except Exception as e:
@@ -319,7 +336,6 @@ def check_daily_schedule():
             
             send_push_notification.delay(
                 first_job.primary_detailer.user.id,
-                first_job.id,
                 title,
                 message,
                 "reminder"
@@ -362,40 +378,6 @@ def check_upcoming_jobs():
                 f"Your {job.service_type.name} appointment with {job.client_name} starts in 30 minutes at {job.address}",
                 "reminder"
             )
-
-
-@shared_task
-def check_pending_jobs():
-    """ Send notification for jobs that are pending and haven't been accepted yet """
-    from django.db import close_old_connections
-    from main.models import Job, Notification
-    from django.utils import timezone
-    from datetime import timedelta
-    
-    # Close stale database connections before querying
-    close_old_connections()
-    
-    try:
-        now = timezone.now()
-        # Only send notifications for pending jobs that haven't been notified in the last hour
-        one_hour_ago = now - timedelta(hours=1)
-    
-        # Check for jobs that are pending and haven't been accepted yet
-        pending_jobs = Job.objects.filter(
-            status='pending'
-        )
-
-        for job in pending_jobs:
-            if job.primary_detailer:
-                send_push_notification.delay(
-                    job.primary_detailer.user.id,
-                    "Pending Tasks",
-                    f"You have pending tasks to either accept or reject. Please check your dashboard to manage your tasks.",
-                    "pending_jobs"
-                )
-
-    except Exception as e:
-        return f"Failed to check pending jobs: {str(e)}"
 
 
 @shared_task

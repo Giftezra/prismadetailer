@@ -2,10 +2,62 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from django.db.models import Q
 from main.models import Detailer, Availability, Job, ServiceType
 from main.utils.detailer_matcher import find_detailers_for_location
 from datetime import datetime, time, timedelta
+from django.utils import timezone
 import json
+
+
+def _merge_times_to_ranges(time_strings):
+    """
+    Convert a sorted list of time strings (e.g. ["06:00","07:00","08:00","10:00"])
+    into contiguous (start_time, end_time) ranges as datetime.time.
+    E.g. ["06:00","07:00","08:00","10:00"] -> [(06:00, 09:00), (10:00, 11:00)].
+    Each slot is treated as one hour; end = start + 1 hour for the last in a run.
+    """
+    if not time_strings:
+        return []
+    ranges = []
+    try:
+        times = [datetime.strptime(t, "%H:%M").time() for t in sorted(time_strings)]
+    except (ValueError, TypeError):
+        return []
+    start = times[0]
+    prev = times[0]
+    for i in range(1, len(times)):
+        prev_minutes = prev.hour * 60 + prev.minute
+        curr_minutes = times[i].hour * 60 + times[i].minute
+        if curr_minutes != prev_minutes + 60:
+            # Not consecutive: close current range at prev + 1 hour
+            end_minutes = prev_minutes + 60
+            end = time(end_minutes // 60, end_minutes % 60)
+            ranges.append((start, end))
+            start = times[i]
+        prev = times[i]
+    end_minutes = prev.hour * 60 + prev.minute + 60
+    end = time(end_minutes // 60, end_minutes % 60) if end_minutes < 24 * 60 else time(23, 59)
+    ranges.append((start, end))
+    return ranges
+
+
+def _range_to_hour_slots(start_min, end_min):
+    """
+    Return set of 'HH:00' for business hours 6-20 that overlap [start_min, end_min).
+    UI only has whole-hour slots (06:00, 07:00, ...), so a job at 07:30 must block 07:00.
+    If end_min <= start_min (e.g. duration 0), still block the hour containing start_min.
+    """
+    out = set()
+    if end_min <= start_min:
+        end_min = start_min + 1
+    for h in range(6, 21):
+        slot_start = h * 60
+        slot_end = (h + 1) * 60
+        if start_min < slot_end and end_min > slot_start:
+            out.add(f"{h:02d}:00")
+    return out
+
 
 """ The class is used to handle all of the users availability related actions
 
@@ -18,13 +70,13 @@ class AvailabilityView(APIView):
 
         To do this, we will destructure and override the get_permissions method.
     """
-    public_actions = ['get_timeslots']
+    public_actions = ['get_timeslots', 'check_bulk_capacity']
     
     def get_permissions(self):
         """ set permissions to the allow any for the method that is connected from the client app stack
         """
         action = self.kwargs.get('action')
-        if action in ['get_timeslots']:
+        if action in self.public_actions:
             permission_classes = [AllowAny]
         else:
             permission_classes = [IsAuthenticated]
@@ -34,6 +86,10 @@ class AvailabilityView(APIView):
     """ Create the action handler to route the user to the appropriate view, given the action """
     action_handler = {
         'get_timeslots': 'get_timeslots',
+        'check_bulk_capacity': 'check_bulk_capacity',
+        'get_availability': 'get_availability',
+        'create_availability': 'create_availability',
+        'get_busy_times': 'get_busy_times',
     }
 
     def get(self, request, *args, **kwargs):
@@ -102,12 +158,13 @@ class AvailabilityView(APIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             # Get detailers using three-step fallback: exact -> normalized -> 30km radius
+            # Only include detailers who have is_available=True (toggled on for work)
             detailers, _ = find_detailers_for_location(
                 country=country,
                 city=city,
                 latitude=latitude,
                 longitude=longitude,
-                is_available=None,
+                is_available=True,
             )
 
             if not detailers.exists():
@@ -116,50 +173,39 @@ class AvailabilityView(APIView):
                     "slots": []
                 }, status=status.HTTP_200_OK)
 
-            # Business hours: 6 AM to 9 PM (default if no availability set)
-            business_start = time(6, 0)  # 7:00 AM
-            business_end = time(21, 0)   # 9:00 PM
-            
-            # Travel time interval between jobs (30 minutes)
+            # Business hours: 6 AM to 9 PM. First bookable slot is 6:30 AM to allow 30 min drive to first appointment.
+            business_start = time(6, 0)
+            first_slot_start = time(6, 30)  # 30 min drive considered for first booking
+            business_end = time(21, 0)
             travel_interval = 30
-            
-            # Get detailers' availability for the target date
-            detailer_availability = Availability.objects.filter(
+
+            # Generate all possible slots for the day (first slot 6:30, then after each slot + travel_interval)
+            all_slots = self._generate_time_slots(
+                first_slot_start,
+                business_end,
+                service_duration,
+                travel_interval,
+            )
+
+            # Availability table stores when detailers are NOT available (off work). Subtract those windows.
+            detailer_unavailability = Availability.objects.filter(
                 detailer__in=detailers,
                 date=target_date,
-                is_available=True
-            ).select_related('detailer')
+            ).select_related("detailer")
 
-            # If no specific availability is set, use default business hours
-            if not detailer_availability.exists():
-                # Generate all possible time slots for the day using default business hours
-                all_slots = self._generate_time_slots(
-                    business_start, 
-                    business_end, 
-                    service_duration, 
-                    travel_interval
-                )
-            else:
-                # Use detailers' set availability times
-                all_slots = self._generate_slots_from_availability(
-                    detailer_availability,
-                    service_duration,
-                    travel_interval
-                )
-
-            # Get existing appointments for all detailers on the target date
             existing_jobs = Job.objects.filter(
                 primary_detailer__in=detailers,
                 appointment_date__date=target_date,
-                status__in=['accepted', 'in_progress', 'pending']
-            ).select_related('primary_detailer')
+                status__in=["accepted", "in_progress", "pending"],
+            ).select_related("primary_detailer")
 
-            # Calculate available slots by removing booked times
             available_slots = self._calculate_available_slots(
-                all_slots, 
-                existing_jobs, 
-                service_duration, 
-                travel_interval
+                all_slots,
+                existing_jobs,
+                service_duration,
+                travel_interval,
+                detailers=list(detailers),
+                detailer_unavailability=detailer_unavailability,
             )
 
             if not available_slots:
@@ -179,7 +225,255 @@ class AvailabilityView(APIView):
             return Response({
                 "error": f"Server error: {str(e)}"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
+
+    def check_bulk_capacity(self, request):
+        """
+        Check if there is enough aggregate detailer capacity for a bulk booking on a given date.
+        GET/POST params: date (YYYY-MM-DD), workload_minutes, service_duration (minutes per vehicle),
+                        country, city, optional latitude, longitude.
+        Returns booking options (morning/afternoon/fullday) with best_start_time, estimated_finish_time,
+        suggested_team_size when capacity >= workload_minutes.
+        """
+        try:
+            data = request.query_params if request.method == 'GET' else (request.data or {})
+            date_str = data.get('date')
+            workload_minutes = data.get('workload_minutes')
+            service_duration = data.get('service_duration')
+            country = (data.get('country') or '').strip()
+            city = (data.get('city') or '').strip()
+            latitude_str = data.get('latitude')
+            longitude_str = data.get('longitude')
+
+            if not date_str or not country or not city:
+                return Response({
+                    "error": "Missing required parameters: date, country, city"
+                }, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                workload_minutes = int(workload_minutes)
+            except (TypeError, ValueError):
+                return Response({
+                    "error": "workload_minutes must be an integer"
+                }, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                service_duration = int(service_duration) if service_duration is not None else 60
+            except (TypeError, ValueError):
+                service_duration = 60
+
+            try:
+                target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({
+                    "error": "Invalid date format. Use YYYY-MM-DD"
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            latitude = None
+            longitude = None
+            if latitude_str is not None and longitude_str is not None:
+                try:
+                    latitude = float(latitude_str)
+                    longitude = float(longitude_str)
+                except (TypeError, ValueError):
+                    pass
+
+            # "Too late for today" check: if selected date is today, ensure enough time until 9pm
+            business_end = time(21, 0)
+            today = timezone.now().date()
+            if target_date == today:
+                now_param = data.get('now')
+                if now_param:
+                    try:
+                        now_dt = datetime.fromisoformat(now_param.replace('Z', '+00:00'))
+                        if timezone.is_naive(now_dt):
+                            now_dt = timezone.make_aware(now_dt, timezone.get_current_timezone())
+                        now_dt = timezone.localtime(now_dt)
+                        now_minutes = now_dt.hour * 60 + now_dt.minute
+                    except (ValueError, TypeError):
+                        now_minutes = timezone.now().hour * 60 + timezone.now().minute
+                else:
+                    now_dt = timezone.now()
+                    now_minutes = now_dt.hour * 60 + now_dt.minute
+                business_end_min = 21 * 60
+                minutes_left = business_end_min - now_minutes
+                # Same-location bulk: one 30 min drive + workload
+                required_minutes = 30 + workload_minutes
+                if minutes_left < required_minutes:
+                    return Response({
+                        "error": "Too late for this volume today. Business closes at 9pm. Try fewer vehicles or another day.",
+                        "available": False,
+                        "options": [],
+                    }, status=status.HTTP_200_OK)
+
+            travel_interval = 30  # for existing jobs at other locations only
+            # Same-location bulk: no travel between jobs; slot = duration only
+            slot_length = service_duration
+
+            # Window boundaries (minutes from midnight for comparison)
+            business_start = time(6, 0)
+            business_end = time(21, 0)
+            morning_end = time(12, 0)
+            afternoon_end = time(18, 0)
+
+            detailers, _ = find_detailers_for_location(
+                country=country,
+                city=city,
+                latitude=latitude,
+                longitude=longitude,
+                is_available=True,
+            )
+            if not detailers.exists():
+                return Response({
+                    "error": "Not enough capacity on this date. Try another date or fewer vehicles.",
+                    "available": False,
+                    "options": [],
+                }, status=status.HTTP_200_OK)
+
+            # Availability table = when detailers are NOT available. Default = available (business hours).
+            detailer_unavailability = Availability.objects.filter(
+                detailer__in=detailers,
+                date=target_date,
+            ).select_related("detailer")
+
+            existing_jobs = Job.objects.filter(
+                primary_detailer__in=detailers,
+                appointment_date__date=target_date,
+                status__in=["accepted", "in_progress", "pending"],
+            ).select_related("primary_detailer", "service_type")
+
+            def minutes_since_midnight(t):
+                return t.hour * 60 + t.minute
+
+            def free_intervals_in_range(detailer_id, range_start, range_end):
+                """
+                Return list of (start_min, end_min) for contiguous free segments
+                in [range_start, range_end), in minutes from midnight.
+                """
+                start_min = minutes_since_midnight(range_start)
+                end_min = minutes_since_midnight(range_end)
+                blocked = []
+                unavails = detailer_unavailability.filter(detailer_id=detailer_id)
+                for u in unavails:
+                    u_start = minutes_since_midnight(u.start_time)
+                    u_end = minutes_since_midnight(u.end_time)
+                    overlap_start = max(u_start, start_min)
+                    overlap_end = min(u_end, end_min)
+                    if overlap_end > overlap_start:
+                        blocked.append((overlap_start, overlap_end))
+                jobs_for_detailer = existing_jobs.filter(primary_detailer_id=detailer_id)
+                for job in jobs_for_detailer:
+                    j_start = minutes_since_midnight(job.appointment_time)
+                    j_dur = getattr(job.service_type, "duration", 60) or 60
+                    # Block from 30 min before job (drive to appointment) until job end + 30 min (travel after)
+                    j_block_start = max(0, j_start - travel_interval)
+                    j_end = j_start + j_dur + travel_interval
+                    overlap_start = max(j_block_start, start_min)
+                    overlap_end = min(j_end, end_min)
+                    if overlap_end > overlap_start:
+                        blocked.append((overlap_start, overlap_end))
+                if not blocked:
+                    return [(start_min, end_min)] if start_min < end_min else []
+                blocked.sort(key=lambda x: x[0])
+                merged = [blocked[0]]
+                for a, b in blocked[1:]:
+                    if a <= merged[-1][1]:
+                        merged[-1] = (merged[-1][0], max(merged[-1][1], b))
+                    else:
+                        merged.append((a, b))
+                free = []
+                cur = start_min
+                for a, b in merged:
+                    if cur < a and cur < end_min:
+                        free.append((cur, min(a, end_min)))
+                    cur = max(cur, b)
+                if cur < end_min:
+                    free.append((cur, end_min))
+                return free
+
+            def max_contiguous_free_minutes_in_range(detailer_id, range_start, range_end):
+                """Longest contiguous free block for this detailer in the window."""
+                intervals = free_intervals_in_range(detailer_id, range_start, range_end)
+                return max((e - s for s, e in intervals), default=0)
+
+            # Build list of detailer ids (from queryset)
+            detailer_ids = list(detailers.values_list('id', flat=True))
+
+            windows_config = [
+                ('morning', business_start, morning_end),
+                ('afternoon', morning_end, afternoon_end),
+                ('fullday', business_start, business_end),
+            ]
+            options = []
+            for window_name, w_start, w_end in windows_config:
+                w_start_min = minutes_since_midnight(w_start)
+                w_end_min = minutes_since_midnight(w_end)
+                # Use max contiguous free minutes per detailer (bulk needs one contiguous block per detailer)
+                max_contiguous_per_detailer = [
+                    max_contiguous_free_minutes_in_range(did, w_start, w_end) for did in detailer_ids
+                ]
+                total_contiguous = sum(max_contiguous_per_detailer)
+                if total_contiguous < workload_minutes:
+                    continue
+                # Number of job slots we need (each vehicle = one job)
+                number_of_slots = (workload_minutes + service_duration - 1) // service_duration
+                if number_of_slots <= 0:
+                    number_of_slots = 1
+                # Slots per detailer = how many service_duration slots fit in their longest contiguous block
+                slots_per_detailer = [m // slot_length for m in max_contiguous_per_detailer]
+                slots_per_detailer.sort(reverse=True)
+                team_size = 0
+                slots_covered = 0
+                for s in slots_per_detailer:
+                    team_size += 1
+                    slots_covered += s
+                    if slots_covered >= number_of_slots:
+                        break
+                if slots_covered < number_of_slots:
+                    continue
+                # Window must fit the busiest detailer (30 min drive + their share of jobs)
+                jobs_per_busiest = (number_of_slots + team_size - 1) // team_size
+                required_window_minutes = 30 + jobs_per_busiest * service_duration
+                if (w_end_min - w_start_min) < required_window_minutes:
+                    continue
+                # Pick best_start/estimated_finish from the first contiguous block that fits (busiest detailer)
+                busiest_idx = max(range(len(detailer_ids)), key=lambda i: max_contiguous_per_detailer[i])
+                busiest_detailer_id = detailer_ids[busiest_idx]
+                intervals = free_intervals_in_range(busiest_detailer_id, w_start, w_end)
+                best_start_min = None
+                for seg_start, seg_end in intervals:
+                    if seg_end - seg_start >= required_window_minutes:
+                        best_start_min = seg_start + 30
+                        break
+                if best_start_min is None:
+                    continue
+                end_min = best_start_min + jobs_per_busiest * service_duration
+                end_min = min(end_min, w_end_min)
+                best_start_time = time(best_start_min // 60, best_start_min % 60).strftime('%H:%M')
+                estimated_finish_time = time(end_min // 60, end_min % 60).strftime('%H:%M')
+                options.append({
+                    "window": window_name,
+                    "best_start_time": best_start_time,
+                    "estimated_finish_time": estimated_finish_time,
+                    "suggested_team_size": team_size,
+                })
+
+            if not options:
+                return Response({
+                    "error": "Not enough capacity on this date. Try another date or fewer vehicles.",
+                    "available": False,
+                    "options": [],
+                }, status=status.HTTP_200_OK)
+
+            return Response({
+                "available": True,
+                "options": options,
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                "error": f"Server error: {str(e)}",
+                "available": False,
+                "options": [],
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def _generate_time_slots(self, start_time, end_time, service_duration, travel_interval):
         slots = []
@@ -239,99 +533,322 @@ class AvailabilityView(APIView):
         
         return unique_slots
 
-    def _calculate_available_slots(self, all_slots, existing_jobs, service_duration, travel_interval, is_express_service=False, detailers=None):
+
+    def _calculate_available_slots(
+        self,
+        all_slots,
+        existing_jobs,
+        service_duration,
+        travel_interval,
+        detailers=None,
+        detailer_unavailability=None,
+    ):
         """
-        Calculate available slots by removing booked times
-        
-        Args:
-            all_slots: List of all possible time slots
-            existing_jobs: QuerySet of existing jobs
-            service_duration: Service duration in minutes
-            travel_interval: Travel time interval in minutes
-            is_express_service: Boolean - if True, checks for 2 available detailers
-            detailers: QuerySet of available detailers (for express service check)
-            
-        Returns:
-            List of available time slots
+        Keep a slot if at least one detailer is free (no unavailability, no job) at that time.
         """
+        detailers = detailers or []
+        detailer_unavailability = list(detailer_unavailability or [])
+        unavail_by_detailer = {}
+        for u in detailer_unavailability:
+            did = u.detailer_id
+            if did not in unavail_by_detailer:
+                unavail_by_detailer[did] = []
+            unavail_by_detailer[did].append((u.start_time, u.end_time))
+
         available_slots = []
-        
         for slot in all_slots:
             slot_start = datetime.strptime(slot["start_time"], "%H:%M").time()
             slot_end = datetime.strptime(slot["end_time"], "%H:%M").time()
-            
-            # Check if this slot conflicts with any existing job
-            is_conflicting = False
-            
-            for job in existing_jobs:
-                job_start = job.appointment_time
-                
-                # Calculate job end time based on service duration
-                job_start_minutes = job_start.hour * 60 + job_start.minute
-                job_end_minutes = job_start_minutes + job.service_type.duration
-                job_end = time(job_end_minutes // 60, job_end_minutes % 60)
-                
-                # Add travel interval after job
-                travel_end_minutes = job_end_minutes + travel_interval
-                travel_end = time(travel_end_minutes // 60, travel_end_minutes % 60)
-                
-                # Check for overlap
-                # New slot starts before existing job ends + travel time
-                # AND new slot ends after existing job starts
-                if (slot_start < travel_end and slot_end > job_start):
-                    is_conflicting = True
+
+            for detailer in detailers:
+                did = detailer.pk
+                unavail_windows = unavail_by_detailer.get(did, [])
+                if any(slot_start < u_end and slot_end > u_start for u_start, u_end in unavail_windows):
+                    continue
+                detailer_jobs = existing_jobs.filter(primary_detailer_id=did)
+                in_job = False
+                for job in detailer_jobs:
+                    job_start = job.appointment_time
+                    js = job_start.hour * 60 + job_start.minute
+                    je = js + (job.service_type.duration or 0) + travel_interval
+                    job_end = time(je // 60, je % 60)
+                    if slot_start < job_end and slot_end > job_start:
+                        in_job = True
+                        break
+                if not in_job:
+                    available_slots.append({
+                        "start_time": slot["start_time"],
+                        "end_time": slot["end_time"],
+                        "is_available": True,
+                    })
                     break
-            
-            # For express service, check if at least 2 detailers are available at this time
-            if not is_conflicting and is_express_service and detailers:
-                # Count how many detailers are available for this slot
-                available_detailers_count = 0
-                for detailer in detailers:
-                    # Check if this detailer has any conflicting jobs at this time
-                    detailer_conflicts = existing_jobs.filter(
-                        primary_detailer=detailer,
-                        appointment_time__lte=slot_end,
-                    )
-                    has_conflict = False
-                    for conflict_job in detailer_conflicts:
-                        conflict_start = conflict_job.appointment_time
-                        conflict_start_minutes = conflict_start.hour * 60 + conflict_start.minute
-                        conflict_end_minutes = conflict_start_minutes + conflict_job.service_type.duration + travel_interval
-                        conflict_end = time(conflict_end_minutes // 60, conflict_end_minutes % 60)
-                        if (slot_start < conflict_end and slot_end > conflict_start):
-                            has_conflict = True
-                            break
-                    if not has_conflict:
-                        available_detailers_count += 1
-                
-                # For express service, need at least 2 detailers (but allow fallback to 1)
-                # We'll still show the slot even if only 1 is available (fallback behavior)
-                # The booking assignment logic will handle the actual assignment
-                if available_detailers_count < 1:
-                    is_conflicting = True
-            
-            if not is_conflicting:
-                # Create a clean slot object without detailer info for the response
-                clean_slot = {
-                    "start_time": slot["start_time"],
-                    "end_time": slot["end_time"],
-                    "is_available": True
-                }
-                available_slots.append(clean_slot)
-        
         return available_slots
     
 
-    def _get_detailer_availability(self, request):
-        """ The method is designed to get all of the detailers availability for a year
-           ARGs None
-           Returns:
-           - List of detailers availability for a year
-          """
-        pass
-
-    def _update_detailer_availability(self, request):
-        """ The method is designed to update the availability of a detailer
+    def get_availability(self, request):
         """
-        
-        pass
+        GET: Load the detailer's unavailability (when they're not available for work).
+        Calendar shows selected = unavailable (self-set or job). isBlockedByJob = job times (read-only).
+        """
+        try:
+            try:
+                detailer = Detailer.objects.get(user=request.user)
+            except Detailer.DoesNotExist:
+                return Response(
+                    {"error": "Detailer profile not found"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            today = timezone.now().date()
+            end_date = today + timedelta(days=365)
+            # All Availability rows for this detailer = when they're NOT available (unavailability)
+            rows = Availability.objects.filter(
+                detailer=detailer,
+                date__gte=today,
+                date__lte=end_date,
+            ).order_by("date", "start_time")
+
+            all_hours = [f"{h:02d}:00" for h in range(6, 21)]
+            date_to_unavailable_hours = {}
+            for r in rows:
+                d = r.date.isoformat()
+                if d not in date_to_unavailable_hours:
+                    date_to_unavailable_hours[d] = set()
+                start_min = r.start_time.hour * 60 + r.start_time.minute
+                end_min = r.end_time.hour * 60 + r.end_time.minute
+                for m in range(start_min, end_min, 60):
+                    hour_str = f"{m // 60:02d}:{m % 60:02d}"
+                    date_to_unavailable_hours[d].add(hour_str)
+
+            jobs = Job.objects.filter(
+                Q(primary_detailer=detailer) | Q(detailers=detailer),
+                appointment_date__date__gte=today,
+                appointment_date__date__lte=end_date,
+                status__in=["pending", "accepted", "in_progress"],
+            ).distinct().select_related("service_type")
+            date_to_job_hours = {}
+            for job in jobs:
+                d = job.appointment_date.date().isoformat()
+                if d not in date_to_job_hours:
+                    date_to_job_hours[d] = set()
+                start_min = job.appointment_time.hour * 60 + job.appointment_time.minute
+                end_min = start_min + (job.service_type.duration or 0)
+                date_to_job_hours[d] |= _range_to_hour_slots(start_min, end_min)
+
+            all_dates = sorted(
+                set(date_to_unavailable_hours.keys()) | set(date_to_job_hours.keys())
+            )
+            selected_dates = []
+            for d in all_dates:
+                unavailable_hours = date_to_unavailable_hours.get(d, set())
+                job_hours = date_to_job_hours.get(d, set())
+                time_slots = []
+                for h in all_hours:
+                    hour_num = int(h.split(":")[0])
+                    is_blocked_by_job = h in job_hours
+                    # Selected = unavailable (either self-set or job)
+                    is_selected = h in unavailable_hours or is_blocked_by_job
+                    time_slots.append({
+                        "id": f"{hour_num}-00",
+                        "time": h,
+                        "isSelected": is_selected,
+                        "isBlockedByJob": is_blocked_by_job,
+                    })
+                selected_dates.append({
+                    "date": d,
+                    "timeSlots": time_slots,
+                    "isSelected": True,
+                })
+
+            now = timezone.now()
+            return Response({
+                "selectedDates": selected_dates,
+                "currentMonth": now.strftime("%Y-%m"),
+                "currentYear": now.year,
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def get_busy_times(self, request):
+        """
+        GET: Return hour slots (HH:MM) for a single date when the detailer has a job.
+        Query param: date=YYYY-MM-DD.
+        Response: { "date": "YYYY-MM-DD", "busySlots": ["09:00", "10:00", ...] }
+        Used when the detailer selects a date so the app can block those slots (read-only).
+        """
+        try:
+            try:
+                detailer = Detailer.objects.get(user=request.user)
+            except Detailer.DoesNotExist:
+                return Response(
+                    {"error": "Detailer profile not found"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            date_str = request.query_params.get("date")
+            if not date_str:
+                return Response(
+                    {"error": "Missing required parameter: date (YYYY-MM-DD)"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except ValueError:
+                return Response(
+                    {"error": "Invalid date format. Use YYYY-MM-DD"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            today = timezone.now().date()
+            if target_date < today:
+                return Response(
+                    {"date": date_str, "busySlots": []},
+                    status=status.HTTP_200_OK,
+                )
+            jobs = Job.objects.filter(
+                Q(primary_detailer=detailer) | Q(detailers=detailer),
+                appointment_date__date=target_date,
+                status__in=["pending", "accepted", "in_progress"],
+            ).distinct().select_related("service_type")
+            busy = set()
+            for job in jobs:
+                start_min = job.appointment_time.hour * 60 + job.appointment_time.minute
+                end_min = start_min + (job.service_type.duration or 0)
+                busy |= _range_to_hour_slots(start_min, end_min)
+            # Include existing unavailability so those times are not returned as available to mark
+            availability_rows = Availability.objects.filter(
+                detailer=detailer,
+                date=target_date,
+            )
+            for row in availability_rows:
+                start_min = row.start_time.hour * 60 + row.start_time.minute
+                end_min = row.end_time.hour * 60 + row.end_time.minute
+                busy |= _range_to_hour_slots(start_min, end_min)
+            busy_slots = sorted(busy)
+            return Response(
+                {"date": date_str, "busySlots": busy_slots},
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def create_availability(self, request):
+        """
+        POST: Save when the detailer is NOT available (unavailability).
+        Body: { "selectedDates": [ { "date": "YYYY-MM-DD", "timeSlots": ["06:00", ...] } ] }
+        Selected times = when they're off. Replaces unavailability for the given dates.
+        """
+        try:
+            try:
+                detailer = Detailer.objects.get(user=request.user)
+            except Detailer.DoesNotExist:
+                return Response(
+                    {"error": "Detailer profile not found"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            data = request.data or {}
+            selected_dates = data.get("selectedDates")
+            if selected_dates is None:
+                return Response(
+                    {"error": "selectedDates is required"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            today = timezone.now().date()
+            valid_hours = {f"{h:02d}:00" for h in range(6, 21)}
+
+            if len(selected_dates) == 0:
+                Availability.objects.filter(
+                    detailer=detailer,
+                    date__gte=today,
+                ).delete()
+                return Response({
+                    "selectedDates": [],
+                    "currentMonth": today.strftime("%Y-%m"),
+                    "currentYear": today.year,
+                }, status=status.HTTP_200_OK)
+
+            dates_to_update = []
+            for item in selected_dates:
+                date_str = item.get("date")
+                time_slots = item.get("timeSlots") or []
+                if not date_str:
+                    continue
+                try:
+                    d = datetime.strptime(date_str, "%Y-%m-%d").date()
+                except (ValueError, TypeError):
+                    return Response(
+                        {"error": f"Invalid date format: {date_str}. Use YYYY-MM-DD"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                if d < today:
+                    continue
+                times = []
+                for ts in time_slots:
+                    if isinstance(ts, dict):
+                        t = ts.get("time")
+                        if ts.get("isSelected") and t and t in valid_hours:
+                            times.append(t)
+                    elif isinstance(ts, str) and ts in valid_hours:
+                        times.append(ts)
+                dates_to_update.append((d, times))
+
+            def _job_hours_on_date(detailer_obj, date_obj):
+                out = set()
+                jobs = Job.objects.filter(
+                    Q(primary_detailer=detailer_obj) | Q(detailers=detailer_obj),
+                    appointment_date__date=date_obj,
+                    status__in=["pending", "accepted", "in_progress"],
+                ).distinct().select_related("service_type")
+                for job in jobs:
+                    start_min = job.appointment_time.hour * 60 + job.appointment_time.minute
+                    end_min = start_min + (job.service_type.duration or 0)
+                    out |= _range_to_hour_slots(start_min, end_min)
+                return out
+
+            for d, time_strings in dates_to_update:
+                job_hours = _job_hours_on_date(detailer, d)
+                overlapping = [t for t in time_strings if t in job_hours]
+                if overlapping:
+                    sample = sorted(overlapping)[:3]
+                    sample_str = ", ".join(sample)
+                    return Response(
+                        {
+                            "error": (
+                                "Cannot set unavailability for times that have an existing appointment "
+                                f"(e.g. {sample_str}). Remove those times and try again."
+                            )
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            for d, _ in dates_to_update:
+                Availability.objects.filter(detailer=detailer, date=d).delete()
+
+            for d, time_strings in dates_to_update:
+                job_hours = _job_hours_on_date(detailer, d)
+                unavail_times = [t for t in time_strings if t not in job_hours]
+                for start_t, end_t in _merge_times_to_ranges(unavail_times):
+                    Availability.objects.create(
+                        detailer=detailer,
+                        date=d,
+                        start_time=start_t,
+                        end_time=end_t,
+                        is_available=False,
+                    )
+
+            now = timezone.now()
+            return Response({
+                "selectedDates": [{"date": d.isoformat(), "timeSlots": tlist} for d, tlist in dates_to_update],
+                "currentMonth": now.strftime("%Y-%m"),
+                "currentYear": now.year,
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

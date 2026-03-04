@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Sum, Avg, Q
 from main.models import Job, Review, Earning, Detailer
+from main.utils.redis_geo import update_detailer_location
 
 
 class ProfileView(APIView):
@@ -14,10 +15,18 @@ class ProfileView(APIView):
         "update_push_notification_token": "_update_push_notification_token",
         "update_email_notification_token": "_update_email_notification_token",
         "update_marketing_email_token": "_update_marketing_email_token",
-        'get_user_profile': '_get_user_profile',
+        "get_user_profile": "_get_user_profile",
+        "update_location": "_update_location",
     }
 
     def get(self, request, *args, **kwargs):
+        action = kwargs.get('action')
+        if action not in self.action_handler:
+            return Response({"error": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
+        handler = getattr(self, self.action_handler[action])
+        return handler(request)
+
+    def post(self, request, *args, **kwargs):
         action = kwargs.get('action')
         if action not in self.action_handler:
             return Response({"error": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
@@ -138,4 +147,47 @@ class ProfileView(APIView):
             
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def _update_location(self, request):
+        """Update detailer's current location (DB + Redis GEO). Authenticated detailer only."""
+        try:
+            latitude = request.data.get('latitude')
+            longitude = request.data.get('longitude')
+            if latitude is None or longitude is None:
+                return Response(
+                    {'error': 'latitude and longitude are required'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                lat_f = float(latitude)
+                lng_f = float(longitude)
+            except (TypeError, ValueError):
+                return Response(
+                    {'error': 'latitude and longitude must be valid numbers'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                detailer = Detailer.objects.get(user=request.user)
+            except Detailer.DoesNotExist:
+                return Response(
+                    {'error': 'Detailer profile not found'},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            detailer.latitude = lat_f
+            detailer.longitude = lng_f
+            detailer.save(update_fields=['latitude', 'longitude'])
+            try:
+                update_detailer_location(detailer.id, lng_f, lat_f)
+            except Exception as e:
+                # Log but do not fail the request; DB is updated
+                import logging
+                logging.getLogger(__name__).warning(
+                    "Redis GEO update failed for detailer %s: %s", detailer.id, e
+                )
+            return Response(
+                {'success': True, 'message': 'Location updated successfully'},
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

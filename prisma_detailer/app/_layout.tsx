@@ -11,33 +11,39 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SnackbarProvider } from "./contexts/SnackbarContext";
 import { useUpdateMonitor } from "@/hooks/useUpdateMonitor";
 
-export default function RootLayout() {
+function AppContent() {
   const backgroundColor = useThemeColor({}, "background");
-
   useUpdateMonitor();
+  return (
+    <>
+      <StatusBar barStyle="dark-content" backgroundColor={backgroundColor} />
+      <SnackbarProvider>
+        <AuthContextProvider>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen
+                name="main"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="onboarding"
+                options={{ headerShown: false }}
+              />
+            </Stack>
+          </GestureHandlerRootView>
+        </AuthContextProvider>
+      </SnackbarProvider>
+    </>
+  );
+}
 
+export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle="dark-content" backgroundColor={backgroundColor} />
       <Provider store={store}>
         <ThemeProvider>
           <AlertProvider>
-            <SnackbarProvider>
-              <AuthContextProvider>
-                <GestureHandlerRootView style={{ flex: 1 }}>
-                  <Stack screenOptions={{ headerShown: false }}>
-                    <Stack.Screen
-                      name="main"
-                      options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                      name="onboarding"
-                      options={{ headerShown: false }}
-                    />
-                  </Stack>
-                </GestureHandlerRootView>
-              </AuthContextProvider>
-            </SnackbarProvider>
+            <AppContent />
           </AlertProvider>
         </ThemeProvider>
       </Provider>

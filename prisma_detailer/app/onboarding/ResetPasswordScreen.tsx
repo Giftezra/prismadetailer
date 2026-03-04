@@ -3,7 +3,6 @@ import {
   StyleSheet,
   View,
   ScrollView,
-  Alert,
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
@@ -18,6 +17,7 @@ import {
   useResetPasswordMutation,
   useValidateResetTokenMutation,
 } from "@/app/store/api/authApi";
+import { useAlertContext } from "@/app/contexts/AlertContext";
 
 const ResetPasswordScreen = () => {
   const { token } = useLocalSearchParams();
@@ -28,6 +28,7 @@ const ResetPasswordScreen = () => {
   const [isValidatingToken, setIsValidatingToken] = useState(true);
   const [tokenValid, setTokenValid] = useState(false);
   const [userEmail, setUserEmail] = useState("");
+  const { setAlertConfig } = useAlertContext();
 
   // Theme colors
   const backgroundColor = useThemeColor({}, "background");
@@ -43,12 +44,13 @@ const ResetPasswordScreen = () => {
   useEffect(() => {
     const validateToken = async () => {
       if (!token) {
-        Alert.alert("Invalid Link", "This password reset link is invalid.", [
-          {
-            text: "OK",
-            onPress: () => router.replace("/onboarding/SigninScreen"),
-          },
-        ]);
+        setAlertConfig({
+          isVisible: true,
+          title: "Invalid Link",
+          message: "This password reset link is invalid.",
+          type: "error",
+          onConfirm: () => router.replace("/onboarding/SigninScreen"),
+        });
         return;
       }
 
@@ -71,12 +73,13 @@ const ResetPasswordScreen = () => {
           errorMessage = error.data.error;
         }
 
-        Alert.alert("Invalid Link", errorMessage, [
-          {
-            text: "OK",
-            onPress: () => router.replace("/onboarding/SigninScreen"),
-          },
-        ]);
+        setAlertConfig({
+          isVisible: true,
+          title: "Invalid Link",
+          message: errorMessage,
+          type: "error",
+          onConfirm: () => router.replace("/onboarding/SigninScreen"),
+        });
       } finally {
         setIsValidatingToken(false);
       }
@@ -103,23 +106,47 @@ const ResetPasswordScreen = () => {
 
   const handleResetPassword = async () => {
     if (!password.trim()) {
-      Alert.alert("Error", "Please enter a new password");
+      setAlertConfig({
+        isVisible: true,
+        title: "Error",
+        message: "Please enter a new password",
+        type: "error",
+        onConfirm: () => {},
+      });
       return;
     }
 
     if (!confirmPassword.trim()) {
-      Alert.alert("Error", "Please confirm your password");
+      setAlertConfig({
+        isVisible: true,
+        title: "Error",
+        message: "Please confirm your password",
+        type: "error",
+        onConfirm: () => {},
+      });
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match");
+      setAlertConfig({
+        isVisible: true,
+        title: "Error",
+        message: "Passwords do not match",
+        type: "error",
+        onConfirm: () => {},
+      });
       return;
     }
 
     const passwordError = validatePassword(password);
     if (passwordError) {
-      Alert.alert("Error", passwordError);
+      setAlertConfig({
+        isVisible: true,
+        title: "Error",
+        message: passwordError,
+        type: "error",
+        onConfirm: () => {},
+      });
       return;
     }
 
@@ -129,22 +156,25 @@ const ResetPasswordScreen = () => {
         password: password.trim(),
       }).unwrap();
 
-      Alert.alert(
-        "Success",
-        "Your password has been reset successfully. You are now logged in.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              // Navigate to dashboard or main app
-              router.replace("/main/(tabs)/dashboard/DashboardScreen");
-            },
-          },
-        ]
-      );
+      setAlertConfig({
+        isVisible: true,
+        title: "Success",
+        message:
+          "Your password has been reset successfully. You are now logged in.",
+        type: "success",
+        onConfirm: () => {
+          router.replace("/main/(tabs)/dashboard/DashboardScreen");
+        },
+      });
     } catch (error: any) {
       console.error("Password reset error:", error);
-      Alert.alert("Error", error.data?.error || "Failed to reset password");
+      setAlertConfig({
+        isVisible: true,
+        title: "Error",
+        message: error.data?.error || "Failed to reset password",
+        type: "error",
+        onConfirm: () => {},
+      });
     }
   };
 

@@ -1,10 +1,10 @@
 import React from "react";
 import {
   View,
-  Text,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
@@ -13,15 +13,20 @@ import { useColorScheme } from "../../../../hooks/useColorScheme";
 import { AvailabilityDate } from "../../../app-hooks/useAvailability";
 import StyledText from "@/app/components/helpers/StyledText";
 
-interface AvailabilitySummaryProps {
+export interface AvailabilitySummaryProps {
   selectedDates: AvailabilityDate[];
   onClearAll: () => void;
+  onSave?: () => void | Promise<void>;
+  isSaving?: boolean;
 }
 
-export const AvailabilitySummary: React.FC<AvailabilitySummaryProps> = ({
-  selectedDates,
-  onClearAll,
-}) => {
+export const AvailabilitySummary: React.FC<AvailabilitySummaryProps> = (props) => {
+  const {
+    selectedDates,
+    onClearAll,
+    onSave,
+    isSaving = false,
+  } = props;
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? "light"];
 
@@ -39,7 +44,7 @@ export const AvailabilitySummary: React.FC<AvailabilitySummaryProps> = ({
     const selectedSlots = timeSlots
       .filter((slot) => slot.isSelected)
       .map((slot) => slot.time);
-    if (selectedSlots.length === 0) return "No times selected";
+    if (selectedSlots.length === 0) return "No times marked unavailable";
     if (selectedSlots.length <= 3) return selectedSlots.join(", ");
     return `${selectedSlots.slice(0, 3).join(", ")} +${
       selectedSlots.length - 3
@@ -51,11 +56,23 @@ export const AvailabilitySummary: React.FC<AvailabilitySummaryProps> = ({
       <View style={[styles.container, { backgroundColor: colors.cards }]}>
         <View style={styles.emptyState}>
           <Ionicons name="calendar-outline" size={48} color={colors.icons} />
-          <StyledText variant="titleMedium">No dates selected</StyledText>
+          <StyledText variant="titleMedium">No unavailability set</StyledText>
           <StyledText variant="bodySmall">
-            Select dates from the calendar above to set your availability
+            Select dates and times above when you won't be available for work
           </StyledText>
         </View>
+        {onSave && (
+          <TouchableOpacity
+            style={[styles.saveButton, { backgroundColor: colors.borders }]}
+            onPress={onSave}
+            disabled
+          >
+            <Ionicons name="save-outline" size={18} color={colors.text} />
+            <StyledText variant="bodySmall" style={[styles.saveButtonText, { color: colors.text }]}>
+              Save
+            </StyledText>
+          </TouchableOpacity>
+        )}
       </View>
     );
   }
@@ -66,7 +83,7 @@ export const AvailabilitySummary: React.FC<AvailabilitySummaryProps> = ({
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-          <StyledText variant="titleMedium">Selected Availability</StyledText>
+          <StyledText variant="titleMedium">When I'm not available</StyledText>
         </View>
         <TouchableOpacity
           style={[styles.clearButton, { backgroundColor: colors.error }]}
@@ -111,26 +128,28 @@ export const AvailabilitySummary: React.FC<AvailabilitySummaryProps> = ({
         ))}
       </ScrollView>
 
-      {/* Console log button for debugging */}
-      <TouchableOpacity
-        style={[
-          styles.debugButton,
-          { backgroundColor: colors.secondaryButton },
-        ]}
-        onPress={() => {
-          // AVAILABILITY SUMMARY
-          selectedDates.forEach((date) => {
-            const selectedTimes = date.timeSlots
-              .filter((slot) => slot.isSelected)
-              .map((slot) => slot.time);
-            // Log date and selected times
-          });
-          // End availability summary
-        }}
-      >
-        <Ionicons name="code-outline" size={16} color={colors.buttonText} />
-        <StyledText variant="bodySmall">Log to Console</StyledText>
-      </TouchableOpacity>
+      {/* Save button */}
+      {onSave && (
+        <TouchableOpacity
+          style={[
+            styles.saveButton,
+            { backgroundColor: colors.primary },
+          ]}
+          onPress={onSave}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <Ionicons name="save-outline" size={18} color="#fff" />
+              <StyledText variant="bodySmall" style={styles.saveButtonText}>
+                Save
+              </StyledText>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -222,6 +241,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 4,
   },
+  saveButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  saveButtonText: {
+    color: "#fff",
+  },
   dateText: {
     fontSize: 14,
     fontWeight: "600",
@@ -230,18 +261,5 @@ const styles = StyleSheet.create({
   timeSlotsText: {
     fontSize: 12,
     marginLeft: 24,
-  },
-  debugButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 16,
-  },
-  debugButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginLeft: 8,
   },
 });

@@ -35,6 +35,7 @@ class UserManager(BaseUserManager):
     
 
 class User(AbstractUser):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
@@ -75,6 +76,7 @@ class User(AbstractUser):
 # Detailer
 # -------------------------------
 class Detailer(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE )
     rating = models.FloatField(default=0, blank=True, null=True)
     address = models.CharField(max_length=120, blank=True, null=True)
@@ -156,6 +158,7 @@ class Detailer(models.Model):
 # Service Type
 # -------------------------------
 class ServiceType(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=120)  # e.g. "Full Interior Clean"
     description = models.JSONField(blank=True, null=True, default=dict)
     duration = models.IntegerField(default=0)  # in minutes
@@ -169,6 +172,7 @@ class ServiceType(models.Model):
 # Availability
 # -------------------------------
 class TimeSlot(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     detailer = models.ForeignKey(Detailer, on_delete=models.CASCADE)
     date = models.DateField()
     start_time = models.TimeField()
@@ -184,6 +188,7 @@ class TimeSlot(models.Model):
         return f'{self.detailer.user.get_full_name()} - {self.date} - {self.start_time} - {self.end_time}'
 
 class Addon(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=120)
 
     def __str__(self):
@@ -206,7 +211,7 @@ class Job(models.Model):
         ('platinum', 'Platinum'),
     ]
 
-    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     service_type = models.ForeignKey(ServiceType, on_delete=models.CASCADE)
 
     booking_reference = models.CharField(max_length=120, unique=True)
@@ -316,6 +321,7 @@ class JobActivityLog(models.Model):
         ('active', 'Active Cleaning'),       # $15/hour
     ]
     
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='activity_logs')
     detailer = models.ForeignKey(Detailer, on_delete=models.CASCADE)
     activity_state = models.CharField(max_length=20, choices=ACTIVITY_STATES)
@@ -347,7 +353,8 @@ class JobActivityLog(models.Model):
         delta = end - self.start_time
         hours = delta.total_seconds() / 3600
         self.hours_worked = Decimal(str(round(hours, 2)))
-        self.amount_earned = self.hours_worked * self.rate_applied
+        rate = self.rate_applied if isinstance(self.rate_applied, Decimal) else Decimal(str(self.rate_applied or 0))
+        self.amount_earned = self.hours_worked * rate
         return self.hours_worked, self.amount_earned
     
     def __str__(self):
@@ -382,6 +389,7 @@ class JobImage(models.Model):
         ('exterior', 'Exterior'),
     ]
     
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='images')
     image_type = models.CharField(max_length=10, choices=IMAGE_TYPE_CHOICES)
     segment = models.CharField(max_length=10, choices=SEGMENT_CHOICES, default='exterior')
@@ -435,6 +443,7 @@ class JobFleetMaintenance(models.Model):
         ('not_working', 'Not Working'),
     ]
     
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     job = models.OneToOneField(Job, on_delete=models.CASCADE, related_name='fleet_maintenance')
     tire_tread_depth = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="Tire tread depth in mm")
     tire_condition = models.TextField(blank=True, null=True, help_text="Notes about tire condition")
@@ -468,6 +477,7 @@ class Earning(models.Model):
         ("paid", "Paid"),
     ]
 
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     detailer = models.ForeignKey(Detailer, on_delete=models.CASCADE, related_name="earnings")
     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="earnings")
     gross_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -495,6 +505,10 @@ class Earning(models.Model):
         from decimal import Decimal
         from django.db.models import Sum
         
+        # Coerce rates to Decimal (defaults from model can be float in memory before refresh)
+        rate_active = self.hourly_rate_active if isinstance(self.hourly_rate_active, Decimal) else Decimal(str(self.hourly_rate_active if self.hourly_rate_active is not None else 15))
+        rate_inactive = self.hourly_rate_inactive if isinstance(self.hourly_rate_inactive, Decimal) else Decimal(str(self.hourly_rate_inactive if self.hourly_rate_inactive is not None else 9))
+        
         # Get all activity logs for this job and detailer
         activity_logs = self.job.activity_logs.filter(detailer=self.detailer)
         
@@ -510,7 +524,7 @@ class Earning(models.Model):
         
         self.total_active_hours = total_active_hours
         self.total_inactive_hours = total_inactive_hours
-        self.hourly_earnings = (total_active_hours * self.hourly_rate_active) + (total_inactive_hours * self.hourly_rate_inactive)
+        self.hourly_earnings = (total_active_hours * rate_active) + (total_inactive_hours * rate_inactive)
         self.net_amount = self.hourly_earnings
         return self.hourly_earnings
 
@@ -522,6 +536,7 @@ class Earning(models.Model):
 
 """ Defines the account neccessary where the users earnings will be paid into """
 class BankAccount(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     detailer = models.ForeignKey(Detailer, on_delete=models.CASCADE)
     account_number = models.CharField(max_length=20)
     account_name = models.CharField(max_length=100)
@@ -541,6 +556,7 @@ class BankAccount(models.Model):
 # Review
 # -------------------------------
 class Review(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     job = models.OneToOneField(Job, on_delete=models.CASCADE)
     detailer = models.ForeignKey(Detailer, on_delete=models.CASCADE)
     rating = models.DecimalField(max_digits=3, decimal_places=2)
@@ -552,6 +568,7 @@ class Review(models.Model):
     
 
 class Availability(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     detailer = models.ForeignKey(Detailer, on_delete=models.CASCADE, related_name="availability")
     date = models.DateField()
     start_time = models.TimeField()
@@ -564,6 +581,7 @@ class Availability(models.Model):
 # Training Records
 # -------------------------------
 class TrainingRecord(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     detailer = models.ForeignKey(Detailer, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     status = models.CharField(max_length=20, choices=[("pending", "Pending"), ("completed", "Completed")], default="pending")
@@ -587,6 +605,7 @@ class PayoutHistory(models.Model):
         ("scheduled", "Scheduled")
     ]
     
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     detailer = models.ForeignKey(Detailer, on_delete=models.CASCADE, related_name="payout_history")
     bank_account = models.ForeignKey(BankAccount, on_delete=models.CASCADE)
     payout_amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -658,6 +677,7 @@ class Notification(models.Model):
         ('info', 'Info'),
     ]
 
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     message = models.TextField()
@@ -674,6 +694,7 @@ class Notification(models.Model):
 
 
 class TermsAndConditions(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     version = models.CharField(max_length=20, unique=True)
     content = models.TextField()
     last_updated = models.DateTimeField(auto_now=True)
@@ -682,6 +703,7 @@ class TermsAndConditions(models.Model):
         return f"Terms and Conditions - {self.version}"
 
 class PasswordResetToken(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     token = models.CharField(max_length=255, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)

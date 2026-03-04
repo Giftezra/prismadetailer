@@ -41,6 +41,8 @@ class AuthenticationView(APIView):
         pass
         try:
             credentials = request.data.get('credentials')
+
+            print ("credentials", credentials)
             if not credentials:
                 return Response({'error': 'Credentials are required'}, status=status.HTTP_400_BAD_REQUEST)
             

@@ -1110,3 +1110,41 @@ ERROR 2026-02-16 01:38:40,630 dashboard 171 131993060763328 Error calculating co
 ERROR 2026-02-16 01:38:40,785 dashboard 171 131993060763328 Error calculating completed jobs this month: Cannot resolve keyword 'detailer' into field. Choices are: activity_logs, addons, address, appointment_date, appointment_time, booking_reference, city, client_name, client_phone, country, created_at, detailers, duration, earnings, fleet_maintenance, id, images, latitude, longitude, loyalty_benefits, loyalty_tier, owner_note, post_code, primary_detailer, primary_detailer_id, rating, review, service_type, service_type_id, status, total_amount, updated_at, valet_type, vehicle_color, vehicle_make, vehicle_model, vehicle_registration, vehicle_year
 ERROR 2026-02-16 01:38:40,869 dashboard 171 131993060763328 Error calculating pending jobs count: Cannot resolve keyword 'detailer' into field. Choices are: activity_logs, addons, address, appointment_date, appointment_time, booking_reference, city, client_name, client_phone, country, created_at, detailers, duration, earnings, fleet_maintenance, id, images, latitude, longitude, loyalty_benefits, loyalty_tier, owner_note, post_code, primary_detailer, primary_detailer_id, rating, review, service_type, service_type_id, status, total_amount, updated_at, valet_type, vehicle_color, vehicle_make, vehicle_model, vehicle_registration, vehicle_year
 ERROR 2026-02-16 01:38:41,289 dashboard 171 131993060763328 Error calculating ratings: Cannot resolve keyword 'detailer' into field. Choices are: activity_logs, addons, address, appointment_date, appointment_time, booking_reference, city, client_name, client_phone, country, created_at, detailers, duration, earnings, fleet_maintenance, id, images, latitude, longitude, loyalty_benefits, loyalty_tier, owner_note, post_code, primary_detailer, primary_detailer_id, rating, review, service_type, service_type_id, status, total_amount, updated_at, valet_type, vehicle_color, vehicle_make, vehicle_model, vehicle_registration, vehicle_year
+ERROR 2026-02-23 14:45:03,331 log 63 137720231864000 Internal Server Error: /api/v1/profile/update_location/
+ERROR 2026-02-23 14:45:03,336 runserver 63 137720395990720 HTTP PATCH /api/v1/profile/update_location/ 500 [0.34, 172.18.0.10:36472]
+ERROR 2026-02-23 14:54:16,854 log 63 137719736956608 Internal Server Error: /api/v1/profile/update_location/
+ERROR 2026-02-23 14:54:16,855 runserver 63 137720395990720 HTTP PATCH /api/v1/profile/update_location/ 500 [0.04, 172.18.0.10:52428]
+ERROR 2026-02-23 15:15:26,727 log 129 123917725333184 Internal Server Error: /api/v1/profile/update_location/
+ERROR 2026-02-23 15:15:26,729 runserver 129 123917860480704 HTTP PATCH /api/v1/profile/update_location/ 500 [0.03, 172.18.0.10:58028]
+ERROR 2026-02-23 15:23:02,808 log 129 123917725333184 Internal Server Error: /api/v1/profile/update_location/
+ERROR 2026-02-23 15:23:02,810 runserver 129 123917860480704 HTTP PATCH /api/v1/profile/update_location/ 500 [0.04, 172.18.0.10:40890]
+ERROR 2026-02-23 15:31:46,053 log 129 123917691762368 Internal Server Error: /api/v1/profile/update_location/
+ERROR 2026-02-23 15:31:46,055 runserver 129 123917860480704 HTTP PATCH /api/v1/profile/update_location/ 500 [0.04, 172.18.0.10:58554]
+ERROR 2026-02-23 15:45:12,764 log 129 123917725333184 Internal Server Error: /api/v1/profile/update_location/
+ERROR 2026-02-23 15:45:12,766 runserver 129 123917860480704 HTTP PATCH /api/v1/profile/update_location/ 500 [0.04, 172.18.0.10:57056]
+ERROR 2026-02-23 15:56:50,172 log 208 124702253115072 Internal Server Error: /api/v1/profile/update_location/
+ERROR 2026-02-23 15:56:50,174 runserver 208 124702387218112 HTTP PATCH /api/v1/profile/update_location/ 500 [0.04, 172.18.0.10:49294]
+ERROR 2026-02-23 16:13:29,711 log 282 132279422678720 Internal Server Error: /api/v1/profile/update_location/
+ERROR 2026-02-23 16:13:29,714 runserver 282 132280080340672 HTTP PATCH /api/v1/profile/update_location/ 500 [0.07, 172.18.0.10:43774]
+ERROR 2026-02-23 16:16:17,636 log 282 132279921784512 Internal Server Error: /api/v1/profile/update_location/
+ERROR 2026-02-23 16:16:17,637 runserver 282 132280080340672 HTTP PATCH /api/v1/profile/update_location/ 500 [0.04, 172.18.0.10:33824]
+ERROR 2026-02-23 16:21:09,663 log 282 132279913391808 Internal Server Error: /api/v1/profile/update_location/
+ERROR 2026-02-23 16:21:09,664 runserver 282 132280080340672 HTTP PATCH /api/v1/profile/update_location/ 500 [0.03, 172.18.0.10:57066]
+ERROR 2026-02-23 16:42:13,052 log 427 130717925238464 Internal Server Error: /api/v1/profile/update_location/
+ERROR 2026-02-23 16:42:13,054 runserver 427 130718060218048 HTTP PATCH /api/v1/profile/update_location/ 500 [0.06, 172.18.0.10:50560]
+ERROR 2026-02-23 16:42:33,919 log 427 130717925238464 Internal Server Error: /api/v1/profile/update_location/
+ERROR 2026-02-23 16:42:33,921 runserver 427 130718060218048 HTTP PATCH /api/v1/profile/update_location/ 500 [0.06, 172.18.0.10:38770]
+ERROR 2026-02-23 16:52:28,914 log 503 131703427299008 Internal Server Error: /api/v1/profile/update_location/
+ERROR 2026-02-23 16:52:28,916 runserver 503 131703563560640 HTTP PATCH /api/v1/profile/update_location/ 500 [0.09, 172.18.0.10:53484]
+ERROR 2026-02-23 16:54:10,097 log 503 131703427299008 Internal Server Error: /api/v1/profile/update_location/
+ERROR 2026-02-23 16:54:10,099 runserver 503 131703563560640 HTTP PATCH /api/v1/profile/update_location/ 500 [0.06, 172.18.0.10:50098]
+ERROR 2026-02-23 17:04:11,757 log 531 137800057874112 Internal Server Error: /api/v1/profile/update_location/
+ERROR 2026-02-23 17:04:11,761 runserver 531 137800195192512 HTTP PATCH /api/v1/profile/update_location/ 500 [0.10, 172.18.0.10:37066]
+ERROR 2026-02-24 23:08:53,738 log 769 128958540543680 Internal Server Error: /api/v1/onboard/create_new_user/
+ERROR 2026-02-24 23:08:53,740 runserver 769 128958674220736 HTTP POST /api/v1/onboard/create_new_user/ 500 [0.15, 172.18.0.10:59134]
+ERROR 2026-02-24 23:10:11,607 log 769 128958540543680 Internal Server Error: /api/v1/onboard/create_new_user/
+ERROR 2026-02-24 23:10:11,609 runserver 769 128958674220736 HTTP POST /api/v1/onboard/create_new_user/ 500 [0.15, 172.18.0.10:38338]
+ERROR 2026-02-24 23:11:05,810 log 791 123903777171136 Internal Server Error: /api/v1/onboard/create_new_user/
+ERROR 2026-02-24 23:11:05,812 runserver 791 123903838480064 HTTP POST /api/v1/onboard/create_new_user/ 500 [0.29, 172.18.0.10:50466]
+ERROR 2026-02-24 23:17:42,287 log 809 136937683805888 Internal Server Error: /api/v1/onboard/create_new_user/
+ERROR 2026-02-24 23:17:42,291 runserver 809 136937817962176 HTTP POST /api/v1/onboard/create_new_user/ 500 [0.37, 172.18.0.10:45206]

@@ -82,9 +82,9 @@
       "typedRoutes": true
     },
     "extra": {
-      "detailer_app_url":"https://0c60-2a02-8084-c80-ea80-c1fc-2938-23f4-4da1.ngrok-free.app/detailer",  
-      "customer_app_url":"https://0c60-2a02-8084-c80-ea80-c1fc-2938-23f4-4da1.ngrok-free.app/client", 
-      "websockets_url":"wss://0c60-2a02-8084-c80-ea80-c1fc-2938-23f4-4da1.ngrok-free.app/ws/detailer/",   
+      "detailer_app_url":"https://157b-2a02-8084-c80-ea80-2438-8f1b-b2df-319f.ngrok-free.app/detailer",  
+      "customer_app_url":"https://157b-2a02-8084-c80-ea80-2438-8f1b-b2df-319f.ngrok-free.app/client", 
+      "websockets_url":"wss://detailer.prismavalet.com/ws/detailer/",    
       "googoleApiKeys":"AIzaSyAW00mf-OWgmU_lQ2yLiy3RLWkAVpIdE0U",
       "router": {},
       "eas": {

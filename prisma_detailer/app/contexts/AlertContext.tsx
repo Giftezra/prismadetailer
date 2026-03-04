@@ -47,10 +47,16 @@ export const AlertProvider = ({ children }: { children: React.ReactNode }) => {
         message={alertConfig?.message || ""}
         type={alertConfig?.type || "error"}
         {...(alertConfig?.onClose && {
-          onClose: () => alertConfig.onClose?.(),
+          onClose: () => {
+            setIsVisible(false);
+            alertConfig.onClose?.();
+          },
         })}
         {...(alertConfig?.onConfirm && {
-          onConfirm: () => alertConfig.onConfirm?.(),
+          onConfirm: () => {
+            setIsVisible(false);
+            alertConfig.onConfirm?.();
+          },
         })}
       />
     </AlertContext.Provider>

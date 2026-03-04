@@ -3,7 +3,6 @@ import {
   StyleSheet,
   View,
   ScrollView,
-  Alert,
   TouchableOpacity,
 } from "react-native";
 import { router } from "expo-router";
@@ -13,10 +12,12 @@ import StyledButton from "../components/helpers/StyledButton";
 import { useThemeColor } from "@/hooks/useThemeColor";
 import { Ionicons } from "@expo/vector-icons";
 import { useRequestPasswordResetMutation } from "@/app/store/api/authApi";
+import { useAlertContext } from "@/app/contexts/AlertContext";
 
 const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
+  const { setAlertConfig } = useAlertContext();
 
   // Theme colors
   const backgroundColor = useThemeColor({}, "background");
@@ -31,13 +32,25 @@ const ForgotPasswordScreen = () => {
 
   const handleSendResetEmail = async () => {
     if (!email.trim()) {
-      Alert.alert("Error", "Please enter your email address");
+      setAlertConfig({
+        isVisible: true,
+        title: "Error",
+        message: "Please enter your email address",
+        type: "error",
+        onConfirm: () => {},
+      });
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-      Alert.alert("Error", "Please enter a valid email address");
+      setAlertConfig({
+        isVisible: true,
+        title: "Error",
+        message: "Please enter a valid email address",
+        type: "error",
+        onConfirm: () => {},
+      });
       return;
     }
 
@@ -51,7 +64,13 @@ const ForgotPasswordScreen = () => {
       }
     } catch (error: any) {
       console.error("Password reset error:", error);
-      Alert.alert("Error", error.data?.error || "Failed to send reset email");
+      setAlertConfig({
+        isVisible: true,
+        title: "Error",
+        message: error.data?.error || "Failed to send reset email",
+        type: "error",
+        onConfirm: () => {},
+      });
     }
   };
 

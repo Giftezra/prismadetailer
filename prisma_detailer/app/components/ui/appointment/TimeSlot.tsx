@@ -156,8 +156,6 @@ const styles = StyleSheet.create({
   emptySlot: {
     borderRadius: 3,
     padding: 10,
-    borderWidth: 1,
-    borderStyle: "solid",
   },
   pastEmptySlot: {
     opacity: 0.6,

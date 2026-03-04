@@ -2,13 +2,15 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
-from main.models import Detailer, ServiceType, Job, Availability, Addon
+from main.models import Detailer, ServiceType, Job, Addon, Availability
 from main.utils.detailer_matcher import find_detailers_for_location
+from main.utils.redis_geo import get_nearest_detailer_ids
 from main.serializer import DetailerSerializer, ServiceTypeSerializer
 from datetime import datetime, time, timedelta
 from django.utils import timezone
+from django.db import transaction
 from main.util.media_helper import get_full_media_url
-from main.tasks import send_booking_confirmation_email, send_push_notification, create_notification   
+from main.tasks import send_booking_confirmation_email, send_push_notification, create_notification, publish_job_acceptance   
 from channels.layers import get_channel_layer
 
 class BookingView(APIView):
@@ -16,6 +18,8 @@ class BookingView(APIView):
 
     action_handler = {
         "create_booking": '_create_booking',
+        "create_bulk_booking": '_create_bulk_booking',
+        "reschedule_bulk_booking": '_reschedule_bulk_booking',
     }   
 
     def get(self, request, *args, **kwargs):
@@ -31,7 +35,44 @@ class BookingView(APIView):
             return Response({"error": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
         handler = getattr(self, self.action_handler[action])
         return handler(request)
-    
+
+    def _get_detailers_free_for_slot(
+        self,
+        available_detailers,
+        appointment_date,
+        appointment_time,
+        appointment_end_time,
+        service_duration,
+        travel_buffer=30,
+    ):
+        """
+        Return a list of detailers from available_detailers who have no conflicting
+        job for the given date and time slot (overlap check includes travel buffer).
+        """
+        result = []
+        for detailer in available_detailers:
+            conflicting_jobs = Job.objects.filter(
+                primary_detailer=detailer,
+                appointment_date__date=appointment_date,
+                status__in=['pending', 'accepted', 'in_progress'],
+            ).select_related('service_type')
+            has_conflict = False
+            for job in conflicting_jobs:
+                job_start = job.appointment_time
+                job_duration = getattr(job.service_type, 'duration', None) or 60
+                job_end_minutes = job_start.hour * 60 + job_start.minute + job_duration
+                job_end = time(job_end_minutes // 60, job_end_minutes % 60)
+                job_end_with_buffer_minutes = job_end.hour * 60 + job_end.minute + travel_buffer
+                job_end_with_buffer = time(
+                    job_end_with_buffer_minutes // 60,
+                    job_end_with_buffer_minutes % 60,
+                )
+                if appointment_time < job_end_with_buffer and appointment_end_time > job_start:
+                    has_conflict = True
+                    break
+            if not has_conflict:
+                result.append(detailer)
+        return result
 
     def _create_booking(self, request):
         """ The client app stack uses this method to communicate with the detailer app stack servers.
@@ -39,6 +80,7 @@ class BookingView(APIView):
             When the data required to complete a booking is recieved in the params, the method is to destructure it so that it can be used to create a new booking.
         """
         try:
+            print ("request.data", request.data)
 
             try:
                 data = request.data
@@ -109,29 +151,10 @@ class BookingView(APIView):
                     "success": False,
                     "error": f"No available detailers found in {data['city']}, {data['country']}. We are currently working to bring PRISMA closer to you. Please check back another time."
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # For express service, try to find 2 detailers, fallback to 1
-            detailers_to_assign = []
-            if is_express_service:
-                # Try to find 2 available detailers
-                detailers_to_assign = list(available_detailers[:2])
-                # If only 1 available, still proceed (fallback)
-                if len(detailers_to_assign) == 0:
-                    return Response({
-                        "success": False,
-                        "error": f"No available detailers found in {data['city']}, {data['country']}"
-                    }, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                # Regular booking - single detailer
-                detailers_to_assign = [available_detailers.first()]
-            
-            # Primary detailer is the first one
-            primary_detailer = detailers_to_assign[0]
-            
-            # Check if the detailer is available for the specified time
+
+            # Parse appointment date/time first so we can filter detailers by slot availability
             appointment_date = datetime.strptime(data['booking_date'], '%Y-%m-%d').date()
-            
-            # Handle time format - client sends HH:MM:SS.sss or HH:MM:SS
+
             try:
                 appointment_time = datetime.strptime(data['start_time'], '%H:%M:%S.%f').time()
             except ValueError:
@@ -141,7 +164,7 @@ class BookingView(APIView):
                     return Response({
                         "error": "Invalid start_time format"
                     }, status=status.HTTP_400_BAD_REQUEST)
-            
+
             try:
                 appointment_end_time = datetime.strptime(data['end_time'], '%H:%M:%S.%f').time()
             except ValueError:
@@ -151,48 +174,47 @@ class BookingView(APIView):
                     return Response({
                         "error": "Invalid end_time format"
                     }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Client sends the correct local time (Europe/London timezone)
-            # Just combine and mark as timezone-aware without any conversion
-            from zoneinfo import ZoneInfo
-            appointment_datetime = datetime.combine(
-                appointment_date, 
-                appointment_time, 
-                tzinfo=ZoneInfo('Europe/London')
+
+            # Only consider detailers who are free for this specific slot (no overlapping job)
+            detailers_free_for_slot = self._get_detailers_free_for_slot(
+                available_detailers=available_detailers,
+                appointment_date=appointment_date,
+                appointment_time=appointment_time,
+                appointment_end_time=appointment_end_time,
+                service_duration=service_type.duration or 60,
             )
-            
-            # Check for conflicting jobs for all detailers to be assigned
-            has_conflict = False
-            for detailer in detailers_to_assign:
-                # Check conflicts using primary_detailer (since we changed the model)
-                conflicting_jobs = Job.objects.filter(
-                    primary_detailer=detailer,
-                    appointment_date__date=appointment_date,
-                    status__in=['pending', 'accepted', 'in_progress']
-                )
-                
-                for job in conflicting_jobs:
-                    job_start = job.appointment_time
-                    job_end_minutes = job_start.hour * 60 + job_start.minute + service_type.duration
-                    job_end = time(job_end_minutes // 60, job_end_minutes % 60)
-                    travel_buffer = 30  # minutes
-                    job_end_with_buffer_minutes = job_end.hour * 60 + job_end.minute + travel_buffer
-                    job_end_with_buffer = time(job_end_with_buffer_minutes // 60, job_end_with_buffer_minutes % 60)
-                    
-                    # Check if new appointment overlaps with existing job
-                    if (appointment_time < job_end_with_buffer and appointment_end_time > job_start):
-                        has_conflict = True
-                        break
-                
-                if has_conflict:
-                    break
-            
-            if has_conflict:
+            if not detailers_free_for_slot:
                 return Response({
                     "success": False,
                     "error": "No detailers available for the specified time"
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
+
+            # Order by distance when client lat/lng present; otherwise use order of filtered list
+            available_detailer_ids = set(d.id for d in detailers_free_for_slot)
+            detailers_to_assign = []
+            if latitude is not None and longitude is not None:
+                nearest_ids = get_nearest_detailer_ids(
+                    longitude, latitude, radius_km=30.0, count=10
+                )
+                ordered_ids = [did for did in nearest_ids if did in available_detailer_ids]
+                if ordered_ids:
+                    need = 2 if is_express_service else 1
+                    by_id = {d.id: d for d in detailers_free_for_slot}
+                    detailers_to_assign = [by_id[i] for i in ordered_ids[:need] if i in by_id]
+            if not detailers_to_assign:
+                need = 2 if is_express_service else 1
+                detailers_to_assign = detailers_free_for_slot[:need]
+
+            primary_detailer = detailers_to_assign[0]
+
+            # Client sends the correct local time (Europe/London timezone)
+            from zoneinfo import ZoneInfo
+            appointment_datetime = datetime.combine(
+                appointment_date,
+                appointment_time,
+                tzinfo=ZoneInfo('Europe/London')
+            )
+
             # Convert vehicle_year to integer if it's a string
             vehicle_year = data.get('vehicle_year')
             if vehicle_year and isinstance(vehicle_year, str):
@@ -234,13 +256,13 @@ class BookingView(APIView):
                     longitude=data['longitude'],
                     appointment_date=appointment_datetime,
                     appointment_time=appointment_time,
-                    status=data['status'],
+                    status='accepted',  # No separate accept step; job is accepted when assigned
                     loyalty_tier=data.get('loyalty_tier', 'bronze'),
                     loyalty_benefits=data.get('loyalty_benefits', [])
                 )
                 # Assign all detailers to the job (ManyToMany)
                 job.detailers.set(detailers_to_assign)
-                pass
+                # Jobs block times via get_timeslots (we subtract existing jobs); no Availability row needed
             except Exception as e:
                 pass
                 return Response({
@@ -278,9 +300,9 @@ class BookingView(APIView):
                 create_notification.delay(
                     detailer.user.id,
                     'New Appointment',
-                    'pending',
+                    'assigned',
                     'success',
-                    'You have a new appointment!'
+                    'You have been assigned an appointment.'
                 )
 
                 # Send the user a push notification if they have allowed push notifications and 
@@ -289,9 +311,18 @@ class BookingView(APIView):
                     send_push_notification.delay(
                         detailer.user.id,
                         'New Appointment',
-                        'You have a new appointment| ' + self.format_appointment_date_time(job.appointment_date, job.appointment_time) + ' at ' + job.post_code,
+                        'You have been assigned an appointment: ' + self.format_appointment_date_time(job.appointment_date, job.appointment_time) + ' at ' + job.post_code,
                         'booking_created'
                     )
+
+            # Publish job_acceptance so client app can set detailer and send confirmation (no separate accept step)
+            publish_job_acceptance.delay(
+                job.booking_reference,
+                primary_detailer.user.email,
+                primary_detailer.user.get_full_name(),
+                primary_detailer.user.phone or '',
+                primary_detailer.rating or 0.0
+            )
 
             # Return success response with appointment ID
             response_data = {
@@ -309,7 +340,516 @@ class BookingView(APIView):
                 "success": False,
                 "error": str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
+    def _create_bulk_booking(self, request):
+        """
+        Create multiple jobs for a bulk order: assign jobs to detailers by capacity within the given time window.
+        Payload: address, city, country, postcode, latitude, longitude, date, start_time, end_time,
+                 service_type (name), number_of_vehicles, total_amount, client_name, client_phone,
+                 booking_reference, owner_note, suggested_team_size, window.
+        """
+        try:
+            data = request.data or {}
+            booking_reference = (data.get('booking_reference') or '').strip()
+            if not booking_reference:
+                return Response({"error": "booking_reference is required"}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                service_type = ServiceType.objects.get(name=data.get('service_type', ''))
+            except ServiceType.DoesNotExist:
+                return Response({"error": f"Service type '{data.get('service_type')}' not found"}, status=status.HTTP_400_BAD_REQUEST)
+            number_of_vehicles = int(data.get('number_of_vehicles', 0))
+            if number_of_vehicles <= 0:
+                return Response({"error": "number_of_vehicles must be positive"}, status=status.HTTP_400_BAD_REQUEST)
+            total_amount = data.get('total_amount', 0)
+            try:
+                total_amount = float(total_amount)
+            except (TypeError, ValueError):
+                total_amount = 0
+            amount_per_job = total_amount / number_of_vehicles if number_of_vehicles else 0
+            city = (data.get('city') or '').strip()
+            country = (data.get('country') or '').strip()
+            if not city or not country:
+                return Response({"error": "city and country are required"}, status=status.HTTP_400_BAD_REQUEST)
+            latitude = data.get('latitude')
+            longitude = data.get('longitude')
+            if latitude is not None and longitude is not None:
+                try:
+                    latitude = float(latitude)
+                    longitude = float(longitude)
+                except (TypeError, ValueError):
+                    latitude = longitude = None
+            try:
+                target_date = datetime.strptime(data.get('date', ''), '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                return Response({"error": "Invalid date. Use YYYY-MM-DD"}, status=status.HTTP_400_BAD_REQUEST)
+            start_time_str = data.get('start_time', '06:00')
+            end_time_str = data.get('end_time', '21:00')
+            for fmt in ('%H:%M:%S', '%H:%M'):
+                try:
+                    start_time = datetime.strptime(start_time_str.split('.')[0], fmt).time()
+                    break
+                except ValueError:
+                    continue
+            else:
+                start_time = time(6, 0)
+            for fmt in ('%H:%M:%S', '%H:%M'):
+                try:
+                    end_time = datetime.strptime(end_time_str.split('.')[0], fmt).time()
+                    break
+                except ValueError:
+                    continue
+            else:
+                end_time = time(21, 0)
+            from zoneinfo import ZoneInfo
+            travel_interval = 30  # drive before/after appointments (same-location bulk: no travel between jobs)
+            try:
+                suggested_team_size = max(1, int(data.get('suggested_team_size', 1)))
+            except (TypeError, ValueError):
+                suggested_team_size = 1
+            valet_type_str = (data.get('valet_type') or '')
+            if isinstance(valet_type_str, str):
+                valet_type_str = valet_type_str.strip()[:20]
+            else:
+                valet_type_str = str(valet_type_str)[:20]
+            slot_length_minutes = service_type.duration or 60
+            detailers_qs, _ = find_detailers_for_location(
+                country=country,
+                city=city,
+                latitude=latitude,
+                longitude=longitude,
+                is_available=True,
+            )
+            if not detailers_qs.exists():
+                return Response({
+                    "error": "No available detailers found for this location. We are currently working to bring PRISMA closer to you."
+                }, status=status.HTTP_400_BAD_REQUEST)
+            detailer_list = list(detailers_qs)
+            existing_jobs = Job.objects.filter(
+                primary_detailer__in=detailer_list,
+                appointment_date__date=target_date,
+                status__in=['accepted', 'in_progress', 'pending'],
+            ).select_related('primary_detailer', 'service_type')
+            detailer_unavailability = Availability.objects.filter(
+                detailer__in=detailer_list,
+                date=target_date,
+            ).select_related("detailer")
+
+            start_minutes = start_time.hour * 60 + start_time.minute
+            end_minutes = end_time.hour * 60 + end_time.minute
+            # First bookable slot is 30 min after window start (drive time to first appointment)
+            effective_start_minutes = start_minutes + travel_interval
+            window_minutes = end_minutes - effective_start_minutes
+            if window_minutes < slot_length_minutes:
+                return Response({
+                    "error": "Time window too short for at least one service. Please choose a longer window."
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            def minutes_since_midnight(t):
+                return t.hour * 60 + t.minute
+
+            def free_intervals_for_detailer(detailer_id, range_start_min, range_end_min, jobs_for_detailer, unavails_for_detailer):
+                """
+                Return list of (start_min, end_min) for contiguous free segments for this detailer
+                in [range_start_min, range_end_min). Blocks: unavailability + existing jobs (with travel).
+                Same-location bulk sub-jobs don't add travel after.
+                """
+                blocked = []
+                for u in unavails_for_detailer:
+                    u_start = minutes_since_midnight(u.start_time)
+                    u_end = minutes_since_midnight(u.end_time)
+                    overlap_start = max(u_start, range_start_min)
+                    overlap_end = min(u_end, range_end_min)
+                    if overlap_end > overlap_start:
+                        blocked.append((overlap_start, overlap_end))
+                for job in jobs_for_detailer:
+                    j_start = minutes_since_midnight(job.appointment_time)
+                    j_dur = getattr(job.service_type, "duration", 60) or 60
+                    j_dur = int(j_dur)
+                    j_block_start = max(0, j_start - travel_interval)
+                    is_bulk_sub = (
+                        getattr(job, "booking_reference", "")
+                        and "-" in job.booking_reference
+                        and job.booking_reference.split("-")[-1].isdigit()
+                    )
+                    j_end = j_start + j_dur + (0 if is_bulk_sub else travel_interval)
+                    overlap_start = max(j_block_start, range_start_min)
+                    overlap_end = min(j_end, range_end_min)
+                    if overlap_end > overlap_start:
+                        blocked.append((overlap_start, overlap_end))
+                if not blocked:
+                    return [(range_start_min, range_end_min)] if range_start_min < range_end_min else []
+                blocked.sort(key=lambda x: x[0])
+                merged = [blocked[0]]
+                for a, b in blocked[1:]:
+                    if a <= merged[-1][1]:
+                        merged[-1] = (merged[-1][0], max(merged[-1][1], b))
+                    else:
+                        merged.append((a, b))
+                free = []
+                cur = range_start_min
+                for a, b in merged:
+                    if cur < a and cur < range_end_min:
+                        free.append((cur, min(a, range_end_min)))
+                    cur = max(cur, b)
+                if cur < range_end_min:
+                    free.append((cur, range_end_min))
+                return free
+
+            def subtract_block(intervals, block_start, block_end):
+                """Return new list of (s,e) with [block_start, block_end] removed from intervals."""
+                out = []
+                for s, e in intervals:
+                    if e <= block_start or s >= block_end:
+                        out.append((s, e))
+                    else:
+                        if s < block_start:
+                            out.append((s, block_start))
+                        if e > block_end:
+                            out.append((block_end, e))
+                return out
+
+            def earliest_start(intervals, duration):
+                """Earliest start minute in intervals that fits a block of length duration. None if no fit."""
+                best = None
+                for s, e in intervals:
+                    if e - s >= duration:
+                        if best is None or s < best:
+                            best = s
+                return best
+
+            # Build mutable free intervals per detailer (minutes from midnight)
+            existing_jobs_list = list(existing_jobs)
+            intervals_by_detailer = {}
+            for d in detailer_list:
+                jobs_d = [j for j in existing_jobs_list if j.primary_detailer_id == d.id]
+                unavails_d = detailer_unavailability.filter(detailer_id=d.id)
+                intervals_by_detailer[d.id] = free_intervals_for_detailer(
+                    d.id, effective_start_minutes, end_minutes, jobs_d, unavails_d
+                )
+
+            created_jobs = []
+            with transaction.atomic():
+                for i in range(number_of_vehicles):
+                    best_detailer = None
+                    best_start = None
+                    for d in detailer_list:
+                        start = earliest_start(intervals_by_detailer[d.id], slot_length_minutes)
+                        if start is not None and (best_start is None or start < best_start):
+                            best_detailer = d
+                            best_start = start
+                    if not best_detailer:
+                        import logging
+                        logging.getLogger(__name__).warning(
+                            "Bulk booking capacity failed at slot %s/%s (ref=%s)",
+                            i + 1, number_of_vehicles, booking_reference,
+                        )
+                        return Response({
+                            "error": "Not enough detailer capacity to assign all vehicles. Please try a different date or time window."
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    slot_time = time(best_start // 60, best_start % 60)
+                    job_ref = f"{booking_reference}-{i + 1}"
+                    appointment_datetime = datetime.combine(target_date, slot_time, tzinfo=ZoneInfo('Europe/London'))
+                    job = Job.objects.create(
+                        booking_reference=job_ref,
+                        primary_detailer=best_detailer,
+                        service_type=service_type,
+                        client_name=data.get('client_name', '') or 'Client',
+                        client_phone=data.get('client_phone', '') or '',
+                        vehicle_registration=f"Bulk-{i + 1}",
+                        vehicle_make="TBD",
+                        vehicle_model="TBD",
+                        vehicle_color="TBD",
+                        total_amount=amount_per_job,
+                        owner_note=data.get('owner_note', '') or '',
+                        address=data.get('address', '') or '',
+                        city=city,
+                        post_code=data.get('postcode', '') or '',
+                        country=country,
+                        latitude=latitude,
+                        longitude=longitude,
+                        appointment_date=appointment_datetime,
+                        appointment_time=slot_time,
+                        duration=service_type.duration,
+                        valet_type=valet_type_str or None,
+                        status='accepted',
+                        loyalty_tier='bronze',
+                        loyalty_benefits=[],
+                    )
+                    job.detailers.set([best_detailer])
+                    intervals_by_detailer[best_detailer.id] = subtract_block(
+                        intervals_by_detailer[best_detailer.id],
+                        best_start,
+                        best_start + slot_length_minutes,
+                    )
+                    created_jobs.append(job)
+            # After successful commit: send notifications and publish events
+            for job in created_jobs:
+                assigned = job.primary_detailer
+                appointment_datetime = job.appointment_date
+                slot_time = job.appointment_time
+                if assigned.user.allow_email_notifications:
+                    send_booking_confirmation_email.delay(
+                        assigned.user.email,
+                        job.booking_reference,
+                        appointment_datetime.strftime('%b. %d, %Y, %I %p').replace(' 0', ' ').lower(),
+                        slot_time.strftime('%I %p').replace(' 0', ' ').lower(),
+                        job.address,
+                        service_type.name,
+                        job.owner_note,
+                        f"{amount_per_job:.2f}",
+                    )
+                create_notification.delay(
+                    assigned.user.id,
+                    'New Appointment',
+                    'assigned',
+                    'success',
+                    'You have been assigned an appointment.',
+                )
+                if assigned.user.allow_push_notifications and assigned.user.notification_token:
+                    send_push_notification.delay(
+                        assigned.user.id,
+                        'New Appointment',
+                        f'You have been assigned an appointment: {slot_time.strftime("%H:%M")} at {job.post_code}',
+                        'booking_created',
+                    )
+                publish_job_acceptance.delay(
+                    job.booking_reference,
+                    assigned.user.email,
+                    assigned.user.get_full_name(),
+                    assigned.user.phone or '',
+                    assigned.rating or 0.0,
+                )
+            # Build unique assigned detailers list for client (same shape as Redis job_acceptance)
+            seen_ids = set()
+            assigned_detailers = []
+            for job in created_jobs:
+                d = job.primary_detailer
+                if d and d.id not in seen_ids:
+                    seen_ids.add(d.id)
+                    assigned_detailers.append({
+                        "id": str(d.id),
+                        "name": d.user.get_full_name() or "",
+                        "phone": (d.user.phone or "") or "",
+                        "rating": float(d.rating or 0),
+                        "image": None,
+                    })
+            return Response({
+                "success": True,
+                "jobs_created": len(created_jobs),
+                "booking_reference": booking_reference,
+                "assigned_detailers": assigned_detailers,
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({
+                "success": False,
+                "error": str(e),
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    def _reschedule_bulk_booking(self, request):
+        """
+        Reschedule an existing bulk order to a new date/window. Load existing jobs by base booking_reference,
+        build new slots for the new date and selected option, then update or reassign each job.
+        Input: booking_reference (base), date, start_time, end_time, number_of_vehicles, suggested_team_size
+        (same shape as create_bulk_booking). Returns new_slots for client server to update BookedAppointments.
+        """
+        try:
+            data = request.data or {}
+            booking_reference = (data.get('booking_reference') or '').strip()
+            if not booking_reference:
+                return Response({"error": "booking_reference is required"}, status=status.HTTP_400_BAD_REQUEST)
+            base_ref = booking_reference.rstrip('-')
+            existing_jobs = list(
+                Job.objects.filter(booking_reference__startswith=base_ref + '-')
+                .select_related('primary_detailer', 'service_type')
+                .order_by('booking_reference')
+            )
+            if not existing_jobs:
+                return Response({"error": "No jobs found for this bulk order"}, status=status.HTTP_404_NOT_FOUND)
+            number_of_vehicles = int(data.get('number_of_vehicles', len(existing_jobs)))
+            if number_of_vehicles != len(existing_jobs):
+                return Response({"error": "number_of_vehicles must match existing job count"}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                target_date = datetime.strptime(data.get('date', ''), '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                return Response({"error": "Invalid date. Use YYYY-MM-DD"}, status=status.HTTP_400_BAD_REQUEST)
+            start_time_str = data.get('start_time', '06:00')
+            end_time_str = data.get('end_time', '21:00')
+            for fmt in ('%H:%M:%S', '%H:%M'):
+                try:
+                    start_time = datetime.strptime(start_time_str.split('.')[0], fmt).time()
+                    break
+                except ValueError:
+                    continue
+            else:
+                start_time = time(6, 0)
+            for fmt in ('%H:%M:%S', '%H:%M'):
+                try:
+                    end_time = datetime.strptime(end_time_str.split('.')[0], fmt).time()
+                    break
+                except ValueError:
+                    continue
+            else:
+                end_time = time(21, 0)
+            try:
+                suggested_team_size = max(1, int(data.get('suggested_team_size', 1)))
+            except (TypeError, ValueError):
+                suggested_team_size = 1
+            first_job = existing_jobs[0]
+            service_type = first_job.service_type
+            slot_length_minutes = service_type.duration or 60
+            city = (first_job.city or '').strip()
+            country = (first_job.country or '').strip()
+            latitude = getattr(first_job, 'latitude', None)
+            longitude = getattr(first_job, 'longitude', None)
+            detailers_qs, _ = find_detailers_for_location(
+                country=country,
+                city=city,
+                latitude=latitude,
+                longitude=longitude,
+                is_available=True,
+            )
+            if not detailers_qs.exists():
+                return Response({"error": "No available detailers for this location"}, status=status.HTTP_400_BAD_REQUEST)
+            detailer_list = list(detailers_qs)
+            from zoneinfo import ZoneInfo
+            travel_interval = 30
+            start_minutes = start_time.hour * 60 + start_time.minute
+            end_minutes = end_time.hour * 60 + end_time.minute
+            effective_start_minutes = start_minutes + travel_interval
+            window_minutes = end_minutes - effective_start_minutes
+            if window_minutes < slot_length_minutes:
+                return Response({"error": "Time window too short"}, status=status.HTTP_400_BAD_REQUEST)
+            bulk_job_ids = {j.id for j in existing_jobs}
+            other_jobs_same_day = list(
+                Job.objects.filter(
+                    primary_detailer__in=detailer_list,
+                    appointment_date__date=target_date,
+                    status__in=['accepted', 'in_progress', 'pending'],
+                )
+                .exclude(id__in=bulk_job_ids)
+                .select_related('primary_detailer', 'service_type')
+            )
+            detailer_unavailability = Availability.objects.filter(
+                detailer__in=detailer_list,
+                date=target_date,
+            ).select_related("detailer")
+
+            def _minutes_since_midnight(t):
+                return t.hour * 60 + t.minute
+
+            def _reschedule_free_intervals(detailer_id, range_start_min, range_end_min, jobs_for_detailer, unavails_for_detailer):
+                blocked = []
+                for u in unavails_for_detailer:
+                    u_start = _minutes_since_midnight(u.start_time)
+                    u_end = _minutes_since_midnight(u.end_time)
+                    overlap_start = max(u_start, range_start_min)
+                    overlap_end = min(u_end, range_end_min)
+                    if overlap_end > overlap_start:
+                        blocked.append((overlap_start, overlap_end))
+                for job in jobs_for_detailer:
+                    j_start = _minutes_since_midnight(job.appointment_time)
+                    j_dur = getattr(job.service_type, "duration", 60) or 60
+                    j_dur = int(j_dur)
+                    j_block_start = max(0, j_start - travel_interval)
+                    is_bulk_sub = (
+                        getattr(job, "booking_reference", "")
+                        and "-" in job.booking_reference
+                        and job.booking_reference.split("-")[-1].isdigit()
+                    )
+                    j_end = j_start + j_dur + (0 if is_bulk_sub else travel_interval)
+                    overlap_start = max(j_block_start, range_start_min)
+                    overlap_end = min(j_end, range_end_min)
+                    if overlap_end > overlap_start:
+                        blocked.append((overlap_start, overlap_end))
+                if not blocked:
+                    return [(range_start_min, range_end_min)] if range_start_min < range_end_min else []
+                blocked.sort(key=lambda x: x[0])
+                merged = [blocked[0]]
+                for a, b in blocked[1:]:
+                    if a <= merged[-1][1]:
+                        merged[-1] = (merged[-1][0], max(merged[-1][1], b))
+                    else:
+                        merged.append((a, b))
+                free = []
+                cur = range_start_min
+                for a, b in merged:
+                    if cur < a and cur < range_end_min:
+                        free.append((cur, min(a, range_end_min)))
+                    cur = max(cur, b)
+                if cur < range_end_min:
+                    free.append((cur, range_end_min))
+                return free
+
+            def _reschedule_subtract_block(intervals, block_start, block_end):
+                out = []
+                for s, e in intervals:
+                    if e <= block_start or s >= block_end:
+                        out.append((s, e))
+                    else:
+                        if s < block_start:
+                            out.append((s, block_start))
+                        if e > block_end:
+                            out.append((block_end, e))
+                return out
+
+            def _reschedule_earliest_start(intervals, duration):
+                best = None
+                for s, e in intervals:
+                    if e - s >= duration:
+                        if best is None or s < best:
+                            best = s
+                return best
+
+            intervals_by_detailer = {}
+            for d in detailer_list:
+                jobs_d = [j for j in other_jobs_same_day if j.primary_detailer_id == d.id]
+                unavails_d = detailer_unavailability.filter(detailer_id=d.id)
+                intervals_by_detailer[d.id] = _reschedule_free_intervals(
+                    d.id, effective_start_minutes, end_minutes, jobs_d, unavails_d
+                )
+
+            new_slots = []
+            with transaction.atomic():
+                for idx, job in enumerate(existing_jobs):
+                    best_detailer = None
+                    best_start = None
+                    for d in detailer_list:
+                        start = _reschedule_earliest_start(intervals_by_detailer[d.id], slot_length_minutes)
+                        if start is not None and (best_start is None or start < best_start):
+                            best_detailer = d
+                            best_start = start
+                    if not best_detailer:
+                        return Response({
+                            "error": "Not enough detailer capacity for the new date. Please try a different option."
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    slot_time = time(best_start // 60, best_start % 60)
+                    appointment_datetime = datetime.combine(target_date, slot_time, tzinfo=ZoneInfo('Europe/London'))
+                    job.primary_detailer = best_detailer
+                    job.appointment_date = appointment_datetime
+                    job.appointment_time = slot_time
+                    job.detailers.set([best_detailer])
+                    job.save()
+                    intervals_by_detailer[best_detailer.id] = _reschedule_subtract_block(
+                        intervals_by_detailer[best_detailer.id],
+                        best_start,
+                        best_start + slot_length_minutes,
+                    )
+                    new_slots.append({
+                        "booking_reference": job.booking_reference,
+                        "appointment_date": target_date.isoformat(),
+                        "appointment_time": slot_time.strftime("%H:%M"),
+                        "detailer_id": str(best_detailer.id),
+                    })
+            return Response({
+                "success": True,
+                "booking_reference": base_ref,
+                "new_slots": new_slots,
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                "success": False,
+                "error": str(e),
+            }, status=status.HTTP_400_BAD_REQUEST)
 
     
     # Format the appointment date and time so it says the day and time 
